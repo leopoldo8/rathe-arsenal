@@ -182,6 +182,42 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: C161 apps/web/tests/e2e/product-add-flow.spec.ts (web routes)
 - last seen: 2026-10-26T19:44:12Z
 
+### L-038 - A layout test that collects controls from a container must assert the collected list is not empty, because a selector for an element the page does not render makes every overlap and edge assertion pass over nothing.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `web/layout` · harmful: 0
+- features: persona-rethink
+- evidence: e756b4a0 (verification round 5 to 7) (web/layout)
+- last seen: 2026-10-28T12:44:24Z
+
+### L-039 - A Retry-After built from the process clock against a database-stamped createdAt can exceed its window under Docker clock skew, so clamp it to the window and assert the upper bound.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `apps/api/rate-limit` · harmful: 0
+- features: persona-rethink
+- evidence: 1ec29e09, C452 (verification round 5 to 7) (apps/api/rate-limit)
+- last seen: 2026-10-28T12:44:24Z
+
+### L-040 - A visual-regression test must stub the data it shows, or it passes only on rows left in a long-lived local database and fails on a fresh one; run it once against a fresh database.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `web/visual-regression` · harmful: 0
+- features: persona-rethink
+- evidence: 747c877a (verification round 5 to 7) (web/visual-regression)
+- last seen: 2026-10-28T12:44:24Z
+
+### L-041 - A query whose result order an e2e assertion checks needs an explicit ORDER BY with a tiebreaker, or the assertion passes most runs on the database's arbitrary order.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `apps/api/e2e` · harmful: 0
+- features: persona-rethink
+- evidence: 35d8a8ba (verification round 5 to 7) (apps/api/e2e)
+- last seen: 2026-10-28T12:44:24Z
+
+### L-042 - Every part a claim names needs a Proof that names it and a test that asserts it; a colour claim needs a computed-style browser assertion, because unit runs do not evaluate CSS.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
+- features: persona-rethink
+- evidence: verification round 5: Wh skip note, Wp and P2c colours, A3 tried codes (94639402) (web)
+- last seen: 2026-10-28T12:44:24Z
+
+### L-043 - Count the sign-ups the web e2e suite already spends against the API's per-address hourly limit before adding a test; fold new sign-up flows into existing walks instead of adding sign-ups.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `web/e2e` · harmful: 0
+- features: persona-rethink
+- evidence: web e2e sign-up throttle, fix rounds 5 to 7 (57a131bf) (web/e2e)
+- last seen: 2026-10-28T12:44:24Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 38,
+  "next_id": 44,
   "lessons": [
     {
       "id": "L-010",
@@ -508,6 +508,114 @@
       ],
       "created": "2026-10-26T19:44:12Z",
       "last_seen": "2026-10-26T19:44:12Z"
+    },
+    {
+      "id": "L-038",
+      "key": "gate_fail::a layout test that collects controls from a container must assert the collected list is not empty because a selector for an element the page does not render makes every overlap and edge assertion pass over nothing",
+      "text": "A layout test that collects controls from a container must assert the collected list is not empty, because a selector for an element the page does not render makes every overlap and edge assertion pass over nothing.",
+      "signal": "gate_fail",
+      "scope": "web/layout",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "e756b4a0 (verification round 5 to 7) (web/layout)"
+      ],
+      "created": "2026-10-28T12:44:24Z",
+      "last_seen": "2026-10-28T12:44:24Z"
+    },
+    {
+      "id": "L-039",
+      "key": "gate_fail::a retry after built from the process clock against a database stamped createdat can exceed its window under docker clock skew so clamp it to the window and assert the upper bound",
+      "text": "A Retry-After built from the process clock against a database-stamped createdAt can exceed its window under Docker clock skew, so clamp it to the window and assert the upper bound.",
+      "signal": "gate_fail",
+      "scope": "apps/api/rate-limit",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "1ec29e09, C452 (verification round 5 to 7) (apps/api/rate-limit)"
+      ],
+      "created": "2026-10-28T12:44:24Z",
+      "last_seen": "2026-10-28T12:44:24Z"
+    },
+    {
+      "id": "L-040",
+      "key": "gate_fail::a visual regression test must stub the data it shows or it passes only on rows left in a long lived local database and fails on a fresh one run it once against a fresh database",
+      "text": "A visual-regression test must stub the data it shows, or it passes only on rows left in a long-lived local database and fails on a fresh one; run it once against a fresh database.",
+      "signal": "gate_fail",
+      "scope": "web/visual-regression",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "747c877a (verification round 5 to 7) (web/visual-regression)"
+      ],
+      "created": "2026-10-28T12:44:24Z",
+      "last_seen": "2026-10-28T12:44:24Z"
+    },
+    {
+      "id": "L-041",
+      "key": "gate_fail::a query whose result order an e2e assertion checks needs an explicit order by with a tiebreaker or the assertion passes most runs on the database s arbitrary order",
+      "text": "A query whose result order an e2e assertion checks needs an explicit ORDER BY with a tiebreaker, or the assertion passes most runs on the database's arbitrary order.",
+      "signal": "gate_fail",
+      "scope": "apps/api/e2e",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "35d8a8ba (verification round 5 to 7) (apps/api/e2e)"
+      ],
+      "created": "2026-10-28T12:44:24Z",
+      "last_seen": "2026-10-28T12:44:24Z"
+    },
+    {
+      "id": "L-042",
+      "key": "surviving_mutant::every part a claim names needs a proof that names it and a test that asserts it a colour claim needs a computed style browser assertion because unit runs do not evaluate css",
+      "text": "Every part a claim names needs a Proof that names it and a test that asserts it; a colour claim needs a computed-style browser assertion, because unit runs do not evaluate CSS.",
+      "signal": "surviving_mutant",
+      "scope": "web",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification round 5: Wh skip note, Wp and P2c colours, A3 tried codes (94639402) (web)"
+      ],
+      "created": "2026-10-28T12:44:24Z",
+      "last_seen": "2026-10-28T12:44:24Z"
+    },
+    {
+      "id": "L-043",
+      "key": "gate_fail::count the sign ups the web e2e suite already spends against the api s per address hourly limit before adding a test fold new sign up flows into existing walks instead of adding sign ups",
+      "text": "Count the sign-ups the web e2e suite already spends against the API's per-address hourly limit before adding a test; fold new sign-up flows into existing walks instead of adding sign-ups.",
+      "signal": "gate_fail",
+      "scope": "web/e2e",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "web e2e sign-up throttle, fix rounds 5 to 7 (57a131bf) (web/e2e)"
+      ],
+      "created": "2026-10-28T12:44:24Z",
+      "last_seen": "2026-10-28T12:44:24Z"
     }
   ]
 }
