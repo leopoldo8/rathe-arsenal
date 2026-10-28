@@ -227,7 +227,8 @@ export class SignInCodeService {
     }
     if (waits.length === 0) return;
     // Both limits must be clear before a request fits, so the wait is the longer one.
-    const retryAfterSeconds = Math.max(1, Math.ceil(Math.max(...waits) / 1000));
+    // `createdAt` comes from the database clock and `now` from this process, so skew could push the wait past the one-hour window.
+    const retryAfterSeconds = Math.min(HOUR_MS / 1000, Math.max(1, Math.ceil(Math.max(...waits) / 1000)));
     this.logger.warn({ event: 'auth.code.address_limit', retryAfterSeconds });
     throw new AuthError(EAuthErrorCode.TooManyCodes, 'Too many codes were asked for this address', retryAfterSeconds);
   }
