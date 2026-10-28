@@ -227,4 +227,24 @@ describe('MissingListPage', () => {
       expect(picks).toHaveLength(0);
     }
   });
+
+  it('the sheet puts the name field above the groups, and Fechar sends no request of any kind', async () => {
+    phone.value = true;
+    await renderPage(response([line({ cardIdentifier: 'bloodrush-bellow-yellow', name: 'Bloodrush Bellow', pitch: 2, deckNeeded: 3 })]));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver alternativas para Bloodrush Bellow (Amarelo)' }));
+
+    const sheet = await screen.findByTestId('alternatives-sheet');
+    const needed = await within(sheet).findByText('Ocupa o lugar de 3 cópias que faltam.');
+    const field = within(sheet).getByLabelText('Buscar pelo nome');
+    const firstCandidate = within(sheet).getAllByTestId('alternative-ownership')[0]!;
+    const follows = (before: HTMLElement, after: HTMLElement): boolean => Boolean(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(within(sheet).getByRole('heading', { name: 'Alternativas para Bloodrush Bellow (Amarelo)' }), needed)).toBe(true);
+    expect(follows(needed, field)).toBe(true);
+    expect(follows(field, firstCandidate)).toBe(true);
+
+    const callsBefore = api.fetch.mock.calls.length;
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Fechar' }));
+    await waitFor(() => expect(screen.queryByTestId('alternatives-sheet')).toBeNull());
+    expect(api.fetch.mock.calls).toHaveLength(callsBefore);
+  });
 });

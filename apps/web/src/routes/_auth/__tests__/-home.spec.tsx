@@ -302,6 +302,15 @@ describe('Home route', () => {
     expect(screen.queryByTestId('deckbox')).not.toBeInTheDocument();
   });
 
+  it('an account with no deck, no card and no import opening /home sees the empty state, not a redirect', () => {
+    seed([], null);
+    renderHome();
+
+    expect(screen.getByRole('heading', { name: 'Comece por um deck' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Importar meu primeiro deck' })).toHaveAttribute('href', '/decks/new');
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
   it('renders the aggregate line inside the armory header, not after the groups', () => {
     mockUseDecksQuery.mockReturnValue({
       isLoading: false,
@@ -425,6 +434,40 @@ describe('Home route, the stage and the verdict', () => {
         cursor = at;
       }
     }
+  });
+
+  it('puts each card of r3-stage-a-phone under its group, with every line as its own exact text', () => {
+    seed([
+      makeDeck(1, 'active', 'Rhinar Blitz', { format: 'Blitz', deckSize: 40, legality: copiesProblem(8, 2, 1, 'Blitz') }),
+      makeDeck(2, 'building', 'Rhinar - Blitz', {
+        format: 'Blitz',
+        deckSize: 31,
+        legality: {
+          ...copiesProblem(1, 2, 1, 'Blitz'),
+          details: [
+            ...copiesProblem(1, 2, 1, 'Blitz').details,
+            { code: 'mainboard_not_exact', params: { card: null, count: 31, limit: 40, format: 'Blitz' } },
+          ],
+        },
+      }),
+      makeDeck(3, 'ready', 'Rhinar CC', { deckSize: 60, legality: copiesProblem(1, 4, 3, 'Classic Constructed') }),
+    ]);
+    renderHome();
+
+    const expected: ReadonlyArray<readonly [string, string, readonly string[]]> = [
+      ['Ativos', 'Rhinar Blitz', ['Não vale no Blitz', '8 cartas com 2 cópias', 'Etapa: Jogando · 40 cartas']],
+      ['Ativos', 'Rhinar CC', ['Não vale no Classic Constructed', '1 carta com 4 cópias', 'Etapa: Pronto · 60 cartas']],
+      ['Construindo', 'Rhinar - Blitz', ['Não vale no Blitz', '1 carta com 2 cópias', 'Etapa: Montando · 31 de 40 cartas']],
+    ];
+    for (const [groupName, deckName, lines] of expected) {
+      const card = within(group(groupName)).getByLabelText(deckName);
+      for (const line of lines) {
+        expect(within(card).getByText(line)).toBeInTheDocument();
+      }
+    }
+    expect(within(group('Ativos')).queryByLabelText('Rhinar - Blitz')).not.toBeInTheDocument();
+    expect(within(group('Construindo')).queryByLabelText('Rhinar Blitz')).not.toBeInTheDocument();
+    expect(within(group('Construindo')).queryByLabelText('Rhinar CC')).not.toBeInTheDocument();
   });
 });
 

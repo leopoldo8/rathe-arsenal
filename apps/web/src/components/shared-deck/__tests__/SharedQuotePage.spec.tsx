@@ -102,6 +102,34 @@ describe('SharedQuotePage', () => {
     expect(screen.getByTestId('shared-deck-footer')).toHaveTextContent('Legend Story Studios');
   });
 
+  it('shows every needed card with its own stepper, price and note, and no store price, link or total', () => {
+    renderQuote();
+
+    const rows = screen.getAllByTestId('quote-row');
+    expect(rows).toHaveLength(NEEDED.length);
+    NEEDED.forEach((needed, index) => {
+      const row = rows[index]!;
+      expect(within(row).getByText(`precisa de ${needed.quantity}`)).toBeInTheDocument();
+      const stepper = within(row).getByRole('group', { name: 'Tenho' });
+      const values = within(stepper).getAllByRole('button').map((button) => button.textContent);
+      expect(values).toEqual(Array.from({ length: needed.quantity + 1 }, (_, count) => String(count)));
+      expect(within(row).getByText('R$')).toBeInTheDocument();
+      expect(within(row).getByLabelText(/^Preço por unidade de /)).toBeInTheDocument();
+      expect(within(row).getByLabelText(/^Observação de /)).toHaveAttribute('maxLength', '60');
+    });
+
+    // The only money on the page, besides the bar with the visitor's own quote ("Seu orçamento"),
+    // is the empty "R$" in front of each price field.
+    expect(screen.getByTestId('quote-bar')).toHaveTextContent(/^Seu orçamento: 0 de 59 cópias/);
+    const page = document.body.cloneNode(true) as HTMLElement;
+    page.querySelector('[data-testid="quote-bar"]')?.remove();
+    const text = page.textContent ?? '';
+    expect(text.match(/R\$/g)).toHaveLength(NEEDED.length);
+    expect(text).not.toMatch(/R\$\s*\d/);
+    expect(text).not.toMatch(/total|loja|comprar/i);
+    expect(screen.queryAllByRole('link').filter((link) => /^https?:/.test(link.getAttribute('href') ?? ''))).toEqual([]);
+  });
+
   it('sends nothing typed and records only quote_sent', async () => {
     const user = userEvent.setup();
     renderQuote();

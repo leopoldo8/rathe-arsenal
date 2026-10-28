@@ -52,4 +52,38 @@ test.describe('Card alternatives — E2E', () => {
     await page.goto(`${BASE_URL}/decks/${deckId}/missing`, { waitUntil: 'networkidle', timeout: 20000 });
     await expect(page.getByTestId('missing-list-page')).toContainText(originalName);
   });
+
+  test('the first candidate takes the place of the row card, and undoing it brings that row back', async ({ page }) => {
+    const deckId = loadFixture().swapDeckId;
+    await page.goto(`${BASE_URL}/decks/${deckId}/missing`, { waitUntil: 'networkidle', timeout: 20000 });
+    const missingRows = page.getByTestId('missing-list-page').getByTestId('missing-row');
+    await expect(missingRows.first()).toBeVisible();
+    const control = missingRows.first().getByRole('button', { name: /^Ver alternativas para / });
+    const originalName = ((await control.getAttribute('aria-label')) ?? '').replace('Ver alternativas para ', '');
+    expect(originalName).not.toBe('');
+
+    await control.click();
+    const sheet = page.getByTestId('alternatives-sheet');
+    await expect(sheet.getByTestId(/^alternatives-group-/).first()).toBeVisible();
+    // The very first candidate of the sheet, whatever its owned tag says.
+    const first = sheet.getByTestId('alternative-card').first();
+    const pick = first.getByRole('button', { name: /^Usar / });
+    const candidateName = ((await pick.getAttribute('aria-label')) ?? '').replace(/^Usar /, '').replace(/ no lugar de .*/, '');
+    expect(candidateName).not.toBe('');
+    await pick.click();
+    await expect(sheet).toBeHidden();
+
+    await page.goto(`${BASE_URL}/decks/${deckId}`, { waitUntil: 'networkidle', timeout: 20000 });
+    const mark = page.getByTestId('deck-list').getByTestId('replacement-mark');
+    await expect(mark).toHaveCount(1);
+    await expect(mark).toHaveText(new RegExp(`^no lugar de ${originalName.replace(/[()]/g, '\\$&')}`));
+
+    await page.getByTestId('deck-list').getByRole('button', { name: /^Desfazer a troca de / }).click();
+    await expect(page.getByTestId('replacement-mark')).toHaveCount(0);
+
+    await page.goto(`${BASE_URL}/decks/${deckId}/missing`, { waitUntil: 'networkidle', timeout: 20000 });
+    await expect(
+      page.getByTestId('missing-list-page').getByTestId('missing-row').getByRole('button', { name: `Ver alternativas para ${originalName}` }),
+    ).toHaveCount(1);
+  });
 });

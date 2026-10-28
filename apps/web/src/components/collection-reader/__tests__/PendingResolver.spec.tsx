@@ -150,6 +150,70 @@ describe('PendingResolver', () => {
     expect(screen.getByText('3')).toBeInTheDocument();
   });
 
+  it('prints the skip note under the near-name step only, on no other step (r4-resolve-b-phone)', () => {
+    const SKIP_NOTE = 'Pular deixa a linha na lista. Ela volta na próxima vez que você abrir Resolver.';
+
+    pendingQuery.mockReturnValue(withLines(SUGGESTION_LINE));
+    render(<PendingResolver />);
+    expect(screen.getAllByText(SKIP_NOTE)).toHaveLength(1);
+    cleanup();
+
+    pendingQuery.mockReturnValue(withLines(UNKNOWN_LINE));
+    render(<PendingResolver />);
+    expect(screen.queryByText(SKIP_NOTE)).not.toBeInTheDocument();
+    cleanup();
+
+    pendingQuery.mockReturnValue(withLines(QUANTITY_LINE));
+    render(<PendingResolver />);
+    expect(screen.queryByText(SKIP_NOTE)).not.toBeInTheDocument();
+  });
+
+  it('groups the near-name controls as r4-resolve-b-phone draws them', () => {
+    pendingQuery.mockReturnValue(withLines(SUGGESTION_LINE));
+    render(<PendingResolver />);
+
+    const follows = (before: HTMLElement, after: HTMLElement): boolean => Boolean(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING);
+    // The stepper reads "−" 2 "+", in that order, and sits above the primary button.
+    const less = screen.getByRole('button', { name: 'Menos uma cópia' });
+    const value = screen.getByText('2');
+    const more = screen.getByRole('button', { name: 'Mais uma cópia' });
+    expect(less.parentElement).toBe(more.parentElement);
+    expect(value.parentElement).toBe(less.parentElement);
+    expect(follows(less, value) && follows(value, more)).toBe(true);
+    expect(follows(more, screen.getByRole('button', { name: 'Adicionar 2 Snatch (Vermelho)' }))).toBe(true);
+    // "Não é esta, buscar" and "Pular" share one row; "Excluir esta linha" sits on its own under it.
+    const notThis = screen.getByRole('button', { name: 'Não é esta, buscar' });
+    const skip = screen.getByRole('button', { name: 'Pular' });
+    const remove = screen.getByRole('button', { name: 'Excluir esta linha' });
+    expect(notThis.parentElement).toBe(skip.parentElement);
+    expect(follows(notThis, skip)).toBe(true);
+    expect(remove.parentElement).not.toBe(skip.parentElement);
+    expect(skip.parentElement?.contains(remove)).toBe(false);
+    expect(follows(skip, remove)).toBe(true);
+  });
+
+  it('shows Mistery in the search box, then the no-card sentence under it and above Adicionar', () => {
+    pendingQuery.mockReturnValue(withLines(UNKNOWN_LINE));
+    readMutate.mockImplementation((_input: unknown, options: { onSuccess: (r: IReadImportResponse) => void }) =>
+      options.onSuccess({ columns: [], lines: [makeLine({ lineNumber: 1, originalText: 'Mistery', outcome: 'not_found', quantity: 1 })] }),
+    );
+    render(<PendingResolver />);
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Mistery' } });
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+
+    const box = screen.getByRole('searchbox');
+    expect(box).toHaveValue('Mistery');
+    const sentence = screen.getByText('Nenhuma carta com esse nome. Tente só uma palavra.');
+    const add = screen.getByRole('button', { name: 'Adicionar' });
+    const follows = (before: HTMLElement, after: HTMLElement): boolean => Boolean(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(screen.getByText('Não achamos essa carta. Busque pelo nome.'), box)).toBe(true);
+    expect(follows(box, sentence)).toBe(true);
+    expect(follows(sentence, add)).toBe(true);
+  });
+
   it('an unknown word centres on the search and keeps Adicionar off until a card is chosen', () => {
     pendingQuery.mockReturnValue(withLines(UNKNOWN_LINE));
     readMutate.mockImplementation((_input: unknown, options: { onSuccess: (r: IReadImportResponse) => void }) =>

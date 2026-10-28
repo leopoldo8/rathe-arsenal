@@ -30,6 +30,12 @@ describe('locale copy rules', () => {
     ]);
   });
 
+  it('leaves the account namespace unscanned so its Trocar link stays (D55)', () => {
+    expect(findCopyViolations('account', 'Não é você? Trocar')).toEqual([]);
+    expect(ptBR.account.notYou).toBe('Não é você? Trocar');
+    expect(scanCatalog(ptBR).filter((v) => v.path === 'account.notYou')).toEqual([]);
+  });
+
   it('no pt-BR value contains an em or en dash', () => {
     const offenders = scanCatalog(ptBR)
       .filter((v) => v.rule === 'dash')
