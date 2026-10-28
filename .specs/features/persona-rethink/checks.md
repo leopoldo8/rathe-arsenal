@@ -50,6 +50,7 @@ Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "no pt-BR value
 
 **C2** - The rule function flags `troca`, `trocas` and `trocar` (whole word, any case) in values of the `home`, `auth` and `onboarding` namespaces and does not flag them in `deckDetail` or `alternatives`; it flags the literals "Manual entries" and "Attack Actions" in a value of any pt-BR namespace; the one stated exception is the string "Não é você? Trocar" of the `account` namespace (C360, from `.design/account.md`), which the rule does not scan because it covers only `home`, `auth` and `onboarding` (AC 2) · done · amended 2026-10-27 (delegation, D55)
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "flags troca outside a deck and the leaked English literals"`
+Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "leaves the account namespace unscanned so its Trocar link stays (D55)"` · amended 2026-10-27 (delegation, round 5)
 
 **C3** - The current pt-BR catalog passes both rules after S1: `home.emptyLead`, `home.step2Body`, `auth.decorationCopy`, `onboarding.step2BodySingle`, `onboarding.step2BodyMultiple` and `onboarding.congratsBody` contain no `troca`/`trocas`/`trocar`; `deckDetail.groupAttack` and `deckDetail.groupNonAttack` are not English; `decks.partialUpdateMsg`, `lists` `totalPlaceholder` and `price` contain no em dash, so "R$ —" is gone (AC 4, AC 5) · done
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "the pt-BR catalog passes every copy rule"`
@@ -278,6 +279,8 @@ Proof: `web unit src/components/deck-detail/__tests__/DeckDetailLayout.spec.tsx 
 **C71** - The home keeps its stage grouping and each card of `r3-stage-a-phone` carries its exact lines: the groups come in the order "Ativos", "Construindo", "Ideias", "Aposentados", a group with no decks is left out, and a ready deck sits under "Ativos" with the active ones; "Rhinar Blitz" (active) / "Não vale no Blitz" / "8 cartas com 2 cópias" / "Etapa: Jogando · 40 cartas" and "Rhinar CC" (ready) / "Não vale no Classic Constructed" / "1 carta com 4 cópias" / "Etapa: Pronto · 60 cartas" sit under "Ativos"; "Rhinar - Blitz" (building) / "Não vale no Blitz" / "1 carta com 2 cópias" / "Etapa: Montando · 31 de 40 cartas" sits under "Construindo"; the picked screen draws one flat list, and the grouping that predates this feature is kept (AC 40) · amended 2026-10-27 (delegation, D1)
 Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "renders four groups with ready and active under one Ativos group"`
 Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "each card of r3-stage-a-phone carries its exact lines"`
+Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "puts each card of r3-stage-a-phone under its group, with every line as its own exact text"` · amended 2026-10-27 (delegation, round 5)
+Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "omits groups with no decks"` · amended 2026-10-27 (delegation, round 5)
 
 **C72** - A home card for a format outside the four shows the grey chip "Formato não conferido" and a grey line with the stage (AC 40) · done
 Proof: `web unit src/components/home/__tests__/DeckTile.spec.tsx -t "an unchecked format reads Formato não conferido"`
@@ -560,6 +563,10 @@ Proof: `web unit src/routes/_auth/__tests__/-library.test.tsx -t "matches r3-pen
 **C453** - Arrangement of `r4-resolve-b-phone` at 390 px, one line at a time (picked in round 4): under the app bar, "‹ Coleção" and "Sair e continuar depois"; the progress "3 de 11" with "colecao-lucas.csv · 8 depois desta · 2 já resolvidas"; "Linha 12 do arquivo · lemos assim" and the raw line "Snach,2,Vermelho" in the monospace face; then in the near-name step "Você quis dizer", "Snatch (Vermelho)", "Quantas cópias" with the stepper "−" 2 "+", the primary button "Adicionar 2 Snatch (Vermelho)", "Não é esta, buscar", "Pular", "Excluir esta linha" and last the note "Pular deixa a linha na lista. Ela volta na próxima vez que você abrir Resolver."; the unknown-word step ("Linha 31", "Mistery Card,1,") shows "Não achamos essa carta. Busque pelo nome." and a search box holding "Mistery" first, then "Nenhuma carta com esse nome. Tente só uma palavra.", the stepper at 1, "Adicionar" disabled until a card is chosen, "Pular" and "Excluir esta linha"; the unreadable-quantity step ("Linha 141", "Savage Beatdown,três,Vermelho") shows the known card "Savage Beatdown (Vermelho)", ""três" não é um número. Quantas cópias?", the stepper at 3, "Adicionar 3 Savage Beatdown (Vermelho)", "Pular" and "Excluir esta linha"; every button and stepper control is at least 44 px high, and the page has no horizontal scroll (AC 88, AC 91) · done
 Proof: `web unit src/components/collection-reader/__tests__/PendingResolver.spec.tsx -t "arranges the three steps as r4-resolve-b-phone"`
 Proof: `web e2e --project=mobile-390 tests/mobile/collection-in-layout.spec.ts -g "the page behind Resolver follows r4-resolve-b-phone at 390 px"`
+Proof: `web unit src/components/collection-reader/__tests__/PendingResolver.spec.tsx -t "prints the skip note under the near-name step only, on no other step"` · amended 2026-10-27 (delegation, round 5)
+Proof: `web unit src/components/collection-reader/__tests__/PendingResolver.spec.tsx -t "groups the near-name controls as r4-resolve-b-phone draws them"` · amended 2026-10-27 (delegation, round 5)
+Proof: `web unit src/components/collection-reader/__tests__/PendingResolver.spec.tsx -t "shows Mistery in the search box, then the no-card sentence under it and above Adicionar"` · amended 2026-10-27 (delegation, round 5)
+Proof: `web e2e --project=mobile-390 tests/mobile/collection-in-layout.spec.ts -g "the Resolver steps draw the bar, the monospace line and the control rows of r4-resolve-b-phone"` · amended 2026-10-27 (delegation, round 5)
 
 ### S13 - Ready-made decks · 22 files · 33 KB · ~32k
 
@@ -634,6 +641,9 @@ Proof: `web unit src/components/onboarding/__tests__/FirstRunChooser.spec.tsx -t
 
 **C179** - Only signing up sends an account with no deck, no card and no import to the first-run screen; an account in that state that signs in later, or opens `/home`, sees the home empty state ("Comece por um deck" with the import button); an account with a deck or an import does not land on the first-run screen, and any import counts, including one whose lines are all unresolved, which goes to the Library with its pending lines (AC 107) · amended 2026-10-27 (delegation, D10, D11) · done
 Proof: `web unit src/routes/_auth/__tests__/-onboarding-redirect.spec.tsx -t "a new account starts on the first-run chooser"`
+Proof: `web unit src/components/auth/__tests__/StartFlow.destination.spec.tsx -t "an account that signs in later lands on /home, not on the first-run screen"` · amended 2026-10-27 (delegation, round 5)
+Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "an account with no deck, no card and no import opening /home sees the empty state, not a redirect"` · amended 2026-10-27 (delegation, round 5)
+Proof: `web unit src/routes/_auth/__tests__/-onboarding-redirect.spec.tsx -t "an account whose import has only unresolved lines does not land on the chooser"` · amended 2026-10-27 (delegation, round 5)
 
 **C180** - `r3-add-phone`: "Adicionar cartas" shows, in order, the paste box "Cole aqui" with "Cole um link de deck (do Fabrary, por exemplo) ou uma lista de cartas", then "Comprei um deck pronto", "Enviar uma planilha (.csv)", "Fotografar as cartas", "Digitar o nome"; the old "Deck do Fabrary" tab is gone (AC 108, AC 112) · done
 Proof: `web unit src/routes/_auth/__tests__/-add-cards.test.tsx -t "matches r3-add-phone copy and order"`
@@ -710,6 +720,8 @@ Proof: `web unit src/components/deck-detail/__tests__/DeckDetailView.missing.spe
 
 **C454** - Arrangement of the credits bar of `r5-credits-b-phone` in Settings, for an admin: inside the URL sync section, under the line "Última sincronização: 412 produtos · 22/10/2026 03:10", a divider, then the label "Créditos do Firecrawl este mês" on the left and "120 de 1000" on the right, then a bar 8 px high with 4 px rounded ends that has `role="img"` and the name "120 de 1000 créditos usados" and a fill 12% wide in the accent color; when `lookupsStopped` is true, with 880 of 1000 used, the fill is 88% wide in the amber of the `--warn` color (`#c8843c` in the picture) and under the bar come "As consultas automáticas de preço pararam." and "A sincronização manual continua funcionando." in the amber ink (`#d6954c` in the picture); with lookups running neither line shows (AC 122) · done
 Proof: `web unit src/routes/_auth/__tests__/-settings.spec.tsx -t "the credits bar sits under the sync line and turns amber when lookups stop"`
+Proof: `web e2e --project=mobile-390 tests/mobile/settings-credits.spec.ts -g "the credits bar follows r5-credits-b-phone while lookups run"` · amended 2026-10-27 (delegation, round 5)
+Proof: `web e2e --project=mobile-390 tests/mobile/settings-credits.spec.ts -g "the credits bar turns amber when lookups stop"` · amended 2026-10-27 (delegation, round 5)
 
 ### S17 - The owner's missing list · 46 files · 251 KB · ~95k
 
@@ -826,6 +838,9 @@ Proof: `api e2e src/sharing/__tests__/share-events.e2e-spec.ts -t "refuses unkno
 
 **C236** - Arrangement of `r3-share-phone`, `r3-message-phone`, `r3-group-phone`, `r3-group-friend-phone` and `r3-offer-phone` at 390 px: the share sheet over the deck with the three options; the editor titled "Pedir as cartas que faltam", with no eyebrow above the title, and with "Mensagem para o WhatsApp", "Você pode editar antes de enviar.", the text, the highlighted closing line, "Lista completa", the switch and its line, and "Abrir no WhatsApp", then a divider and the centered text row "Desativar link" in the danger color last (as C458 draws it); the group page with the first section above the collapsed store section; the friend view with the summary above the first section and the combined button at its top; the offer sheet "Oferecer para Caio" with "Mensagem para o WhatsApp", "Preencha edição, condição e preço no WhatsApp antes de enviar.", the text and "Abrir no WhatsApp" (AC 144) · done · amended 2026-10-27 (delegation, D12) · amended 2026-10-27 (follows the owner's round 6 pick D53 A)
 Proof: `web e2e --project=mobile-390 tests/mobile/group-ask-layout.spec.ts -g "the group ask screens follow the r3 screens"`
+Proof: `web e2e --project=mobile-390 tests/mobile/group-ask-layout.spec.ts -g "the turn-off row of the editor is a centered danger-colored text row under a divider"` · amended 2026-10-27 (delegation, round 5)
+Proof: `web e2e --project=mobile-390 tests/mobile/group-ask-layout.spec.ts -g "the group page puts what people can give above the store"` · amended 2026-10-27 (delegation, round 5)
+Proof: `web e2e --project=mobile-390 tests/mobile/group-ask-layout.spec.ts -g "the friend view puts the summary above the first section and the combined button at its top"` · amended 2026-10-27 (delegation, round 5)
 
 ### S19 - A store quote · 22 files · 42 KB · ~25k
 
@@ -841,6 +856,7 @@ Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "the quote page carries the
 
 **C240** - The `quote` page shows "Caio pediu um orçamento para estas cartas. Marque o que você tem e o preço; a resposta vai pelo WhatsApp.", "Caio ainda precisa de 59 cópias (27 cartas menos as que ele já tem).", and every needed card with no "+ N cartas": the name with the pitch as a word, "precisa de 3", a "Tenho" stepper from 0 to 3, a price field in reais and "Observação (edição, condição)" with `maxLength` 60; it shows no sign-up prompt and no "Cúpula DT", store price, store link or store total (AC 146, AC 147) · done · amended 2026-10-27 (delegation, D13)
 Proof: `web unit src/components/shared-deck/__tests__/SharedQuotePage.spec.tsx -t "lists every needed card with a stepper, a price and a note"`
+Proof: `web unit src/components/shared-deck/__tests__/SharedQuotePage.spec.tsx -t "shows every needed card with its own stepper, price and note, and no store price, link or total"` · amended 2026-10-27 (delegation, round 5)
 
 **C241** - The `quote` link preview has the title "Orçamento: cartas para [CC] Brute do Caio", the description "Caio pede orçamento de 59 cópias.", the image's kind label "Orçamento", `noindex`, and no store name or price (AC 147) · done
 Proof: `api unit src/sharing/preview/__tests__/share-meta-tags.spec.ts -t "the quote preview names no store"`
@@ -1594,6 +1610,7 @@ Proof: `web unit src/components/library/__tests__/LibraryStatsBar.test.tsx -t "t
 **C422** - No pt-BR value and no e-mail template string contains a gendered word about the player from the banned list: "bem-vindo", "bem-vinda", "conectado", "conectada", "logado", "logada" (AC 270) · done
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "no value gives the player a gender"`
 Proof: `api unit src/email/__tests__/email-templates.spec.ts -t "no template gives the player a gender"`
+Proof: `api unit src/email/__tests__/email-templates.spec.ts -t "the password-code e-mail does not give the player a gender either"` · amended 2026-10-27 (delegation, round 5)
 
 ### S37 - Every game word one tap from an explanation · 24 files · 76 KB · ~39k
 
@@ -1707,13 +1724,16 @@ Proof: `web e2e --project=mobile-390 tests/mobile/missing-list-layout.spec.ts -g
 
 **C456** - Tapping "Alternativas" in a row opens the bottom sheet "Alternativas para Bloodrush Bellow (Amarelo)" with "Fechar", the line "Ocupa o lugar de 3 cópias que faltam." and the field "Buscar pelo nome" (placeholder "Nome da carta") above the groups, for that row's card and its missing count, in each of the 3 rows of the picture's list (Bloodrush Bellow (Amarelo) 3, Savage Swing (Vermelho) 1, Pack Hunt (Vermelho) 3); "Fechar" closes it and sends nothing; each candidate row shows its owned tag from the existing rule ("você tem" or "nenhuma livre") · added 2026-10-27 (owner pick, round 6) · done
 Proof: `web unit src/components/missing-list/__tests__/MissingListPage.spec.tsx -t "the Alternativas link opens the sheet for that row's card and count"`
+Proof: `web unit src/components/missing-list/__tests__/MissingListPage.spec.tsx -t "the sheet puts the name field above the groups, and Fechar sends no request of any kind"` · amended 2026-10-27 (delegation, round 5)
 
 **C457** - In the browser, on the missing list of the fixture deck: tap "Alternativas" in a row, tap the first candidate, see "no lugar de <that row's card>" on the deck list, tap "Desfazer", and see the original card back in the missing list; this is the claim of C58 of `.specs/features/card-alternatives/checks.md`, which has had no proof since batch 13 deleted its file, and it now starts from the link of C455 instead of the old button · added 2026-10-27 (owner pick, round 6) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/card-alternatives-flow.spec.ts -g "pick an alternative and undo it"`
+Proof: `web e2e --project=e2e-chromium tests/e2e/card-alternatives-flow.spec.ts -g "the first candidate takes the place of the row card, and undoing it brings that row back"` · amended 2026-10-27 (delegation, round 5)
 
 **C458** - Arrangement of the missing-list message step with its way to turn the link off (`r6-turnoff-a-phone`, picked on 2026-10-27, D53) at 390 px: under "Pedir as cartas que faltam", "Mensagem para o WhatsApp", "Você pode editar antes de enviar.", the message box, the switch "Incluir também as 43 que a loja tem" with its line, and the green button "Abrir no WhatsApp", comes a divider and then one centered text row "Desativar link" in the danger color, once, and nothing after it; after tapping it the row is replaced, in the same place, by "Desativar? Quem tem o link não vai mais conseguir abrir." with "Desativar" in the danger color and "Manter" in the accent color on the right, while the message, the switch and "Abrir no WhatsApp" stay as they were; "Desativar link", "Desativar" and "Manter" are each at least 44 px high (AC 144) · added 2026-10-27 (owner pick, round 6) · done
 Proof: `web unit src/components/deck-detail/__tests__/ShareDialog.spec.tsx -t "the missing message step ends with Desativar link under Abrir no WhatsApp and asks before turning off"`
 Proof: `web e2e --project=mobile-390 tests/mobile/missing-list-layout.spec.ts -g "the missing message step follows r6-turnoff-a-phone"`
+Proof: `web e2e --project=mobile-390 tests/mobile/missing-list-layout.spec.ts -g "the missing message step carries the drawn texts and colors of r6-turnoff-a-phone"` · amended 2026-10-27 (delegation, round 5)
 
 **C459** - In that step, "Manter" closes the question, shows "Desativar link" again and sends no request; "Desativar" sends exactly one `DELETE /api/decks/:deckId/share/missing`, then closes the share sheet; when that request fails the step stays open and shows `sharing.dialog.turnOffFailed` with `role="alert"`, and "Desativar link" is back · added 2026-10-27 (owner pick, round 6) · done
 Proof: `web unit src/components/deck-detail/__tests__/ShareDialog.spec.tsx -t "Manter sends nothing and Desativar sends one delete for the missing link"`
@@ -1740,6 +1760,7 @@ Proof: `api e2e src/users/__tests__/password.e2e-spec.ts -t "changing the passwo
 Proof: `web unit src/components/csv-sources/__tests__/CsvSourceRow.test.tsx -t "the menu lists Renomear, Enviar nova versão, a separator and Excluir in that order"`
 Proof: `web unit src/components/csv-sources/__tests__/UploadResolveModal.test.tsx -t "the update window lists the delta rows then the three actions in the order of r6-update-import-a-phone"`
 Proof: `web e2e --project=mobile-390 tests/mobile/collection-in-layout.spec.ts -g "the imports page follows r6-update-import-a-phone"`
+Proof: `web e2e --project=mobile-390 tests/mobile/collection-in-layout.spec.ts -g "the menu and the update window carry the colors, sizes and field order of r6-update-import-a-phone"` · amended 2026-10-27 (delegation, round 5)
 
 **C466** - "Enviar nova versão" in the menu of one import opens the file chooser, accepts `.csv`, sends the chosen file to `POST /api/collection/csv` with that row's `targetSourceId` and no other import's, and shows "Atualizar fonte existente?" with the counts the server returned; "Atualizar a existente" re-sends it with `action` `update` and the same `targetSourceId`, closes the window and shows the toast of the built update (the import's row then shows the new copies count); "Substituir pela nova" re-sends it with `action` `replace`; "Cancelar" sends `cancel` or nothing and the import is unchanged; a file over 2 MB shows the existing size error and sends nothing · added 2026-10-27 (owner pick, round 6) · done
 Proof: `web unit src/components/csv-sources/__tests__/CsvSourceRow.test.tsx -t "Enviar nova versão sends the file for this import and each window action re-sends it"`
