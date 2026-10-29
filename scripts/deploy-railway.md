@@ -105,8 +105,17 @@ First build pulls Node 20 + pnpm via corepack.
 **Migrations run automatically when the API boots** in any environment where `NODE_ENV` is not `development` (`migrationsRun: !isDev` in `apps/api/src/database/database.module.ts`).
 A deploy that adds a migration applies it on the first boot of the new version; there is no separate migration step.
 
-Some features also need one-off steps on the deployed environment.
-Read the "Before deploying" section of the latest feature's `implementation-notes.md` (under `.specs/features/`) before shipping it.
+## Before deploying the persona-rethink release (PR #181)
+
+What to check on the deployed environment before or with this release:
+
+- Production and staging run with `NODE_ENV=production` and without `EXPOSE_DEV_SECRETS`.
+- `APP_BASE_URL` is set, for the e-mailed links.
+- Every user signs in again after the deploy, because sessions moved to the `ra_session` cookie over a `user_session` row.
+- Migrations run on boot, including `1778533613000` (the `purpose` column of `sign_in_code`).
+- The worker service is running: its housekeeping step purges accounts and decks deleted more than 30 days ago, used-up or expired sign-in codes at least an hour old, and ended sessions.
+- Mark the web e2e job as a required check in the repository settings.
+- Routes the plan listed without a coverage row: `/api/collection/sources/:id/copies`, `/api/catalog/collector-codes`, `/library-csv-sources/:sourceId/versions`, `/api/collection/library`.
 
 ## Verify
 

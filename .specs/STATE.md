@@ -220,14 +220,17 @@
 
 ## Handoff
 
-- **Feature**: none in flight. persona-rethink (`.specs/features/persona-rethink/`) merged to `main` in PR #181 on 2026-10-29, and CI is green on `main`.
-- **Verdict at merge**: FAIL on the basis the owner accepted on 2026-10-27 (AD-027), plus four screens kept as built against a picked screen, decided under the owner's delegation: C71 (D1), C74 (D4), C82 (D5), C288 (D17).
-  Decisions and deviations: `.specs/features/persona-rethink/decisions-2026-10-27.md` and `.specs/features/persona-rethink/implementation-notes.md`.
-- **Open, owner**:
-  - The four kept-as-built screens C71, C74, C82 and C288 are provisional until the owner confirms them.
+- **Feature**: none in flight. persona-rethink merged to `main` in PR #181 on 2026-10-29, and CI is green on `main`. Its spec, plan and checks were deleted on 2026-10-29 once finished; `git log --all -- .specs/features` finds them.
+- **Verdict at merge**: the verification stayed FAIL on the basis the owner accepted on 2026-10-27 (AD-027): the screen-arrangement checks missing for most journeys and a few uncovered cells carried from the design documents.
+- **Open, owner** (four screens kept as built, provisional until the owner confirms each):
+  - Home deck list is grouped by stage, not the flat list the picked screen drew (decision D1).
+  - The GEM store is left out of the missing list after its site answered 403 (D4).
+  - The Deck tab sits before Inventário (D5).
+  - "Vendida" shows only on lines that are not sold yet, not on every line (D17).
+- **Open, other**:
   - `docs/phase-1-followups.md` AU1 and AU3.
   - Other uses of `--ra-ember` were not checked for contrast in the dark theme.
-- **Before deploying**: the "Before deploying" section of `.specs/features/persona-rethink/implementation-notes.md` lists what to check on the deployed environment (environment variables, the sign-in migration, the worker service that runs housekeeping, the required check for the web e2e job, and routes with no coverage row).
+- **Before deploying**: the checklist is in `scripts/deploy-railway.md`, section "Before deploying the persona-rethink release".
 - **Next step**: the owner picks the next feature; nothing is queued. Phase 1c is deferred and unbuilt.
 - **Branch**: `main`.
 
