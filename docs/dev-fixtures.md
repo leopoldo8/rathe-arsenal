@@ -10,25 +10,27 @@ are needed.
 pnpm seed:fixture
 ```
 
-Idempotent. Needs the dev server (`pnpm dev`). Signs in as `fixture@test.local` / `test-password-1234` (override with `FIXTURE_EMAIL`, `FIXTURE_PASS`; creates and verifies the user if missing) and guarantees:
+Idempotent. Needs the dev server (`pnpm dev`) and `EXPOSE_DEV_SECRETS=true` in the local `.env`.
+Signs in as `fixture@test.local` / `test-password-1234` (override with `FIXTURE_EMAIL`, `FIXTURE_PASS`; creates and verifies the user if missing) and guarantees:
 
 - a Fabrary-imported deck (imports the two decks below if none exists) and a `liga local` tag on at least one deck;
-- the scratch deck `Rhinar Swap Test`, rewritten to a fixed composition so it yields exactly three pending swaps (Brothers in Arms to Erase Face, Bear Hug to Assault and Battery, Argh... Smash! to Bloodrush Bellow), with the owned cards those swaps need;
-- every swap reverted or restored to pending, and any deck that is neither Fabrary-imported nor the swap deck deleted.
+- the scratch deck `Rhinar Swap Test`, rewritten to a fixed composition so its latest readiness snapshot lists at least three cards with a suggested stand-in (the script throws otherwise), with the owned cards those suggestions need;
+- any replacement a spec left behind closed again (the composition is rewritten), and any deck that is neither Fabrary-imported nor the swap deck deleted.
 
-Playwright runs it from `globalSetup` (`apps/web/tests/support/global-setup.ts`), which signs in once (sign-in is throttled to 5/minute) and writes the shared storageState under `apps/web/tests/.auth/` (gitignored). The session is the `ra_session` cookie: the storageState holds it as an httpOnly cookie for the base URL, and `scripts/fixture/fixture-seed.ts` sends it as a `Cookie` header (there is no bearer token any more). Swap-mutating specs call `resetFixture()` (no sign-in) before each test. Run both suites with `cd apps/web && npx playwright test`.
+Playwright runs it from `globalSetup` (`apps/web/tests/support/global-setup.ts`), which signs in once (sign-in is throttled to 5/minute) and writes the shared storageState under `apps/web/tests/.auth/` (gitignored). Sign-in here uses the optional password; the product path is the e-mailed six-digit code (see `scripts/deploy-railway.md`).
+The session is the `ra_session` cookie: the storageState holds it as an httpOnly cookie for the base URL, and `scripts/fixture/fixture-seed.ts` sends it as a `Cookie` header (there is no bearer token any more). Specs that change the swap deck call `resetFixture()` (no sign-in) before each test. Run both suites with `cd apps/web && npx playwright test`.
 
 ## Test Decks (Fabrary URLs)
 
 | Purpose | URL | Expected state |
 |---------|-----|----------------|
-| 100% ready path (Path A) | `https://fabrary.net/decks/01J027FSFWMBYYDR457YVXM5QT` | Kayo, Armed and Dangerous — Classic Constructed. Imports with raw 100% / effective 100% against a fresh collection; exercises the "all playable" empty state on `/decks/:id`. |
-| Substitution path (Path B/C) | `https://fabrary.net/decks/01HYW5BJE6PD6K25Z3SK758DE8` | Shows a deck with missing cards so the engine proposes substitutes; exercises SubstitutionRow 3-state flow, ModifiedViewBanner, shopping panel. |
+| 100% ready path (Path A) | `https://fabrary.net/decks/01J027FSFWMBYYDR457YVXM5QT` | Kayo, Armed and Dangerous — Classic Constructed. Imports with raw 100% / effective 100% against a fresh collection; shows a deck with nothing missing on `/decks/:id`. |
+| Substitution path (Path B/C) | `https://fabrary.net/decks/01HYW5BJE6PD6K25Z3SK758DE8` | Shows a deck with missing cards, so the page lists the readiness percent, the missing cards and their suggested alternatives. |
 
 ## Usage
 
 ```bash
-# Create a verified test user + import both decks (requires API at :5173)
+# Create a verified test user + import both decks (requires `pnpm dev`: the web server on :5173 proxies `/api` to the API on :3000)
 EMAIL="audit-$(date +%s)@test.local"
 PASS="test-password-1234"
 
@@ -66,22 +68,26 @@ duplicates fixed elements at every scroll frame.
 
 Create a scratch deck (no Fabrary import) for testing the Start-from-scratch flow:
 
-
+```bash
 # Create a scratch deck via the API (Dorinthea + Classic Constructed)
 curl -s -b "$JAR" -X POST http://localhost:5173/api/decks \
+  -H 'Origin: http://localhost:5173' \
   -H "Content-Type: application/json" \
-  -d '{'"heroIdentifier"': '"WTR000"', '"format"': '"Classic Constructed"', '"name"': '"Test Scratch Deck"'}'
-
+  -d '{"heroIdentifier": "WTR000", "format": "Classic Constructed", "name": "Test Scratch Deck"}'
+```
 
 ## Fixture deck status + tag operations (v2)
 
-
+```bash
 # Mark a deck Active
 curl -s -b "$JAR" -X PATCH http://localhost:5173/api/decks/{DECK_ID} \
+  -H 'Origin: http://localhost:5173' \
   -H "Content-Type: application/json" \
-  -d '{'"status"': '"active"'}'
+  -d '{"status": "active"}'
 
 # Add a tag to a deck (create the tag with POST /api/tags, then attach its id)
 curl -s -b "$JAR" -X PATCH http://localhost:5173/api/decks/{DECK_ID} \
+  -H 'Origin: http://localhost:5173' \
   -H "Content-Type: application/json" \
   -d '{"addTagIds": [TAG_ID]}'
+```
