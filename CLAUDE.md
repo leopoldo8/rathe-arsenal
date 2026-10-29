@@ -11,7 +11,7 @@ this order before doing non-trivial work.
 | [`.impeccable.md`](.impeccable.md) | Design context: users, brand personality, palette, typography, motion. Use before any UI work. |
 | [`docs/README.md`](docs/README.md) | Index of every doc: which are current and which are historical records. Start here when unsure what to trust. |
 | [`.specs/STATE.md`](.specs/STATE.md) | Decisions log (AD-NNN) and the current handoff. Read before planning or resuming work. |
-| [`.design/`](.design/) | Confirmed design documents and mockups, one per feature. Read the one for the area you touch. |
+| [`.design/`](.design/) | Confirmed design documents, one per feature. Read the one for the area you touch. The mockups they cite were removed on 2026-10-28 and live in git history. |
 | [`docs/dev-fixtures.md`](docs/dev-fixtures.md) | Test deck URLs + sign-up/import helper for local screenshots and QA. |
 | [`docs/phase-1-followups.md`](docs/phase-1-followups.md) | Debt ledger. Every Phase 0/1 trade-off + trigger to revisit. |
 | [`docs/research/ip-posture.md`](docs/research/ip-posture.md) | LSS card-image IP stance. Consult before any monetization surface or asset pipeline change. |

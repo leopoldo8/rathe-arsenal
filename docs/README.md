@@ -12,7 +12,7 @@ Historical records describe what was decided or found at a point in time, and ar
 | [`../CLAUDE.md`](../CLAUDE.md) | Session context for Claude: guides, what is in flight, owner rules |
 | [`../.specs/STATE.md`](../.specs/STATE.md) | Decisions log (AD-NNN) and the current handoff |
 | [`../.impeccable.md`](../.impeccable.md) | Design brief: users, brand, palette, typography, motion |
-| [`../.design/`](../.design/) | Confirmed design documents and mockups, one per feature |
+| [`../.design/`](../.design/) | Confirmed design documents, one per feature. The mockups they cite were removed on 2026-10-28; those paths are pointers into git history |
 | [`../scripts/deploy-railway.md`](../scripts/deploy-railway.md) | Railway deployment: services, environment variables, verification |
 | [`validation-philosophy.md`](validation-philosophy.md) | How releases are validated (automated first, no external human gate) |
 | [`dev-fixtures.md`](dev-fixtures.md) | Test decks, the seeded fixture user, local QA helpers |
