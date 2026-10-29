@@ -4,40 +4,47 @@
 
 > **Disclaimer.** Rathe Arsenal is in no way affiliated with Legend Story Studios. Legend Story Studios®, Flesh and Blood™, and set names are trademarks of Legend Story Studios. Flesh and Blood characters, cards, logos, and art are property of Legend Story Studios. © Legend Story Studios
 
-Private closed-beta web app that turns Fabrary deck URLs into a tracked deck list with a substitution-aware "effective readiness" score, computed against the cards you actually own — plus an interactive swap editor, Path C ("closest playable version"), and a variant-aware shopping line against Cúpula DT.
+Rathe Arsenal helps Flesh and Blood players in Brazil work out what their collection can play.
+It is pt-BR first, with en-US.
 
-**Status (2026-07-01).** Phase 0 shipped and validated the engine hypothesis (Gate 4: 73.7% SOFT_CONFIDENCE). Phase 1a (product core: tier 2 engine, interactive swap editor, Path C, autocomplete, auth hardening), the variant-aware shopping line, and Phase 1b (Liga FaB / Sbrauble scraper + shopping line, Units 0–6) are merged to `main`. Since then: internationalization (pt-BR / en-US), a UX/UI quality remediation pass (accessibility, design-token discipline, readiness focal point), and pre-launch hardening (LSS fan-content disclaimer surface + opt-in Sentry error monitoring). The original "Gate 2 in-person accuracy walkthrough" launch blocker is **retired** — external human validation is no longer a release gate (see [`docs/validation-philosophy.md`](docs/validation-philosophy.md)); the target-community (Cúpula DT) release is an owner decision informed by automated signals. Phase 1c (Discover, R9 fallback mode, R27 chart) is not yet planned.
+What it does today:
 
-Plans:
+- **Sign-in by e-mail code.** One e-mail field and a six-digit code sent by e-mail; a password is optional.
+- **Getting cards in.** Pasted text, a CSV file or a Fabrary link, the phone camera scanner, a manual search, and ready-made product lists. Lines the reader cannot place are kept as pending lines to resolve.
+- **Decks.** Import a deck from Fabrary or start from scratch, with the rules of the format checked on every change (every problem at once, with the dated rule changes) and an inventory kept apart from the main deck.
+- **Readiness.** The share of a deck you can play with the cards you own, the missing cards, and alternatives for a missing card (stand-ins ranked by fit).
+- **Closing the deck.** The missing list shows what is left after owned copies, with store availability and prices.
+- **Card lists.** Want lists and sell lists, a "spare copies" view computed from the collection and decks, and price suggestions from TCGplayer.
+- **Sharing.** A deck or a list gets a public link (with a link preview image) that shows the deck, asks for the missing cards, or offers or requests cards over WhatsApp.
+- **Tutor.** A chat assistant, behind an access flag, that answers about a deck, the rules and prices and proposes swaps you apply yourself.
+- **Glossary.** Game words explained in place.
+- **Public pages.** `/about` and `/termos`, plus the shared deck and list pages.
 
-- Phase 0 — [`docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md`](docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md) (completed)
-- Replace Clerk with DIY auth — [`docs/plans/2026-04-09-001-feat-replace-clerk-diy-auth-plan.md`](docs/plans/2026-04-09-001-feat-replace-clerk-diy-auth-plan.md) (completed)
-- Phase 1a — [`docs/plans/2026-04-10-001-feat-phase-1a-product-core-plan.md`](docs/plans/2026-04-10-001-feat-phase-1a-product-core-plan.md) (completed)
-- Phase 1b — [`docs/plans/2026-04-11-001-feat-phase-1b-shopping-line-plan.md`](docs/plans/2026-04-11-001-feat-phase-1b-shopping-line-plan.md) (Units 0–6 merged; Unit 7 was a Gate 2 in-person walkthrough — retired as a release gate, see [`docs/validation-philosophy.md`](docs/validation-philosophy.md))
-- Variant-aware shopping line — [`docs/plans/2026-04-13-001-feat-variant-aware-shopping-line-plan.md`](docs/plans/2026-04-13-001-feat-variant-aware-shopping-line-plan.md) (completed)
-- Internationalization (pt-BR / en-US) — spec `.specs/features/i18n/` (merged)
-- UX/UI quality remediation — spec `.specs/features/uxui-remediation/` (merged)
-- Pre-launch hardening (LSS disclaimer + Sentry) — spec `.specs/features/pre-launch-hardening/` (in review)
+Current work and decisions live in [`.specs/STATE.md`](.specs/STATE.md).
+The index of every other document is [`docs/README.md`](docs/README.md).
 
 ## Stack
 
-- **Backend**: NestJS 11 + TypeORM + PostgreSQL + DIY auth (httpOnly session cookie + bcrypt + Resend)
+- **Backend**: NestJS 11 + TypeORM + PostgreSQL. Auth is an httpOnly session cookie (`ra_session`) over a `user_session` row, bcrypt for the optional password, Resend for e-mail.
 - **Frontend**: React 19 + Vite + TanStack Router + TanStack Query + i18next (pt-BR / en-US)
 - **Engine**: Pure TypeScript package (`packages/engine`), zero framework imports
-- **Observability**: Sentry (opt-in — web + api; a complete no-op unless `SENTRY_DSN` / `VITE_SENTRY_DSN` are set)
+- **Worker**: a second process from the API codebase (`apps/api/src/stores/variant-queue-worker.ts`) that drains the job queues (store prices, availability, recommendations, Tutor answers, reference data) and runs housekeeping
+- **Integrations**: Fabrary (deck import), store pages via optional Firecrawl, Gemini and optional OpenRouter (Tutor and recommendations), TCGplayer prices, optional Cloudflare Turnstile on sign-up, Sentry (opt-in, a no-op unless `SENTRY_DSN` / `VITE_SENTRY_DSN` are set)
 - **Monorepo**: pnpm workspace
-- **Deploy**: Single Railway service serving both API and SPA
+- **Deploy**: Railway, a web service (API plus built SPA) and a worker service
 
 ## Layout
 
 ```
 apps/
-  api/        NestJS — REST API under /api/* + serves built SPA
+  api/        NestJS: REST API under /api/*, serves the built SPA, worker entry
   web/        React + Vite SPA
 packages/
-  engine/     Substitution engine (pure TS)
-scripts/      Dev/ops scripts (delete-user, deploy notes)
-docs/         Project-specific docs (research, security notes, ADRs)
+  engine/     Legality, readiness and substitution engine (pure TS)
+scripts/      Dev and ops scripts (seed:fixture, screenshot, share:report, prices, purge, deploy notes)
+docs/         Living guides plus historical records (start at docs/README.md)
+.specs/       Spec-driven features and STATE.md, the decisions log and current handoff
+.design/      Confirmed designs and mockups per feature
 ```
 
 ## Local development
@@ -46,17 +53,30 @@ Prereqs: Node ≥20.18, pnpm ≥9.15 (`corepack enable && corepack prepare pnpm@
 
 ```bash
 pnpm install
-cp .env.example .env       # fill in JWT_SECRET, RESEND_API_KEY, DATABASE_URL
-pnpm dev                   # runs api (3000) + web (5173) concurrently
+cp .env.example .env       # fill in JWT_SECRET, RESEND_API_KEY, EMAIL_FROM, APP_BASE_URL, DATABASE_URL
+pnpm dev                   # runs api (3000) + web (5173, proxies /api) concurrently
 ```
+
+To sign in without an inbox, add `EXPOSE_DEV_SECRETS=true` to `.env`: the API then returns the sign-in secrets in its responses.
+Never set it in staging or production; the API refuses to start with it when `NODE_ENV=production`.
+
+`pnpm seed:fixture` prepares a signed-in test user with decks (see [`docs/dev-fixtures.md`](docs/dev-fixtures.md)).
 
 ## Test
 
 ```bash
-pnpm test                  # all packages
-pnpm --filter @rathe-arsenal/api test
-pnpm --filter @rathe-arsenal/engine test
+pnpm lint
+pnpm typecheck
+pnpm test                                    # unit tests of every package
+pnpm --filter @rathe-arsenal/api test:int    # integration tests (database)
+pnpm --filter @rathe-arsenal/api test:e2e    # API end-to-end tests (database)
+pnpm --filter @rathe-arsenal/web test:e2e    # Playwright journeys and accessibility scan (api and web running)
+pnpm --filter @rathe-arsenal/web test:visual # screenshot regression, local only
 ```
+
+CI runs three jobs: quality (lint, typecheck, unit tests), API end-to-end tests against Postgres, and the web Playwright job.
+The visual regression project is not part of CI; see [`docs/design/v1/visual-regression.md`](docs/design/v1/visual-regression.md).
+The testing approach is in [`docs/validation-philosophy.md`](docs/validation-philosophy.md).
 
 ## Build
 
