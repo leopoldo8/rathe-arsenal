@@ -242,6 +242,26 @@ describe('ShoppingLineService', () => {
       expect(result.storeHostname).toBe('www.cupuladt.com.br');
     });
 
+    it('every line, in stock or not, carries the catalog pitch of its card', async () => {
+      // Arrange
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([
+        makeStockRow('pack-hunt-red', { id: 1, quantity: 5 }),
+        makeStockRow('pack-hunt-blue', { id: 2, quantity: 0 }),
+      ]);
+      const breakdown = makeBreakdown([
+        { cardIdentifier: 'pack-hunt-red', quantity: 1 },
+        { cardIdentifier: 'pack-hunt-blue', quantity: 1 },
+      ]);
+
+      // Act
+      const result = (await service.computeForBreakdown(breakdown)) as IShoppingLinePopulated;
+
+      // Assert
+      const pitchByCard = Object.fromEntries(result.lines.map((line) => [line.cardIdentifier, line.pitch]));
+      expect(pitchByCard).toEqual({ 'pack-hunt-red': 1, 'pack-hunt-blue': 3 });
+    });
+
     it('happy path: 3 of 5 cards in stock — partial result', async () => {
       // Arrange
       const allIds = [

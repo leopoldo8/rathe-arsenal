@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
 import { IShoppingLineResponse } from './shopping-line';
 import type { IDeckReplacement } from './replacements';
+import type { ICardLegalityOverride } from './card-legality-facts';
 // Re-export shared v2 types so callers import from a single location
 export type { TDeckStatus, IDeckLegality } from './decks';
 
@@ -13,6 +14,11 @@ export interface IBreakdownEntry {
    */
   readonly name: string;
   readonly quantity: number;
+  /**
+   * Of `quantity`, the copies that belong to the deck line's inventory (door 3), not to its starting
+   * deck. Absent when none do.
+   */
+  readonly inventoryQuantity?: number;
   readonly slot: string;
   /**
    * Card pitch (1 = red, 2 = yellow, 3 = blue).
@@ -44,6 +50,10 @@ export interface IBreakdownEntry {
   readonly legalFormats?: readonly string[];
   readonly legalHeroes?: readonly string[];
   readonly bannedFormats?: readonly string[];
+  readonly restrictedFormats?: readonly string[];
+  readonly legalOverrides?: readonly ICardLegalityOverride[];
+  readonly specializations?: readonly string[];
+  readonly legendary?: boolean;
 }
 
 export interface ISubstituteCard {
@@ -64,10 +74,19 @@ export interface ISubstituteCard {
     | null;
 }
 
+export type TRationalePitchRelation =
+  | { readonly relation: 'same'; readonly pitch: string }
+  | { readonly relation: 'different'; readonly original: string; readonly candidate: string };
+
 export interface IRationaleDetail {
   readonly tier: number;
   readonly pitch: string;
+  readonly pitchRelation: TRationalePitchRelation;
+  /** The original card's classes, as the catalog holds them. */
+  readonly originalClasses: readonly string[];
   readonly sharedClasses: readonly string[];
+  /** True when the candidate is a Generic card. */
+  readonly candidateGeneric: boolean;
   readonly powerDelta: number;
   readonly defenseDelta: number;
   readonly sharedKeywords: readonly string[];

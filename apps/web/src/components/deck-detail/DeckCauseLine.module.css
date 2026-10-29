@@ -1,0 +1,7 @@
+.cause {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-ready-low);
+}

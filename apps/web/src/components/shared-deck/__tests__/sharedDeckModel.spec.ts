@@ -17,14 +17,14 @@ function card(overrides: Partial<ISharedCard>): ISharedCard {
 }
 
 describe('groupSharedCards', () => {
-  it('orders groups hero, weapon, equipment, actions, reactions and skips empty ones', () => {
+  it('orders groups by the shared card-list rule and skips empty ones', () => {
     const groups = groupSharedCards([
       card({ name: 'Reckless Swing', type: 'Attack Reaction', quantity: 3 }),
       card({ name: 'Rhinar', slot: 'hero', type: 'Hero' }),
       card({ name: 'Smash Instinct', quantity: 3 }),
       card({ name: 'Romping Club', slot: 'weapon', type: 'Weapon' }),
     ]);
-    expect(groups.map((group) => group.id)).toEqual(['hero', 'weapon', 'actions', 'reactions']);
+    expect(groups.map((group) => group.id)).toEqual(['action', 'attackReaction', 'hero', 'weapon']);
   });
 
   it('sums quantities per group and sorts cards by name then pitch', () => {
@@ -42,7 +42,7 @@ describe('groupSharedCards', () => {
   });
 
   it('keeps unknown slots in an other group instead of dropping them', () => {
-    const groups = groupSharedCards([card({ slot: 'sideboard' })]);
+    const groups = groupSharedCards([card({ slot: 'sideboard', type: 'Token' })]);
     expect(groups.map((group) => group.id)).toEqual(['other']);
   });
 });

@@ -3,8 +3,10 @@ import react from '@vitejs/plugin-react';
 import { TanStackRouterVite } from '@tanstack/router-vite-plugin';
 import svgr from 'vite-plugin-svgr';
 import { sentryWebPlugins } from './src/observability/sentry-vite';
+import { engineLegalityAlias } from './engine-legality-alias';
 
 export default defineConfig({
+  resolve: { alias: engineLegalityAlias },
   plugins: [
     TanStackRouterVite({
       // Co-located test files under `__tests__/` are not routes. Without

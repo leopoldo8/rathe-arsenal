@@ -6,6 +6,19 @@ export const settings = {
   // Profile section
   yourProfile: 'Perfil',
   emailAddress: 'E-mail',
+  // Account panel: e-mail and password
+  accountHeading: 'Conta',
+  passwordHave: 'Senha: você tem uma senha',
+  passwordNone: 'Senha: nenhuma',
+  changePassword: 'Mudar a senha',
+  createPassword: 'Criar uma senha',
+  newPasswordLabel: 'Nova senha',
+  savePassword: 'Salvar senha',
+  passwordCancel: 'Cancelar',
+  passwordCodeNote: 'Você também pode entrar com um código por e-mail, sem senha.',
+  passwordCodeSentBefore: 'Mandamos para ',
+  passwordCodeSentAfter_one: '. Ele vale {{count}} minuto.',
+  passwordCodeSentAfter_other: '. Ele vale {{count}} minutos.',
   // Appearance section
   theme: 'Aparência',
   // Account section
@@ -23,6 +36,11 @@ export const settings = {
   neverSynced: 'Nunca sincronizado.',
   lastSyncFailed: 'A última sincronização falhou em {{when}}: {{reason}}',
   couldNotQueueSync: 'Não foi possível iniciar a sincronização. Tente de novo.',
+  creditsLabel: 'Créditos do Firecrawl este mês',
+  creditsOf: '{{used}} de {{budget}}',
+  creditsMeterLabel: '{{used}} de {{budget}} créditos usados',
+  lookupsStopped: 'As consultas automáticas de preço pararam.',
+  manualSyncStillWorks: 'A sincronização manual continua funcionando.',
   // delete-account-modal.tsx
   deleteAccountModalTitle: 'Excluir sua conta',
   deleteAccountModalDesc: 'Sua conta e tudo ligado a ela (coleção, decks e histórico de prontidão) serão excluídos de vez em 30 dias. Você sai na hora.',

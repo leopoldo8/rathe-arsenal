@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Put } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { CollectionService } from './collection.service';
@@ -16,6 +16,7 @@ import {
   IAddCardsBatchResponse,
 } from './dtos/add-cards-batch.dto';
 import { IMarkOwnedResponse } from './dtos/mark-owned.response.dto';
+import { ISetOwnedResponse, SetOwnedRequestDto } from './dtos/set-owned.dto';
 
 @Controller('collection')
 export class CollectionController {
@@ -31,6 +32,15 @@ export class CollectionController {
       dto.deckId,
       dto.cardIdentifier,
     );
+  }
+
+  /** Sets the total copies owned of a card; the manual source takes what the other imports do not hold. */
+  @Put('owned')
+  async setOwned(
+    @Body() dto: SetOwnedRequestDto,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<ISetOwnedResponse> {
+    return this.collectionService.setOwned(user.userId, dto.deckId, dto.cardIdentifier, dto.ownedTotal);
   }
 
   @Post('cards')
@@ -67,6 +77,7 @@ export class CollectionController {
       dto.cardIdentifier,
       dto.sourceId,
       dto.quantity ?? 1,
+      { printingCode: dto.printingCode, edition: dto.edition, finish: dto.finish, condition: dto.condition },
     );
   }
 }

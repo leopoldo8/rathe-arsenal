@@ -39,6 +39,25 @@
   color: var(--ra-fg-secondary);
 }
 
+.versionsLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 24px;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-muted);
+  text-decoration: none;
+}
+
+.versionsLink:hover {
+  color: var(--ra-accent-body);
+}
+
+.versionsLink:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
 .manualNote {
   margin: 0;
   max-inline-size: 28ch;
@@ -48,8 +67,7 @@
 }
 
 .labelText {
-  font: var(--ra-weight-medium) var(--ra-text-body) / var(--ra-leading-snug) var(--ra-font-ui);
-  color: var(--ra-fg-primary);
+  overflow-wrap: anywhere;
 }
 
 /* Active switch */
@@ -97,8 +115,31 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  overflow: hidden;
   min-width: 0;
+}
+
+/* The full name wraps on a phone: nothing in the title is cut off. */
+.title {
+  margin: 0;
+  font: var(--ra-weight-medium) var(--ra-text-body) / var(--ra-leading-snug) var(--ra-font-ui);
+  color: var(--ra-fg-primary);
+  overflow-wrap: anywhere;
+}
+
+.counts {
+  color: var(--ra-fg-primary);
+}
+
+.chevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 24px;
+  min-block-size: 44px;
+  color: var(--ra-fg-muted);
+  font-size: var(--ra-text-h2);
+  text-decoration: none;
 }
 
 .labelBtn {
@@ -109,9 +150,7 @@
   font: var(--ra-weight-medium) var(--ra-text-body) / var(--ra-leading-snug) var(--ra-font-ui);
   color: var(--ra-fg-primary);
   cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   transition: color var(--ra-duration) var(--ra-ease);
 }
 
@@ -224,7 +263,9 @@
 }
 
 .menuItem {
-  display: block;
+  display: flex;
+  align-items: center;
+  min-block-size: 44px;
   padding: var(--ra-space-2) var(--ra-space-4);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-secondary);
@@ -270,4 +311,15 @@
   .menuContent {
     animation: none;
   }
+}
+
+/* The chooser opens from the menu item; the input itself is never seen. */
+.fileInput {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  opacity: 0;
+  pointer-events: none;
 }

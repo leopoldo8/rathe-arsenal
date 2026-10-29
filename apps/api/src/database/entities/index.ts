@@ -1,6 +1,7 @@
 export { UserEntity } from './user.entity';
 export { CsvSourceEntity } from './csv-source.entity';
 export { CollectionCardEntity } from './collection-card.entity';
+export { ImportPendingLineEntity } from './import-pending-line.entity';
 export { TrackedDeckEntity } from './tracked-deck.entity';
 export { DeckCardEntity } from './deck-card.entity';
 export { DeckReadinessSnapshotEntity } from './deck-readiness-snapshot.entity';
@@ -17,6 +18,7 @@ export {
   VariantFetchJobEntity,
   EVariantFetchJobStatus,
 } from './variant-fetch-job.entity';
+export { FirecrawlUsageEntity } from './firecrawl-usage.entity';
 export { RecommendationRunEntity } from './recommendation-run.entity';
 export { RecommendationEntity } from './recommendation.entity';
 export { RecommendationDismissalEntity } from './recommendation-dismissal.entity';
@@ -35,3 +37,5 @@ export { CardListEntity } from './card-list.entity';
 export { CardListLineEntity } from './card-list-line.entity';
 export { CardPriceEntity } from './card-price.entity';
 export { CardPriceGroupSyncEntity } from './card-price-group-sync.entity';
+export { SignInCodeEntity } from './sign-in-code.entity';
+export { UserSessionEntity } from './user-session.entity';

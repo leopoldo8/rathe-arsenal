@@ -6,6 +6,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../app.module';
 import { configureHttpApp } from '../../http/configure-http-app';
+import { sessionCookieHeader, sessionTokenOf } from '../../auth/__tests__/session-test-helpers';
 
 const CONTENT_HASH_INDEX = 'IDX_csv_source_user_content_hash_uq';
 const CONCURRENT_UPLOADS = 6;
@@ -15,7 +16,7 @@ const OTHER_CSV = Buffer.from(['Name,Quantity', 'Crane Dance,1', 'Blessing of Qi
 describe('duplicate CSV uploads (E2E)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
-  let jwt: string;
+  let sessionToken: string;
   let userId: string;
   const email = `csv-duplicate-${Date.now().toString(36)}@test.local`;
   const password = 'csv-duplicate-password-123';
@@ -42,11 +43,11 @@ describe('duplicate CSV uploads (E2E)', () => {
     await dataSource.synchronize();
 
     const server = app.getHttpServer();
-    const signUp = await request(server).post('/api/auth/sign-up').send({ email, password }).expect(202);
+    const signUp = await request(server).post('/api/auth/sign-up').send({ email, password }).expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
     await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     const signIn = await request(server).post('/api/auth/sign-in').send({ email, password }).expect(200);
-    jwt = signIn.body.jwt as string;
+    sessionToken = sessionTokenOf(signIn);
     const [row] = await dataSource.query(`SELECT id FROM "user" WHERE email = $1`, [email]);
     userId = row.id as string;
   }, 60_000);
@@ -74,7 +75,7 @@ describe('duplicate CSV uploads (E2E)', () => {
       request(app.getHttpServer())
         .post('/api/collection/csv')
         .field('action', 'separate')
-        .set('Authorization', `Bearer ${jwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .attach('file', CSV, { filename: 'again.csv', contentType: 'text/csv' });
 
     const first = await upload().expect(201);
@@ -91,7 +92,7 @@ describe('duplicate CSV uploads (E2E)', () => {
       Array.from({ length: CONCURRENT_UPLOADS }, () =>
         request(app.getHttpServer())
           .post('/api/collection/csv')
-          .set('Authorization', `Bearer ${jwt}`)
+          .set('Cookie', sessionCookieHeader(sessionToken))
           .attach('file', OTHER_CSV, { filename: 'same.csv', contentType: 'text/csv' }),
       ),
     );
@@ -101,5 +102,89 @@ describe('duplicate CSV uploads (E2E)', () => {
     expect(kinds).toEqual(['created', ...Array(CONCURRENT_UPLOADS - 1).fill('exact-match')].sort());
     const rows = await dataSource.query(`SELECT id FROM csv_source WHERE "userId" = $1 AND kind = 'csv' AND label = 'same.csv'`, [userId]);
     expect(rows).toHaveLength(1);
+  });
+
+  describe('a file sent for one import', () => {
+    const TARGET = Buffer.from(['Name,Quantity', 'Snatch (Red),2', 'Pummel (Red),1'].join('\n'), 'utf-8');
+    const BYSTANDER = Buffer.from(['Name,Quantity', 'Pack Hunt (Blue),1', 'Sink Below (Yellow),3'].join('\n'), 'utf-8');
+    const REPLACEMENT = Buffer.from(['Name,Quantity', 'Command and Conquer (Red),2', 'Pummel (Yellow),1'].join('\n'), 'utf-8');
+    const FILE = Buffer.from(['Name,Quantity', 'Snatch (Red),3', 'Pack Hunt (Blue),1'].join('\n'), 'utf-8');
+    const EMPTY = Buffer.from('Name,Quantity\n', 'utf-8');
+
+    const post = (file: Buffer, fields: Record<string, string>, token = sessionToken) => {
+      const call = request(app.getHttpServer()).post('/api/collection/csv').set('Cookie', sessionCookieHeader(token));
+      for (const [name, value] of Object.entries(fields)) call.field(name, value);
+      return call.attach('file', file, { filename: 'new-version.csv', contentType: 'text/csv' });
+    };
+    const quantitiesOf = async (sourceId: string): Promise<number[]> =>
+      (
+        (await dataSource.query(`SELECT quantity FROM collection_card WHERE "sourceId" = $1 ORDER BY quantity`, [sourceId])) as {
+          quantity: number;
+        }[]
+      ).map((row) => row.quantity);
+
+    it('a replace or update upload whose file equals another import answers an exact match and leaves both imports as they were', async () => {
+      const OTHER = Buffer.from(['Name,Quantity', 'Oasis Respite (Red),2', 'Pummel (Blue),1'].join('\n'), 'utf-8');
+      const MINE = Buffer.from(['Name,Quantity', 'Sigil of Solace (Blue),1', 'Sink Below (Blue),2'].join('\n'), 'utf-8');
+      const other = await post(OTHER, { action: 'separate' }).expect(201);
+      const mine = await post(MINE, { action: 'separate' }).expect(201);
+      const otherId = other.body.sourceId as string;
+      const mineId = mine.body.sourceId as string;
+
+      for (const action of ['replace', 'update']) {
+        const res = await post(OTHER, { targetSourceId: mineId, action }).expect(201);
+        expect(res.body).toEqual(expect.objectContaining({ kind: 'exact-match', existingSourceId: otherId }));
+        expect(await quantitiesOf(mineId)).toEqual([1, 2]);
+        expect(await quantitiesOf(otherId)).toEqual([1, 2]);
+      }
+      const rows = await dataSource.query(`SELECT id FROM csv_source WHERE id = ANY($1)`, [[mineId, otherId]]);
+      expect(rows).toHaveLength(2);
+    });
+
+    it('a file sent for one import answers its delta, updates or replaces it, and 404s a foreign id', async () => {
+      const target = await post(TARGET, { action: 'separate' }).expect(201);
+      const targetId = target.body.sourceId as string;
+      const bystander = await post(BYSTANDER, { action: 'separate' }).expect(201);
+      const bystanderId = bystander.body.sourceId as string;
+      expect(await quantitiesOf(targetId)).toEqual([1, 2]);
+
+      // The delta is against this import alone: the card the other import holds still counts as added.
+      const preview = await post(FILE, { targetSourceId: targetId }).expect(201);
+      expect(preview.body.kind).toBe('partial-overlap');
+      expect(preview.body.existingSourceId).toBe(targetId);
+      expect(preview.body.delta.added).toHaveLength(1);
+      expect(preview.body.delta.increased).toHaveLength(1);
+      expect(preview.body.delta.decreased).toHaveLength(0);
+      expect(preview.body.delta.removed).toHaveLength(1);
+      expect(await quantitiesOf(targetId)).toEqual([1, 2]);
+      const explicitAuto = await post(FILE, { targetSourceId: targetId, action: 'auto' }).expect(201);
+      expect(explicitAuto.body.existingSourceId).toBe(targetId);
+
+      const updated = await post(FILE, { targetSourceId: targetId, action: 'update' }).expect(201);
+      expect(updated.body).toEqual(expect.objectContaining({ kind: 'updated', sourceId: targetId }));
+      expect(await quantitiesOf(targetId)).toEqual([1, 3]);
+      expect(await quantitiesOf(bystanderId)).toEqual([1, 3]);
+
+      const replaced = await post(REPLACEMENT, { targetSourceId: targetId, action: 'replace' }).expect(201);
+      expect(replaced.body.kind).toBe('replaced');
+      expect(await quantitiesOf(replaced.body.sourceId as string)).toEqual([1, 2]);
+      expect(await quantitiesOf(bystanderId)).toEqual([1, 3]);
+
+      await post(EMPTY, { targetSourceId: bystanderId }).expect(400);
+      await post(EMPTY, { targetSourceId: bystanderId, action: 'update' }).expect(400);
+      expect(await quantitiesOf(bystanderId)).toEqual([1, 3]);
+
+      const strangerEmail = `csv-stranger-${Date.now().toString(36)}@test.local`;
+      const stranger = await request(app.getHttpServer()).post('/api/auth/sign-up').send({ email: strangerEmail, password }).expect(201);
+      try {
+        const foreign = await post(FILE, { targetSourceId: bystanderId }, sessionTokenOf(stranger));
+        expect(foreign.status).toBe(404);
+        await post(FILE, { targetSourceId: bystanderId, action: 'update' }, sessionTokenOf(stranger)).expect(404);
+        await post(FILE, { targetSourceId: '4b8f3a5e-0d3c-4c1e-9d1a-2f6f0a1b2c3d' }).expect(404);
+        expect(await quantitiesOf(bystanderId)).toEqual([1, 3]);
+      } finally {
+        await dataSource.query(`DELETE FROM "user" WHERE email = $1`, [strangerEmail]);
+      }
+    });
   });
 });

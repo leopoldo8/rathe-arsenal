@@ -12,12 +12,16 @@ vi.mock('../../../lib/api-client', async (importOriginal) => {
   return { ...actual, useApiClient: () => mockApiFetch };
 });
 
+vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
+vi.mock('../ShareDialog', () => ({ ShareDialog: () => null }));
+
 import { MissingPanel } from '../MissingPanel';
 import markOwnedStyles from '../MarkOwnedButton.module.css';
 import styles from '../MissingPanel.module.css';
-import fetchStyles from '../../ShoppingLineFetchControls.module.css';
 import type { IAlternativesTarget, IDeckReplacement } from '../../../api/replacements';
 import { setTestLocale } from '../../../test/i18n-test-utils';
+import { MissingListPage } from '../../missing-list/MissingListPage';
+import { line as missingLine, response as missingResponse } from '../../missing-list/__tests__/missingListKit';
 
 const HOST = 'www.cupuladt.com.br';
 const NOW = Date.now();
@@ -28,6 +32,7 @@ function line(overrides: Partial<IShoppingLineLine>): IShoppingLineLine {
   return {
     cardIdentifier: 'card-a',
     cardName: 'Card A',
+    pitch: null,
     quantityNeeded: 3,
     quantityAvailable: 3,
     unitPriceCents: 790,
@@ -67,10 +72,6 @@ function renderPanel(
       onMarkOwned={vi.fn()}
       isMarkingOwned={false}
       pendingCard={null}
-      onFetchVariants={vi.fn()}
-      fetchMutationStatus="idle"
-      isCooldownActive={false}
-      onPollingChange={vi.fn()}
       onShoppingRetry={vi.fn()}
       {...extra}
     />,
@@ -103,6 +104,35 @@ describe('MissingPanel — one merged panel', () => {
     expect(screen.queryByTestId('missing-store-summary')).toBeNull();
     expect(within(rowOf('Card A')).queryByRole('link')).toBeNull();
     expect(within(rowOf('Card A')).queryByTestId('missing-row-unavailable')).toBeNull();
+  });
+});
+
+describe('MissingPanel — pitch words in card names', () => {
+  it('no question mark on the pitch word of a card name', () => {
+    renderPanel(
+      populated({
+        lines: [
+          line({ cardIdentifier: 'pack-hunt-red', cardName: 'Pack Hunt', pitch: 1 }),
+          line({ cardIdentifier: 'pack-hunt-yellow', cardName: 'Pack Hunt', pitch: 2 }),
+          line({ cardIdentifier: 'pack-hunt-blue', cardName: 'Pack Hunt', pitch: 3 }),
+        ],
+      }),
+      {
+        entries: [
+          { ...ENTRIES[0]!, cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', pitch: 1 },
+          { ...ENTRIES[0]!, cardIdentifier: 'pack-hunt-yellow', name: 'Pack Hunt', pitch: 2 },
+          { ...ENTRIES[0]!, cardIdentifier: 'pack-hunt-blue', name: 'Pack Hunt', pitch: 3 },
+        ],
+      },
+    );
+
+    expect(screen.getByText('Pack Hunt (Vermelho)')).toBeInTheDocument();
+    expect(screen.getByText('Pack Hunt (Amarelo)')).toBeInTheDocument();
+    expect(screen.getByText('Pack Hunt (Azul)')).toBeInTheDocument();
+    for (const word of ['Vermelho', 'Amarelo', 'Azul']) {
+      expect(screen.queryByRole('button', { name: `O que é ${word}?` })).toBeNull();
+    }
+    expect(screen.queryByRole('button', { name: /^O que é / })).toBeNull();
   });
 });
 
@@ -180,35 +210,9 @@ describe('MissingPanel — store states per row', () => {
     expect(within(rowOf('Card A')).getByTestId('variant-breakdown-details')).toBeInTheDocument();
   });
 
-  it('flags a card whose exact-price fetch failed', () => {
-    renderPanel(
-      populated({
-        variantFetchProgress: {
-          fetchId: 'f', total: 1, completed: 0, failed: 1, inProgress: false,
-          cards: { 'card-a': 'failed' },
-        },
-      }),
-    );
-
-    expect(within(rowOf('Card A')).getByTestId('line-item-fetch-failed')).toBeInTheDocument();
-  });
 });
 
 describe('MissingPanel — preserved store behaviors', () => {
-  it('"Obter preços exatos" calls the fetch handler when estimated', () => {
-    const onFetchVariants = vi.fn();
-    renderPanel(populated({ isEstimated: true }), { onFetchVariants });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Obter preços exatos' }));
-    expect(onFetchVariants).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows the up-to-date message instead of the button during cooldown', () => {
-    renderPanel(populated({ isEstimated: true }), { isCooldownActive: true });
-
-    expect(screen.queryByRole('button', { name: 'Obter preços exatos' })).toBeNull();
-  });
-
   it('warns about stale prices in the pt-BR UI without English leaking', () => {
     renderPanel(populated({ lastFetchedAt: OLD }));
 
@@ -216,20 +220,6 @@ describe('MissingPanel — preserved store behaviors', () => {
     expect(screen.getByTestId('missing-store-stale')).toBeInTheDocument();
     expect(summary).toHaveTextContent('atualizado há mais de uma semana');
     expect(summary.textContent).not.toMatch(/ago|over a week/i);
-  });
-
-  it('reports polling to the host while a fetch is in progress', () => {
-    const onPollingChange = vi.fn();
-    renderPanel(
-      populated({
-        isEstimated: true,
-        variantFetchProgress: { fetchId: 'f', total: 2, completed: 0, failed: 0, inProgress: true },
-      }),
-      { onPollingChange },
-    );
-
-    expect(onPollingChange).toHaveBeenLastCalledWith(expect.any(Number));
-    expect(screen.getByRole('status')).toHaveTextContent('Verificando carta 1 de 2');
   });
 
   it('shows the retry affordance when the store query errored', () => {
@@ -244,7 +234,7 @@ describe('MissingPanel — preserved store behaviors', () => {
     const onMarkOwned = vi.fn();
     renderPanel(populated(), { onMarkOwned });
 
-    const button = within(rowOf('Card B')).getByRole('button', { name: 'Já tenho' });
+    const button = within(rowOf('Card B')).getByRole('button', { name: 'Já tenho Card B (Vermelho)' });
     expect(button).toHaveClass(markOwnedStyles.btn!);
     fireEvent.click(button);
     expect(onMarkOwned).toHaveBeenCalledWith('card-b');
@@ -265,7 +255,7 @@ describe('MissingPanel — calm row layout (owner feedback round 2)', () => {
   it('renders one quiet Buy link per available row, with an external-link arrow', () => {
     renderPanel(populated());
 
-    const link = within(rowOf('Card A')).getByRole('link', { name: 'Comprar Card A na loja' });
+    const link = within(rowOf('Card A')).getByRole('link', { name: 'Comprar Card A (Vermelho) na loja' });
     expect(link).toHaveClass(styles.buy!);
     expect(link.parentElement).toHaveClass(styles.action!);
     expect(link).toHaveTextContent('Comprar↗');
@@ -286,19 +276,19 @@ describe('MissingPanel — calm row layout (owner feedback round 2)', () => {
   it('Mark owned is an icon button named for screen readers, with no visible label', () => {
     renderPanel(populated());
 
-    const button = within(rowOf('Card A')).getByRole('button', { name: 'Já tenho' });
-    expect(button).toHaveAttribute('title', 'Já tenho');
+    const button = within(rowOf('Card A')).getByRole('button', { name: 'Já tenho Card A (Vermelho)' });
+    expect(button).not.toHaveAttribute('title');
     expect(button).toHaveTextContent('');
     expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(button.parentElement).toHaveClass(styles.owned!);
   });
 
-  it('the pending card keeps its name and says it is saving in the tooltip', () => {
+  it('the pending card keeps its name and is busy and disabled', () => {
     renderPanel(populated(), { isMarkingOwned: true, pendingCard: 'card-a' });
 
-    const button = within(rowOf('Card A')).getByRole('button', { name: 'Já tenho' });
+    const button = within(rowOf('Card A')).getByRole('button', { name: 'Já tenho Card A (Vermelho)' });
     expect(button).toHaveAttribute('aria-busy', 'true');
-    expect(button).toHaveAttribute('title', 'Salvando…');
+    expect(button).not.toHaveAttribute('title');
     expect(button).toBeDisabled();
   });
 });
@@ -336,13 +326,6 @@ describe('MissingPanel — one quiet store line (owner feedback round 2)', () =>
     expect(screen.getByTestId('missing-store-summary')).not.toHaveTextContent('os preços podem ter mudado');
   });
 
-  it('"Obter preços exatos" is the quiet text button, not the brass slab', () => {
-    renderPanel(populated({ isEstimated: true }));
-
-    const button = screen.getByRole('button', { name: 'Obter preços exatos' });
-    expect(button).toHaveClass(fetchStyles.ctaQuiet!);
-    expect(button).not.toHaveClass(fetchStyles.ctaBtn!);
-  });
 });
 
 describe('MissingPanel — alternatives and replacements (card-alternatives)', () => {
@@ -351,6 +334,7 @@ describe('MissingPanel — alternatives and replacements (card-alternatives)', (
     slot: 'mainboard',
     originalCardIdentifier: 'emissary-of-tides-red',
     originalName: 'Emissary of Tides',
+    originalPitch: null,
     replacementCardIdentifier: 'coax-a-commotion-red',
     quantity: 2,
     originalOwned: false,
@@ -457,10 +441,6 @@ describe('MissingPanel — suggestions from the collection', () => {
           onMarkOwned={vi.fn()}
           isMarkingOwned={false}
           pendingCard={null}
-          onFetchVariants={vi.fn()}
-          fetchMutationStatus="idle"
-          isCooldownActive={false}
-          onPollingChange={vi.fn()}
           onShoppingRetry={vi.fn()}
           onOpenAlternatives={vi.fn()}
           deckId={DECK_ID}
@@ -477,8 +457,8 @@ describe('MissingPanel — suggestions from the collection', () => {
     const row = rowOf('Card A');
     expect(within(row).getByTestId('missing-row-suggestion')).toHaveTextContent('Erase Face (Vermelho)');
     expect(within(row).getByTestId('missing-row-suggestion')).toHaveTextContent('da sua coleção');
-    expect(within(row).getByRole('button', { name: /^Usar Erase Face \(Vermelho\) da sua coleção no lugar de Card A$/ })).toHaveTextContent('Usar');
-    expect(within(row).getByRole('button', { name: 'Ver alternativas para Card A' })).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: /^Usar Erase Face \(Vermelho\) da sua coleção no lugar de Card A \(Vermelho\)$/ })).toHaveTextContent('Usar');
+    expect(within(row).getByRole('button', { name: 'Ver alternativas para Card A (Vermelho)' })).toBeInTheDocument();
   });
 
   it('a row without a suggestion offers only the alternatives', async () => {
@@ -486,7 +466,7 @@ describe('MissingPanel — suggestions from the collection', () => {
     renderWithSuggestion();
 
     const row = rowOf('Card B');
-    expect(within(row).getByRole('button', { name: 'Ver alternativas para Card B' })).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: 'Ver alternativas para Card B (Vermelho)' })).toBeInTheDocument();
     expect(within(row).queryByRole('button', { name: /^Usar / })).toBeNull();
     expect(within(row).queryByTestId('missing-row-suggestion')).toBeNull();
     expect(row).not.toHaveTextContent('da sua coleção');
@@ -550,5 +530,85 @@ describe('MissingPanel — share call to action', () => {
   it('is absent when nothing is missing', () => {
     renderPanel(populated(), { onShareMissing: vi.fn(), entries: [] });
     expect(screen.queryByTestId('missing-share-callout')).toBeNull();
+  });
+});
+
+describe('MissingPanel: card names carry the pitch', () => {
+  const PACK_HUNT_RED = entry({ cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', quantity: 1, pitch: 1 });
+  const PACK_HUNT_BLUE = entry({ cardIdentifier: 'pack-hunt-blue', name: 'Pack Hunt', quantity: 1, pitch: 3 });
+
+  it('two pitches of one name read differently', () => {
+    renderPanel(
+      populated({
+        lines: [
+          line({ cardIdentifier: 'pack-hunt-red', cardName: 'Pack Hunt', pitch: 1, quantityNeeded: 1, quantityAvailable: 1 }),
+          line({ cardIdentifier: 'pack-hunt-blue', cardName: 'Pack Hunt', pitch: 3, quantityNeeded: 1, quantityAvailable: 1 }),
+        ],
+      }),
+      { entries: [PACK_HUNT_RED, PACK_HUNT_BLUE] },
+    );
+
+    const names = screen.getAllByTestId('missing-row').map((row) => row.querySelector(`.${styles.name}`)?.textContent);
+    expect(names).toEqual(['Pack Hunt (Vermelho)', 'Pack Hunt (Azul)']);
+    expect(screen.getByRole('link', { name: 'Comprar Pack Hunt (Vermelho) na loja' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Comprar Pack Hunt (Azul) na loja' })).toBeInTheDocument();
+  });
+
+  it('a card with no pitch is named alone', () => {
+    renderPanel(
+      populated({
+        lines: [line({ cardIdentifier: 'dawnblade', cardName: 'Dawnblade', pitch: null, quantityNeeded: 1, quantityAvailable: 1 })],
+      }),
+      { entries: [entry({ cardIdentifier: 'dawnblade', name: 'Dawnblade', quantity: 1, slot: 'weapon', pitch: null })] },
+    );
+
+    const row = screen.getByTestId('missing-row');
+    expect(row.querySelector(`.${styles.name}`)?.textContent).toBe('Dawnblade');
+    expect(within(row).getByRole('link', { name: 'Comprar Dawnblade na loja' })).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: 'Já tenho Dawnblade' })).toBeInTheDocument();
+  });
+});
+
+describe('the missing list page', () => {
+  it('the missing list splits and filters by side', async () => {
+    const lines = [
+      missingLine({ cardIdentifier: 'a', name: 'Alpha', deckNeeded: 3, deckQuantity: 3, availableCopies: 3, lineCents: 300 }),
+      missingLine({ cardIdentifier: 'b', name: 'Bravo', deckNeeded: 1, deckQuantity: 1, availableCopies: 1, lineCents: 100 }),
+      missingLine({ cardIdentifier: 'c', name: 'Charlie', deckNeeded: 0, inventoryNeeded: 2, deckQuantity: 2, availableCopies: 2, lineCents: 200 }),
+      missingLine({ cardIdentifier: 'd', name: 'Delta', deckNeeded: 0, inventoryNeeded: 1, deckQuantity: 1, availableCopies: 1, lineCents: 100 }),
+    ];
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === '/decks/7/missing') return missingResponse(lines, { buyCopies: 7 });
+      return { id: 7, name: 'Deck', hero: 'Rhinar' };
+    });
+    // The rows read as sentences on a phone, where the list is a stack of cards.
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() });
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MissingListPage deckId={7} />
+      </QueryClientProvider>,
+    );
+
+    const page = await screen.findByTestId('missing-list-page');
+    const head = 'Faltam 7 cópias de 4 cartas · 4 do deck, 3 do inventário';
+    expect(page).toHaveTextContent(head);
+    expect(screen.getByRole('button', { name: 'Todas' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Do deck' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'Do inventário' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getAllByTestId('missing-row')).toHaveLength(4);
+    const charlie = screen.getAllByTestId('missing-row').find((row) => row.textContent?.includes('Charlie'));
+    expect(charlie).toHaveTextContent('faltam 2 · 2 do inventário');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Do inventário' }));
+
+    const names = screen.getAllByTestId('missing-row').map((row) => row.textContent?.match(/Alpha|Bravo|Charlie|Delta/)?.[0]);
+    expect(names).toEqual(['Charlie', 'Delta']);
+    expect(screen.getByTestId('missing-head')).toHaveTextContent(head);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Do deck' }));
+
+    expect(screen.getAllByTestId('missing-row')).toHaveLength(2);
+    expect(screen.getByTestId('missing-head')).toHaveTextContent(head);
+    Reflect.deleteProperty(window, 'matchMedia');
   });
 });

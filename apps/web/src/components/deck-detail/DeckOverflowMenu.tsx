@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { DeleteDeckDialog } from '../deck-edit/DeleteDeckDialog';
+import { useNavigate } from '@tanstack/react-router';
+import { useDeleteDeckWithUndo } from '../../hooks/useDeleteDeckWithUndo';
 import styles from './DeckOverflowMenu.module.css';
 
 interface IDeckOverflowMenuProps {
@@ -12,7 +13,8 @@ interface IDeckOverflowMenuProps {
 export function DeckOverflowMenu({ deckId, deckName, className }: IDeckOverflowMenuProps): React.ReactElement {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
-  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const deleteDeck = useDeleteDeckWithUndo();
+  const navigate = useNavigate();
   const rootRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -24,9 +26,12 @@ export function DeckOverflowMenu({ deckId, deckName, className }: IDeckOverflowM
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [open]);
 
+  // Deleting is undoable ("Desfazer", "Excluídos recentemente"), so it asks nothing: the home shows the toast.
   function handleDelete(): void {
     setOpen(false);
-    setConfirmOpen(true);
+    void deleteDeck({ id: deckId, name: deckName }).then((deleted) => {
+      if (deleted) void navigate({ to: '/home', search: { tag: [] } });
+    });
   }
 
   return (
@@ -61,7 +66,6 @@ export function DeckOverflowMenu({ deckId, deckName, className }: IDeckOverflowM
           </button>
         </div>
       )}
-      <DeleteDeckDialog deckId={deckId} deckName={deckName} open={confirmOpen} onOpenChange={setConfirmOpen} />
     </div>
   );
 }

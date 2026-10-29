@@ -5,6 +5,8 @@ import { VariantFetchQueueService } from './variant-fetch-queue.service';
 import { VariantJobProcessorService } from './variant-job-processor.service';
 import { ResolveJobCardsService } from './resolve-job-cards.service';
 import { StoreIngestionService } from './store-ingestion.service';
+import { CreditBudgetService } from './credit-budget.service';
+import { createAvailabilityStep } from './availability-pass';
 import { VariantFetchJobEntity } from '../database/entities/variant-fetch-job.entity';
 import { IFetchCard } from './types/fetch-card';
 import { RecommendationQueueService } from '../recommendations/recommendation-queue.service';
@@ -16,6 +18,8 @@ import { parseThinkingLevel, TGeminiFetch } from '../recommendations/gemini-clie
 import { ChatTurnQueueService } from '../chat/chat-turn-queue.service';
 import { ChatRunnerService, drainChatOnce } from '../chat/chat-runner.service';
 import { createReferenceStep } from '../reference/reference-step';
+import { HousekeepingService } from '../housekeeping/housekeeping.service';
+import { createHousekeepingStep } from '../housekeeping/housekeeping.step';
 import { RulesImportService } from '../reference/rules-import.service';
 import { TournamentSyncService } from '../reference/tournament-sync.service';
 
@@ -24,7 +28,7 @@ const CHAT_MODEL_VARIABLE = 'CHAT_OPENROUTER_MODEL';
 const RECOMMENDATION_MODEL_VARIABLE = 'RECOMMENDATION_OPENROUTER_MODEL';
 
 export interface IDrainDeps {
-  readonly queue: Pick<VariantFetchQueueService, 'reclaimOrphans' | 'claimNext'>;
+  readonly queue: Pick<VariantFetchQueueService, 'reclaimOrphans' | 'claimNext' | 'finish'>;
   readonly processor: Pick<VariantJobProcessorService, 'process'>;
   readonly resolveCards: (job: VariantFetchJobEntity) => Promise<IFetchCard[]>;
   readonly workerId: string;
@@ -35,6 +39,10 @@ export async function drainOnce(deps: IDrainDeps): Promise<void> {
   const job = await deps.queue.claimNext(deps.workerId);
   if (!job) return;
   const cards = await deps.resolveCards(job);
+  if (cards.length === 0) {
+    await deps.queue.finish(job.id, 'The store has no product page for this card.');
+    return;
+  }
   await deps.processor.process(job, cards);
 }
 
@@ -47,10 +55,8 @@ export interface IUrlSyncDeps {
 }
 
 /**
- * Runs one queued URL sync if the owner has requested one. URL sync is no
- * longer on an automatic cadence — it is owner-triggered only (see
- * docs/research/scraper-cost-scaling.md) to keep Firecrawl credit spend
- * controlled. The claim is atomic + lock-guarded so the fast worker loop never
+ * Runs one queued URL sync, whether the admin or the availability step asked
+ * for it. The claim is atomic + lock-guarded so the fast worker loop never
  * starts the long sync twice.
  */
 export async function runPendingUrlSync(deps: IUrlSyncDeps): Promise<void> {
@@ -199,6 +205,14 @@ export async function runWorker(
     }
   };
 
+  const availabilityStep = createAvailabilityStep({
+    ingestion,
+    budget: app.get(CreditBudgetService),
+    config: { get: <T>(key: string): T | undefined => deps.env[key] as T | undefined },
+    logger,
+    runPendingUrlSync: () => runPendingUrlSync({ ingestion, logger }),
+  });
+
   const recommendationStep = createRecommendationStep({
     queue: app.get(RecommendationQueueService),
     runner: app.get(RecommendationRunnerService),
@@ -221,7 +235,13 @@ export async function runWorker(
     logger,
   });
 
-  await runWorkerLoops([variantStep, recommendationStep, chatStep, referenceStep], deps.pollMs ?? POLL_MS, deps.shouldContinue);
+  const housekeepingStep = createHousekeepingStep({ service: app.get(HousekeepingService), logger });
+
+  await runWorkerLoops(
+    [variantStep, availabilityStep, recommendationStep, chatStep, referenceStep, housekeepingStep],
+    deps.pollMs ?? POLL_MS,
+    deps.shouldContinue,
+  );
 }
 
 export async function main(): Promise<void> {

@@ -6,6 +6,19 @@ export const settings = {
   // Profile section
   yourProfile: 'Profile',
   emailAddress: 'Email address',
+  // Account panel: e-mail and password
+  accountHeading: 'Account',
+  passwordHave: 'Password: you have a password',
+  passwordNone: 'Password: none',
+  changePassword: 'Change password',
+  createPassword: 'Create a password',
+  newPasswordLabel: 'New password',
+  savePassword: 'Save password',
+  passwordCancel: 'Cancel',
+  passwordCodeNote: 'You can also sign in with a code by email, no password needed.',
+  passwordCodeSentBefore: 'We sent a code to ',
+  passwordCodeSentAfter_one: '. It is valid for {{count}} minute.',
+  passwordCodeSentAfter_other: '. It is valid for {{count}} minutes.',
   // Appearance section
   theme: 'Appearance',
   // Account section
@@ -23,6 +36,11 @@ export const settings = {
   neverSynced: 'Never synced.',
   lastSyncFailed: 'The last sync failed at {{when}}: {{reason}}',
   couldNotQueueSync: 'Could not queue the sync. Try again.',
+  creditsLabel: 'Firecrawl credits this month',
+  creditsOf: '{{used}} of {{budget}}',
+  creditsMeterLabel: '{{used}} of {{budget}} credits used',
+  lookupsStopped: 'Automatic price lookups have stopped.',
+  manualSyncStillWorks: 'Manual sync still works.',
   // delete-account-modal.tsx
   deleteAccountModalTitle: 'Delete your account',
   deleteAccountModalDesc: 'Your account and everything linked to it (collection, decks, readiness history) will be permanently deleted after 30 days. You are signed out immediately.',

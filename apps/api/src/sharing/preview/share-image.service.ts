@@ -6,12 +6,14 @@ import { CardListLineEntity } from '../../database/entities/card-list-line.entit
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { SharedDeckLookup, type ILiveSharedDeck } from '../shared-deck-lookup';
 import { SharedDeckMissingService } from '../shared-deck-missing.service';
+import { SharedGroupAskService } from '../shared-group-ask.service';
 import { SharedListLookup, type ILiveSharedList } from '../shared-list-lookup';
 import { computeShareImageHash, type IShareImageHashInput } from './share-image-hash';
 import { buildPreviewDeck, type IPreviewFace } from './preview-deck';
 import { buildPreviewList, describeCopyCount } from './preview-list';
 import { formatBrl } from './format-brl';
 import { buildPreviewMissing, describeMissingCount } from './preview-missing';
+import { describeQuoteCopies, QUOTE_KIND_LABEL } from './preview-quote';
 import { CardFaceFetcher } from './card-face-fetcher';
 import { renderShareImage, type IShareImageInput } from './share-image-renderer';
 import { SharePreviewStore, type IShareImageToStore } from './share-preview.store';
@@ -65,6 +67,7 @@ export class ShareImageService {
     private readonly store: SharePreviewStore,
     private readonly faceFetcher: CardFaceFetcher,
     private readonly missingCards: SharedDeckMissingService,
+    private readonly groupAsk: SharedGroupAskService,
     @InjectRepository(DeckCardEntity)
     private readonly deckCards: Repository<DeckCardEntity>,
     @InjectRepository(CardListLineEntity)
@@ -123,6 +126,49 @@ export class ShareImageService {
     const { link, deck: trackedDeck, owner } = live;
     const rows = await this.deckCards.find({ where: { trackedDeckId: trackedDeck.id } });
     const shareUrl = `${this.baseUrl}/d/${token}`;
+
+    if (link.intent === 'quote') {
+      const needed = await this.groupAsk.neededFor(owner.id, trackedDeck.id);
+      const asked = buildPreviewMissing(
+        trackedDeck,
+        owner,
+        needed.map((item) => ({
+          cardIdentifier: item.cardIdentifier,
+          name: item.name,
+          pitch: item.pitch,
+          type: '',
+          slot: 'mainboard',
+          quantity: item.quantity,
+          inventoryQuantity: 0,
+          imageUrl: null,
+        })),
+      );
+      return {
+        faces: asked.faces,
+        emphasizeFirst: asked.heroIsFirst,
+        fileSlug: toFileSlug(asked.name),
+        hashInput: {
+          intent: 'quote',
+          name: asked.name,
+          hero: asked.hero,
+          format: trackedDeck.format,
+          sharerName: asked.sharerName,
+          totalCards: 0,
+          missingCount: asked.missingCount,
+          shareUrl,
+        },
+        image: {
+          kindLabel: QUOTE_KIND_LABEL,
+          sharerName: asked.sharerName,
+          title: asked.name,
+          heroName: asked.hero,
+          detail: describeQuoteCopies(asked.missingCount),
+          shareAddress: addressWithoutScheme(shareUrl),
+          legalLine: LEGAL_LINE,
+          byLabel: 'por',
+        },
+      };
+    }
 
     if (link.intent === 'missing') {
       const missing = buildPreviewMissing(trackedDeck, owner, await this.missingCards.missingFor(owner.id, rows));

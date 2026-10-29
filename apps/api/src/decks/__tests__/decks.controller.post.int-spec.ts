@@ -9,7 +9,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   HttpStatus,
   INestApplication,
-  ValidationPipe,
 } from '@nestjs/common';
 import { createMock } from '@golevelup/ts-jest';
 import type { Request, Response, NextFunction } from 'express';
@@ -19,6 +18,7 @@ import { DecksService } from '../decks.service';
 import { HeroIdentifierExistsInCatalog } from '../validators/hero-identifier-exists.validator';
 import { ITrackedDeckDetailResponse } from '../dtos/tracked-deck-detail.response.dto';
 import { OwnsTrackedDeckGuard } from '../../auth/guards/owns-tracked-deck.guard';
+import { configureHttpApp } from '../../http/configure-http-app';
 
 const USER_ID = 'user-uuid-post-int';
 
@@ -38,6 +38,7 @@ function buildDetailResponse(
     trackedAt: '2026-05-17T10:00:00.000Z',
     updatedAt: '2026-05-17T10:00:00.000Z',
     totalCards: 0,
+    cards: [],
     latestSnapshot: null,
     shoppingLine: null,
     legality: { category: 'incomplete', reasons: ['Deck has 0 mainboard cards but Classic Constructed requires at least 60.'], details: [] },
@@ -75,14 +76,7 @@ async function buildApp(opts: {
     next();
   });
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
+  configureHttpApp(app);
 
   await app.listen(0, '127.0.0.1');
   return app;
@@ -110,7 +104,7 @@ describe('DecksController POST /decks (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .post('/decks')
+        .post('/api/decks')
         .send({ heroIdentifier: 'dorinthea-ironsong', format: 'Classic Constructed' })
         .expect(HttpStatus.CREATED);
 
@@ -126,7 +120,7 @@ describe('DecksController POST /decks (int-spec)', () => {
 
       // Act
       await request(app.getHttpServer())
-        .post('/decks')
+        .post('/api/decks')
         .send({ heroIdentifier: 'dorinthea-ironsong', format: 'Classic Constructed' })
         .expect(HttpStatus.CREATED);
 
@@ -160,7 +154,7 @@ describe('DecksController POST /decks (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .post('/decks')
+        .post('/api/decks')
         .send({ heroIdentifier: 'briar-warden-of-thorns', format: 'Living Legend' })
         .expect(HttpStatus.CREATED);
 
@@ -173,7 +167,7 @@ describe('DecksController POST /decks (int-spec)', () => {
     it('returns 400 when format is "Clash" (not in supported list)', async () => {
       // Act
       await request(app.getHttpServer())
-        .post('/decks')
+        .post('/api/decks')
         .send({ heroIdentifier: 'dorinthea-ironsong', format: 'Clash' })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -183,7 +177,7 @@ describe('DecksController POST /decks (int-spec)', () => {
     it('returns 400 when format is missing', async () => {
       // Act
       await request(app.getHttpServer())
-        .post('/decks')
+        .post('/api/decks')
         .send({ heroIdentifier: 'dorinthea-ironsong' })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -195,7 +189,7 @@ describe('DecksController POST /decks (int-spec)', () => {
     it('returns 400 when heroIdentifier is missing', async () => {
       // Act
       await request(app.getHttpServer())
-        .post('/decks')
+        .post('/api/decks')
         .send({ format: 'Classic Constructed' })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -206,7 +200,7 @@ describe('DecksController POST /decks (int-spec)', () => {
       // The HeroIdentifierExistsInCatalog validator checks the static catalog.
       // 'pummel' is a real card but not a hero.
       await request(app.getHttpServer())
-        .post('/decks')
+        .post('/api/decks')
         .send({ heroIdentifier: 'pummel', format: 'Classic Constructed' })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -215,7 +209,7 @@ describe('DecksController POST /decks (int-spec)', () => {
 
     it('returns 400 when heroIdentifier is a non-existent string', async () => {
       await request(app.getHttpServer())
-        .post('/decks')
+        .post('/api/decks')
         .send({ heroIdentifier: 'this-does-not-exist-in-catalog', format: 'Classic Constructed' })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -225,7 +219,7 @@ describe('DecksController POST /decks (int-spec)', () => {
     it('returns 400 when heroIdentifier exceeds 64 characters', async () => {
       const longId = 'a'.repeat(65);
       await request(app.getHttpServer())
-        .post('/decks')
+        .post('/api/decks')
         .send({ heroIdentifier: longId, format: 'Classic Constructed' })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -254,6 +248,7 @@ describe('DecksController POST /decks (int-spec)', () => {
             latestSnapshot: null,
             heroImageUrl: null,
             representativeCards: [],
+            deckSize: 0,
             cardCounts: null,
             clearUpgradeCount: 0,
           },
@@ -265,13 +260,13 @@ describe('DecksController POST /decks (int-spec)', () => {
 
       // Act: create the deck
       await request(app.getHttpServer())
-        .post('/decks')
+        .post('/api/decks')
         .send({ heroIdentifier: 'dorinthea-ironsong', format: 'Classic Constructed' })
         .expect(HttpStatus.CREATED);
 
       // Act: list decks
       const listRes = await request(app.getHttpServer())
-        .get('/decks')
+        .get('/api/decks')
         .expect(HttpStatus.OK);
 
       // Assert: scratch deck present with fabraryUlid=null

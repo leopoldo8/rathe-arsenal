@@ -1,4 +1,4 @@
-/* /decks/new: two-path landing (EDIT-01, handoff 4) */
+/* /decks/new: three ways to start a deck */
 
 .page {
   display: flex;
@@ -50,27 +50,10 @@
   line-height: var(--ra-leading-tight);
 }
 
-.subtitle {
-  margin: 0;
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-body);
-  color: var(--ra-fg-secondary);
-  line-height: var(--ra-leading-normal);
-}
-
-.cards {
+.options {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-}
-
-@media (min-width: 768px) {
-  .cards {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-    align-items: start;
-  }
+  gap: var(--ra-space-4);
 }
 
 @media (max-width: 639px) {

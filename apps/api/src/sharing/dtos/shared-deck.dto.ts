@@ -1,4 +1,5 @@
 import { TDeckShareIntent } from '../../database/entities/share-link.entity';
+import type { ISharedMissingCard, IStoreSummary } from './shared-missing.dto';
 
 export interface ISharedCardImage {
   small: string;
@@ -13,7 +14,21 @@ export interface ISharedCard {
   type: string;
   slot: string;
   quantity: number;
+  /** Copies carried in the inventory beside `quantity` (door 3); 0 when none. */
+  inventoryQuantity: number;
   imageUrl: ISharedCardImage | null;
+  /** Deck intent: the card this row stands in for, when one of the sharer's active picks covers it; absent or null otherwise. */
+  replaces?: { cardIdentifier: string; name: string; pitch: 1 | 2 | 3 | null } | null;
+}
+
+export interface ISharedFormatVerdict {
+  category: 'legal' | 'incomplete' | 'illegal' | 'unchecked';
+  details: { code: string; params: Record<string, unknown> }[];
+}
+
+export interface ISharedDeckLegality extends ISharedFormatVerdict {
+  heroYoung: boolean | null;
+  otherFormats: (ISharedFormatVerdict & { format: string })[];
 }
 
 export interface ISharedDeckResponse {
@@ -35,14 +50,22 @@ export interface ISharedDeckResponse {
   /** Every card for the 'deck' intent; empty for 'missing'. */
   cards: ISharedCard[];
   /** The owner's missing cards for the 'missing' intent; empty for 'deck', enforced here and not only in the UI. */
-  missing: ISharedCard[];
+  missing: ISharedMissingCard[];
   missingCount: number;
+  /** What the store can supply of the missing cards, from stored answers; null outside the 'missing' intent. */
+  storeSummary: IStoreSummary | null;
+  /** True when the signed-in visitor must answer the spare-rule question before any spare count is shown. */
+  spareNeedsRule: boolean;
+  /** The deck's verdict in its own format and in the others, for the 'deck' intent; null for 'missing'. */
+  legality: ISharedDeckLegality | null;
 }
 
 export interface ISharedDeckCoverage {
   ownedCopies: number;
   totalCopies: number;
   percent: number;
+  /** True when the visitor owns no copy at all, so the page says how to put cards in instead of showing 0%. */
+  collectionEmpty: boolean;
 }
 
 export interface ISharedDeckMatches {

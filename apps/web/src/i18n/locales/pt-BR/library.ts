@@ -36,7 +36,6 @@ export const library = {
   pitchFilterAria: 'Pitch {{pitch}}: {{action}}',
   pitchNoneLabel: 'Sem',
   // LibraryGrid — generic fallback group headings (real type/set names stay as data)
-  typeOtherGroupLabel: 'Outros',
   setUnknownGroupLabel: 'Desconhecido',
 
   // LibraryFilterRail — toggle sections
@@ -86,15 +85,15 @@ export const library = {
   pitchColorlessGroupLabel: 'Sem cor',
 
   // RecentlyAddedBanner
-  bannerCardSingular: 'carta',
-  bannerCardPlural: 'cartas',
+  bannerImported_zero: '{{count}} cartas importadas',
+  bannerImported_one: '{{count}} carta importada',
+  bannerImported_other: '{{count}} cartas importadas',
+  bannerAdded_zero: '{{count}} cartas adicionadas',
+  bannerAdded_one: '{{count}} carta adicionada',
+  bannerAdded_other: '{{count}} cartas adicionadas',
+  bannerViaFabrary: 'do Fabrary',
+  bannerViaCsv: 'por CSV',
   bannerAs: 'como',
-  bannerVerbFabrary_one: 'importada do Fabrary',
-  bannerVerbFabrary_other: 'importadas do Fabrary',
-  bannerVerbCsv_one: 'importada por CSV',
-  bannerVerbCsv_other: 'importadas por CSV',
-  bannerVerbAdded_one: 'adicionada',
-  bannerVerbAdded_other: 'adicionadas',
   bannerDismissAriaLabel: 'Fechar notificação',
 
   // Library route — error state
@@ -103,7 +102,8 @@ export const library = {
 
   // Library route — header
   collectionEyebrow: 'Sua coleção',
-  libraryTitle: 'Biblioteca',
+  libraryTitle: 'Coleção',
+  importsLink: 'Importações',
 
   // Library route — actions
   openFiltersAriaLabel: 'Abrir filtros',

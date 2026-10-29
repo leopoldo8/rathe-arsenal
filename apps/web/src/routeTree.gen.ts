@@ -10,10 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as CheckYourEmailRouteImport } from './routes/check-your-email'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthRouteImport } from './routes/_auth'
@@ -21,9 +21,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as DTokenRouteImport } from './routes/d.$token'
 import { Route as AuthSwapsRouteImport } from './routes/_auth/swaps'
+import { Route as AuthSpareRouteImport } from './routes/_auth/spare'
 import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
 import { Route as AuthReviewsRouteImport } from './routes/_auth/reviews'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
+import { Route as AuthLibraryPendingRouteImport } from './routes/_auth/library-pending'
 import { Route as AuthLibraryCsvSourcesRouteImport } from './routes/_auth/library-csv-sources'
 import { Route as AuthLibraryRouteImport } from './routes/_auth/library'
 import { Route as AuthHomeRouteImport } from './routes/_auth/home'
@@ -33,17 +35,28 @@ import { Route as AuthChatIndexRouteImport } from './routes/_auth/chat.index'
 import { Route as AuthAddCardsIndexRouteImport } from './routes/_auth/add-cards.index'
 import { Route as AuthListsListIdRouteImport } from './routes/_auth/lists.$listId'
 import { Route as AuthDecksNewRouteImport } from './routes/_auth/decks.new'
+import { Route as AuthDecksDeletedRouteImport } from './routes/_auth/decks.deleted'
 import { Route as AuthDecksDeckIdRouteImport } from './routes/_auth/decks.$deckId'
 import { Route as AuthChatConversationIdRouteImport } from './routes/_auth/chat.$conversationId'
+import { Route as AuthAddCardsSheetRouteImport } from './routes/_auth/add-cards_.sheet'
 import { Route as AuthAddCardsScanRouteImport } from './routes/_auth/add-cards_.scan'
+import { Route as AuthAddCardsListRouteImport } from './routes/_auth/add-cards_.list'
 import { Route as AuthAddCardsManualRouteImport } from './routes/_auth/add-cards.manual'
-import { Route as AuthAddCardsFabraryRouteImport } from './routes/_auth/add-cards.fabrary'
 import { Route as AuthAddCardsCsvRouteImport } from './routes/_auth/add-cards.csv'
+import { Route as AuthAddCardsProductIndexRouteImport } from './routes/_auth/add-cards_.product.index'
+import { Route as AuthLibraryCsvSourcesSourceIdVersionsRouteImport } from './routes/_auth/library-csv-sources_.$sourceId.versions'
+import { Route as AuthDecksDeckIdMissingRouteImport } from './routes/_auth/decks.$deckId_.missing'
 import { Route as AuthDecksDeckIdEditRouteImport } from './routes/_auth/decks.$deckId_.edit'
+import { Route as AuthAddCardsProductProductKeyRouteImport } from './routes/_auth/add-cards_.product.$productKey'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignUpRoute = SignUpRouteImport.update({
@@ -56,14 +69,9 @@ const SignInRoute = SignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
+const EntrarRoute = EntrarRouteImport.update({
+  id: '/entrar',
+  path: '/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckYourEmailRoute = CheckYourEmailRouteImport.update({
@@ -100,6 +108,11 @@ const AuthSwapsRoute = AuthSwapsRouteImport.update({
   path: '/swaps',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthSpareRoute = AuthSpareRouteImport.update({
+  id: '/spare',
+  path: '/spare',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthSettingsRoute = AuthSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -113,6 +126,11 @@ const AuthReviewsRoute = AuthReviewsRouteImport.update({
 const AuthOnboardingRoute = AuthOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLibraryPendingRoute = AuthLibraryPendingRouteImport.update({
+  id: '/library-pending',
+  path: '/library-pending',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthLibraryCsvSourcesRoute = AuthLibraryCsvSourcesRouteImport.update({
@@ -160,6 +178,11 @@ const AuthDecksNewRoute = AuthDecksNewRouteImport.update({
   path: '/decks/new',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthDecksDeletedRoute = AuthDecksDeletedRouteImport.update({
+  id: '/decks/deleted',
+  path: '/decks/deleted',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthDecksDeckIdRoute = AuthDecksDeckIdRouteImport.update({
   id: '/decks/$deckId',
   path: '/decks/$deckId',
@@ -170,9 +193,19 @@ const AuthChatConversationIdRoute = AuthChatConversationIdRouteImport.update({
   path: '/chat/$conversationId',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthAddCardsSheetRoute = AuthAddCardsSheetRouteImport.update({
+  id: '/add-cards_/sheet',
+  path: '/add-cards/sheet',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthAddCardsScanRoute = AuthAddCardsScanRouteImport.update({
   id: '/add-cards_/scan',
   path: '/add-cards/scan',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthAddCardsListRoute = AuthAddCardsListRouteImport.update({
+  id: '/add-cards_/list',
+  path: '/add-cards/list',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthAddCardsManualRoute = AuthAddCardsManualRouteImport.update({
@@ -180,84 +213,118 @@ const AuthAddCardsManualRoute = AuthAddCardsManualRouteImport.update({
   path: '/manual',
   getParentRoute: () => AuthAddCardsRoute,
 } as any)
-const AuthAddCardsFabraryRoute = AuthAddCardsFabraryRouteImport.update({
-  id: '/fabrary',
-  path: '/fabrary',
-  getParentRoute: () => AuthAddCardsRoute,
-} as any)
 const AuthAddCardsCsvRoute = AuthAddCardsCsvRouteImport.update({
   id: '/csv',
   path: '/csv',
   getParentRoute: () => AuthAddCardsRoute,
+} as any)
+const AuthAddCardsProductIndexRoute =
+  AuthAddCardsProductIndexRouteImport.update({
+    id: '/add-cards_/product/',
+    path: '/add-cards/product/',
+    getParentRoute: () => AuthRoute,
+  } as any)
+const AuthLibraryCsvSourcesSourceIdVersionsRoute =
+  AuthLibraryCsvSourcesSourceIdVersionsRouteImport.update({
+    id: '/library-csv-sources_/$sourceId/versions',
+    path: '/library-csv-sources/$sourceId/versions',
+    getParentRoute: () => AuthRoute,
+  } as any)
+const AuthDecksDeckIdMissingRoute = AuthDecksDeckIdMissingRouteImport.update({
+  id: '/decks/$deckId_/missing',
+  path: '/decks/$deckId/missing',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthDecksDeckIdEditRoute = AuthDecksDeckIdEditRouteImport.update({
   id: '/decks/$deckId_/edit',
   path: '/decks/$deckId/edit',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthAddCardsProductProductKeyRoute =
+  AuthAddCardsProductProductKeyRouteImport.update({
+    id: '/add-cards_/product/$productKey',
+    path: '/add-cards/product/$productKey',
+    getParentRoute: () => AuthRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/check-your-email': typeof CheckYourEmailRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/reset-password': typeof ResetPasswordRoute
+  '/entrar': typeof EntrarRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/termos': typeof TermosRoute
   '/verify-email': typeof VerifyEmailRoute
   '/add-cards': typeof AuthAddCardsRouteWithChildren
   '/home': typeof AuthHomeRoute
   '/library': typeof AuthLibraryRoute
   '/library-csv-sources': typeof AuthLibraryCsvSourcesRoute
+  '/library-pending': typeof AuthLibraryPendingRoute
   '/onboarding': typeof AuthOnboardingRoute
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
+  '/spare': typeof AuthSpareRoute
   '/swaps': typeof AuthSwapsRoute
   '/d/$token': typeof DTokenRoute
   '/l/$token': typeof LTokenRoute
   '/add-cards/csv': typeof AuthAddCardsCsvRoute
-  '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
+  '/add-cards/list': typeof AuthAddCardsListRoute
   '/add-cards/scan': typeof AuthAddCardsScanRoute
+  '/add-cards/sheet': typeof AuthAddCardsSheetRoute
   '/chat/$conversationId': typeof AuthChatConversationIdRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
+  '/decks/deleted': typeof AuthDecksDeletedRoute
   '/decks/new': typeof AuthDecksNewRoute
   '/lists/$listId': typeof AuthListsListIdRoute
   '/add-cards/': typeof AuthAddCardsIndexRoute
   '/chat/': typeof AuthChatIndexRoute
   '/lists/': typeof AuthListsIndexRoute
+  '/add-cards/product/$productKey': typeof AuthAddCardsProductProductKeyRoute
   '/decks/$deckId/edit': typeof AuthDecksDeckIdEditRoute
+  '/decks/$deckId/missing': typeof AuthDecksDeckIdMissingRoute
+  '/library-csv-sources/$sourceId/versions': typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
+  '/add-cards/product/': typeof AuthAddCardsProductIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/check-your-email': typeof CheckYourEmailRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/reset-password': typeof ResetPasswordRoute
+  '/entrar': typeof EntrarRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/termos': typeof TermosRoute
   '/verify-email': typeof VerifyEmailRoute
   '/home': typeof AuthHomeRoute
   '/library': typeof AuthLibraryRoute
   '/library-csv-sources': typeof AuthLibraryCsvSourcesRoute
+  '/library-pending': typeof AuthLibraryPendingRoute
   '/onboarding': typeof AuthOnboardingRoute
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
+  '/spare': typeof AuthSpareRoute
   '/swaps': typeof AuthSwapsRoute
   '/d/$token': typeof DTokenRoute
   '/l/$token': typeof LTokenRoute
   '/add-cards/csv': typeof AuthAddCardsCsvRoute
-  '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
+  '/add-cards/list': typeof AuthAddCardsListRoute
   '/add-cards/scan': typeof AuthAddCardsScanRoute
+  '/add-cards/sheet': typeof AuthAddCardsSheetRoute
   '/chat/$conversationId': typeof AuthChatConversationIdRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
+  '/decks/deleted': typeof AuthDecksDeletedRoute
   '/decks/new': typeof AuthDecksNewRoute
   '/lists/$listId': typeof AuthListsListIdRoute
   '/add-cards': typeof AuthAddCardsIndexRoute
   '/chat': typeof AuthChatIndexRoute
   '/lists': typeof AuthListsIndexRoute
+  '/add-cards/product/$productKey': typeof AuthAddCardsProductProductKeyRoute
   '/decks/$deckId/edit': typeof AuthDecksDeckIdEditRoute
+  '/decks/$deckId/missing': typeof AuthDecksDeckIdMissingRoute
+  '/library-csv-sources/$sourceId/versions': typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
+  '/add-cards/product': typeof AuthAddCardsProductIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -265,33 +332,41 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/about': typeof AboutRoute
   '/check-your-email': typeof CheckYourEmailRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/reset-password': typeof ResetPasswordRoute
+  '/entrar': typeof EntrarRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/termos': typeof TermosRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_auth/add-cards': typeof AuthAddCardsRouteWithChildren
   '/_auth/home': typeof AuthHomeRoute
   '/_auth/library': typeof AuthLibraryRoute
   '/_auth/library-csv-sources': typeof AuthLibraryCsvSourcesRoute
+  '/_auth/library-pending': typeof AuthLibraryPendingRoute
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/_auth/reviews': typeof AuthReviewsRoute
   '/_auth/settings': typeof AuthSettingsRoute
+  '/_auth/spare': typeof AuthSpareRoute
   '/_auth/swaps': typeof AuthSwapsRoute
   '/d/$token': typeof DTokenRoute
   '/l/$token': typeof LTokenRoute
   '/_auth/add-cards/csv': typeof AuthAddCardsCsvRoute
-  '/_auth/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/_auth/add-cards/manual': typeof AuthAddCardsManualRoute
+  '/_auth/add-cards_/list': typeof AuthAddCardsListRoute
   '/_auth/add-cards_/scan': typeof AuthAddCardsScanRoute
+  '/_auth/add-cards_/sheet': typeof AuthAddCardsSheetRoute
   '/_auth/chat/$conversationId': typeof AuthChatConversationIdRoute
   '/_auth/decks/$deckId': typeof AuthDecksDeckIdRoute
+  '/_auth/decks/deleted': typeof AuthDecksDeletedRoute
   '/_auth/decks/new': typeof AuthDecksNewRoute
   '/_auth/lists/$listId': typeof AuthListsListIdRoute
   '/_auth/add-cards/': typeof AuthAddCardsIndexRoute
   '/_auth/chat/': typeof AuthChatIndexRoute
   '/_auth/lists/': typeof AuthListsIndexRoute
+  '/_auth/add-cards_/product/$productKey': typeof AuthAddCardsProductProductKeyRoute
   '/_auth/decks/$deckId_/edit': typeof AuthDecksDeckIdEditRoute
+  '/_auth/decks/$deckId_/missing': typeof AuthDecksDeckIdMissingRoute
+  '/_auth/library-csv-sources_/$sourceId/versions': typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
+  '/_auth/add-cards_/product/': typeof AuthAddCardsProductIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -299,97 +374,121 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/check-your-email'
-    | '/forgot-password'
-    | '/reset-password'
+    | '/entrar'
     | '/sign-in'
     | '/sign-up'
+    | '/termos'
     | '/verify-email'
     | '/add-cards'
     | '/home'
     | '/library'
     | '/library-csv-sources'
+    | '/library-pending'
     | '/onboarding'
     | '/reviews'
     | '/settings'
+    | '/spare'
     | '/swaps'
     | '/d/$token'
     | '/l/$token'
     | '/add-cards/csv'
-    | '/add-cards/fabrary'
     | '/add-cards/manual'
+    | '/add-cards/list'
     | '/add-cards/scan'
+    | '/add-cards/sheet'
     | '/chat/$conversationId'
     | '/decks/$deckId'
+    | '/decks/deleted'
     | '/decks/new'
     | '/lists/$listId'
     | '/add-cards/'
     | '/chat/'
     | '/lists/'
+    | '/add-cards/product/$productKey'
     | '/decks/$deckId/edit'
+    | '/decks/$deckId/missing'
+    | '/library-csv-sources/$sourceId/versions'
+    | '/add-cards/product/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/check-your-email'
-    | '/forgot-password'
-    | '/reset-password'
+    | '/entrar'
     | '/sign-in'
     | '/sign-up'
+    | '/termos'
     | '/verify-email'
     | '/home'
     | '/library'
     | '/library-csv-sources'
+    | '/library-pending'
     | '/onboarding'
     | '/reviews'
     | '/settings'
+    | '/spare'
     | '/swaps'
     | '/d/$token'
     | '/l/$token'
     | '/add-cards/csv'
-    | '/add-cards/fabrary'
     | '/add-cards/manual'
+    | '/add-cards/list'
     | '/add-cards/scan'
+    | '/add-cards/sheet'
     | '/chat/$conversationId'
     | '/decks/$deckId'
+    | '/decks/deleted'
     | '/decks/new'
     | '/lists/$listId'
     | '/add-cards'
     | '/chat'
     | '/lists'
+    | '/add-cards/product/$productKey'
     | '/decks/$deckId/edit'
+    | '/decks/$deckId/missing'
+    | '/library-csv-sources/$sourceId/versions'
+    | '/add-cards/product'
   id:
     | '__root__'
     | '/'
     | '/_auth'
     | '/about'
     | '/check-your-email'
-    | '/forgot-password'
-    | '/reset-password'
+    | '/entrar'
     | '/sign-in'
     | '/sign-up'
+    | '/termos'
     | '/verify-email'
     | '/_auth/add-cards'
     | '/_auth/home'
     | '/_auth/library'
     | '/_auth/library-csv-sources'
+    | '/_auth/library-pending'
     | '/_auth/onboarding'
     | '/_auth/reviews'
     | '/_auth/settings'
+    | '/_auth/spare'
     | '/_auth/swaps'
     | '/d/$token'
     | '/l/$token'
     | '/_auth/add-cards/csv'
-    | '/_auth/add-cards/fabrary'
     | '/_auth/add-cards/manual'
+    | '/_auth/add-cards_/list'
     | '/_auth/add-cards_/scan'
+    | '/_auth/add-cards_/sheet'
     | '/_auth/chat/$conversationId'
     | '/_auth/decks/$deckId'
+    | '/_auth/decks/deleted'
     | '/_auth/decks/new'
     | '/_auth/lists/$listId'
     | '/_auth/add-cards/'
     | '/_auth/chat/'
     | '/_auth/lists/'
+    | '/_auth/add-cards_/product/$productKey'
     | '/_auth/decks/$deckId_/edit'
+    | '/_auth/decks/$deckId_/missing'
+    | '/_auth/library-csv-sources_/$sourceId/versions'
+    | '/_auth/add-cards_/product/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -397,10 +496,10 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   AboutRoute: typeof AboutRoute
   CheckYourEmailRoute: typeof CheckYourEmailRoute
-  ForgotPasswordRoute: typeof ForgotPasswordRoute
-  ResetPasswordRoute: typeof ResetPasswordRoute
+  EntrarRoute: typeof EntrarRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  TermosRoute: typeof TermosRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   DTokenRoute: typeof DTokenRoute
   LTokenRoute: typeof LTokenRoute
@@ -413,6 +512,13 @@ declare module '@tanstack/react-router' {
       path: '/verify-email'
       fullPath: '/verify-email'
       preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-up': {
@@ -429,18 +535,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
+    '/entrar': {
+      id: '/entrar'
+      path: '/entrar'
+      fullPath: '/entrar'
+      preLoaderRoute: typeof EntrarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/check-your-email': {
@@ -492,6 +591,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSwapsRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/spare': {
+      id: '/_auth/spare'
+      path: '/spare'
+      fullPath: '/spare'
+      preLoaderRoute: typeof AuthSpareRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/settings': {
       id: '/_auth/settings'
       path: '/settings'
@@ -511,6 +617,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthOnboardingRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/library-pending': {
+      id: '/_auth/library-pending'
+      path: '/library-pending'
+      fullPath: '/library-pending'
+      preLoaderRoute: typeof AuthLibraryPendingRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/library-csv-sources': {
@@ -576,6 +689,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDecksNewRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/decks/deleted': {
+      id: '/_auth/decks/deleted'
+      path: '/decks/deleted'
+      fullPath: '/decks/deleted'
+      preLoaderRoute: typeof AuthDecksDeletedRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/decks/$deckId': {
       id: '/_auth/decks/$deckId'
       path: '/decks/$deckId'
@@ -590,11 +710,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthChatConversationIdRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/add-cards_/sheet': {
+      id: '/_auth/add-cards_/sheet'
+      path: '/add-cards/sheet'
+      fullPath: '/add-cards/sheet'
+      preLoaderRoute: typeof AuthAddCardsSheetRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/add-cards_/scan': {
       id: '/_auth/add-cards_/scan'
       path: '/add-cards/scan'
       fullPath: '/add-cards/scan'
       preLoaderRoute: typeof AuthAddCardsScanRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/add-cards_/list': {
+      id: '/_auth/add-cards_/list'
+      path: '/add-cards/list'
+      fullPath: '/add-cards/list'
+      preLoaderRoute: typeof AuthAddCardsListRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/add-cards/manual': {
@@ -604,19 +738,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAddCardsManualRouteImport
       parentRoute: typeof AuthAddCardsRoute
     }
-    '/_auth/add-cards/fabrary': {
-      id: '/_auth/add-cards/fabrary'
-      path: '/fabrary'
-      fullPath: '/add-cards/fabrary'
-      preLoaderRoute: typeof AuthAddCardsFabraryRouteImport
-      parentRoute: typeof AuthAddCardsRoute
-    }
     '/_auth/add-cards/csv': {
       id: '/_auth/add-cards/csv'
       path: '/csv'
       fullPath: '/add-cards/csv'
       preLoaderRoute: typeof AuthAddCardsCsvRouteImport
       parentRoute: typeof AuthAddCardsRoute
+    }
+    '/_auth/add-cards_/product/': {
+      id: '/_auth/add-cards_/product/'
+      path: '/add-cards/product'
+      fullPath: '/add-cards/product/'
+      preLoaderRoute: typeof AuthAddCardsProductIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/library-csv-sources_/$sourceId/versions': {
+      id: '/_auth/library-csv-sources_/$sourceId/versions'
+      path: '/library-csv-sources/$sourceId/versions'
+      fullPath: '/library-csv-sources/$sourceId/versions'
+      preLoaderRoute: typeof AuthLibraryCsvSourcesSourceIdVersionsRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/decks/$deckId_/missing': {
+      id: '/_auth/decks/$deckId_/missing'
+      path: '/decks/$deckId/missing'
+      fullPath: '/decks/$deckId/missing'
+      preLoaderRoute: typeof AuthDecksDeckIdMissingRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_auth/decks/$deckId_/edit': {
       id: '/_auth/decks/$deckId_/edit'
@@ -625,19 +773,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDecksDeckIdEditRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/add-cards_/product/$productKey': {
+      id: '/_auth/add-cards_/product/$productKey'
+      path: '/add-cards/product/$productKey'
+      fullPath: '/add-cards/product/$productKey'
+      preLoaderRoute: typeof AuthAddCardsProductProductKeyRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
 interface AuthAddCardsRouteChildren {
   AuthAddCardsCsvRoute: typeof AuthAddCardsCsvRoute
-  AuthAddCardsFabraryRoute: typeof AuthAddCardsFabraryRoute
   AuthAddCardsManualRoute: typeof AuthAddCardsManualRoute
   AuthAddCardsIndexRoute: typeof AuthAddCardsIndexRoute
 }
 
 const AuthAddCardsRouteChildren: AuthAddCardsRouteChildren = {
   AuthAddCardsCsvRoute: AuthAddCardsCsvRoute,
-  AuthAddCardsFabraryRoute: AuthAddCardsFabraryRoute,
   AuthAddCardsManualRoute: AuthAddCardsManualRoute,
   AuthAddCardsIndexRoute: AuthAddCardsIndexRoute,
 }
@@ -651,18 +804,27 @@ interface AuthRouteChildren {
   AuthHomeRoute: typeof AuthHomeRoute
   AuthLibraryRoute: typeof AuthLibraryRoute
   AuthLibraryCsvSourcesRoute: typeof AuthLibraryCsvSourcesRoute
+  AuthLibraryPendingRoute: typeof AuthLibraryPendingRoute
   AuthOnboardingRoute: typeof AuthOnboardingRoute
   AuthReviewsRoute: typeof AuthReviewsRoute
   AuthSettingsRoute: typeof AuthSettingsRoute
+  AuthSpareRoute: typeof AuthSpareRoute
   AuthSwapsRoute: typeof AuthSwapsRoute
+  AuthAddCardsListRoute: typeof AuthAddCardsListRoute
   AuthAddCardsScanRoute: typeof AuthAddCardsScanRoute
+  AuthAddCardsSheetRoute: typeof AuthAddCardsSheetRoute
   AuthChatConversationIdRoute: typeof AuthChatConversationIdRoute
   AuthDecksDeckIdRoute: typeof AuthDecksDeckIdRoute
+  AuthDecksDeletedRoute: typeof AuthDecksDeletedRoute
   AuthDecksNewRoute: typeof AuthDecksNewRoute
   AuthListsListIdRoute: typeof AuthListsListIdRoute
   AuthChatIndexRoute: typeof AuthChatIndexRoute
   AuthListsIndexRoute: typeof AuthListsIndexRoute
+  AuthAddCardsProductProductKeyRoute: typeof AuthAddCardsProductProductKeyRoute
   AuthDecksDeckIdEditRoute: typeof AuthDecksDeckIdEditRoute
+  AuthDecksDeckIdMissingRoute: typeof AuthDecksDeckIdMissingRoute
+  AuthLibraryCsvSourcesSourceIdVersionsRoute: typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
+  AuthAddCardsProductIndexRoute: typeof AuthAddCardsProductIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
@@ -670,18 +832,28 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthHomeRoute: AuthHomeRoute,
   AuthLibraryRoute: AuthLibraryRoute,
   AuthLibraryCsvSourcesRoute: AuthLibraryCsvSourcesRoute,
+  AuthLibraryPendingRoute: AuthLibraryPendingRoute,
   AuthOnboardingRoute: AuthOnboardingRoute,
   AuthReviewsRoute: AuthReviewsRoute,
   AuthSettingsRoute: AuthSettingsRoute,
+  AuthSpareRoute: AuthSpareRoute,
   AuthSwapsRoute: AuthSwapsRoute,
+  AuthAddCardsListRoute: AuthAddCardsListRoute,
   AuthAddCardsScanRoute: AuthAddCardsScanRoute,
+  AuthAddCardsSheetRoute: AuthAddCardsSheetRoute,
   AuthChatConversationIdRoute: AuthChatConversationIdRoute,
   AuthDecksDeckIdRoute: AuthDecksDeckIdRoute,
+  AuthDecksDeletedRoute: AuthDecksDeletedRoute,
   AuthDecksNewRoute: AuthDecksNewRoute,
   AuthListsListIdRoute: AuthListsListIdRoute,
   AuthChatIndexRoute: AuthChatIndexRoute,
   AuthListsIndexRoute: AuthListsIndexRoute,
+  AuthAddCardsProductProductKeyRoute: AuthAddCardsProductProductKeyRoute,
   AuthDecksDeckIdEditRoute: AuthDecksDeckIdEditRoute,
+  AuthDecksDeckIdMissingRoute: AuthDecksDeckIdMissingRoute,
+  AuthLibraryCsvSourcesSourceIdVersionsRoute:
+    AuthLibraryCsvSourcesSourceIdVersionsRoute,
+  AuthAddCardsProductIndexRoute: AuthAddCardsProductIndexRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
@@ -691,10 +863,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   AboutRoute: AboutRoute,
   CheckYourEmailRoute: CheckYourEmailRoute,
-  ForgotPasswordRoute: ForgotPasswordRoute,
-  ResetPasswordRoute: ResetPasswordRoute,
+  EntrarRoute: EntrarRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  TermosRoute: TermosRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   DTokenRoute: DTokenRoute,
   LTokenRoute: LTokenRoute,

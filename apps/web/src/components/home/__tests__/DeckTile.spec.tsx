@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DeckTile } from '../DeckTile';
 import type { ITrackedDeckListItem } from '../../../api/decks';
@@ -38,6 +39,12 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   };
 });
 
+const apiFetch = vi.hoisted(() => vi.fn());
+vi.mock('../../../lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/api-client')>();
+  return { ...actual, useApiClient: () => apiFetch };
+});
+
 function makeDeck(overrides: Partial<ITrackedDeckListItem> = {}): ITrackedDeckListItem {
   return {
     id: 7,
@@ -59,16 +66,25 @@ function makeDeck(overrides: Partial<ITrackedDeckListItem> = {}): ITrackedDeckLi
   };
 }
 
-function renderTile(deck: ITrackedDeckListItem, onUntrack = vi.fn(), isUntracking = false) {
+function renderTile(deck: ITrackedDeckListItem) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
-    <ToastProvider>
-      <DeckTile deck={deck} onUntrack={onUntrack} isUntracking={isUntracking} />
-    </ToastProvider>,
+    <QueryClientProvider client={client}>
+      <ToastProvider>
+        <DeckTile deck={deck} />
+      </ToastProvider>
+    </QueryClientProvider>,
   );
 }
 
+const flush = (): Promise<void> => act(async () => { await vi.advanceTimersByTimeAsync(0); });
+
 describe('DeckTile', () => {
-  beforeEach(() => vi.useFakeTimers());
+  beforeEach(() => {
+    vi.useFakeTimers();
+    apiFetch.mockReset();
+    apiFetch.mockResolvedValue({});
+  });
   afterEach(() => vi.useRealTimers());
 
   describe('meta line (HOME-06)', () => {
@@ -114,7 +130,7 @@ describe('DeckTile', () => {
       renderTile(makeDeck({ legality: { category: 'illegal', reasons: ['x'] } }));
       const marker = screen.getByTestId('legality-illegal');
       expect(marker).toHaveClass(styles.legalityIllegal as string);
-      expect(marker).toHaveTextContent('Fora do formato');
+      expect(marker).toHaveTextContent('Não vale no Classic Constructed');
     });
 
     it('shows nothing for a legal deck', () => {
@@ -163,35 +179,55 @@ describe('DeckTile', () => {
       expect(pin).toHaveClass(styles.untrackPin as string);
     });
 
-    it('is disabled while the untrack mutation runs', () => {
-      renderTile(makeDeck(), vi.fn(), true);
-      expect(screen.getByRole('button', { name: /excluir rhinar aggro/i })).toBeDisabled();
-    });
-
     it('hides the tile immediately on click', () => {
       renderTile(makeDeck());
       fireEvent.click(screen.getByRole('button', { name: /excluir rhinar aggro/i }));
       expect(screen.queryByTestId('deckbox')).not.toBeInTheDocument();
     });
 
-    it('calls onUntrack only after the undo window', () => {
-      const onUntrack = vi.fn();
-      renderTile(makeDeck(), onUntrack);
-      fireEvent.click(screen.getByRole('button', { name: /excluir rhinar aggro/i }));
-      act(() => vi.advanceTimersByTime(4799));
-      expect(onUntrack).not.toHaveBeenCalled();
-      act(() => vi.advanceTimersByTime(1));
-      expect(onUntrack).toHaveBeenCalledWith(7);
+    it('delete is recorded at once and the toast waits for the next action', async () => {
+      renderTile(makeDeck({ id: 7, name: 'Rhinar Blitz v2' }));
+
+      fireEvent.click(screen.getByRole('button', { name: /excluir rhinar blitz v2/i }));
+
+      expect(apiFetch).toHaveBeenCalledTimes(1);
+      expect(apiFetch).toHaveBeenCalledWith('/decks/7', { method: 'DELETE' });
+      expect(screen.queryByTestId('deckbox')).not.toBeInTheDocument();
+      await flush();
+      expect(screen.getByText('Rhinar Blitz v2 foi para Excluídos recentemente')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Desfazer' })).toBeInTheDocument();
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+      expect(screen.getByText('Rhinar Blitz v2 foi para Excluídos recentemente')).toBeInTheDocument();
+
+      fireEvent.pointerDown(document.body);
+      expect(screen.queryByText('Rhinar Blitz v2 foi para Excluídos recentemente')).not.toBeInTheDocument();
+      expect(apiFetch).toHaveBeenCalledTimes(1);
     });
 
-    it('undo restores the tile and never calls onUntrack', () => {
-      const onUntrack = vi.fn();
-      renderTile(makeDeck(), onUntrack);
-      fireEvent.click(screen.getByRole('button', { name: /excluir rhinar aggro/i }));
-      fireEvent.click(screen.getByRole('button', { name: /desfazer/i }));
-      act(() => vi.advanceTimersByTime(10000));
-      expect(onUntrack).not.toHaveBeenCalled();
+    it('undo restores the deck through the restore route', async () => {
+      renderTile(makeDeck({ id: 7, name: 'Rhinar Blitz v2' }));
+      fireEvent.click(screen.getByRole('button', { name: /excluir rhinar blitz v2/i }));
+      await flush();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Desfazer' }));
+      await flush();
+
+      expect(apiFetch).toHaveBeenCalledTimes(2);
+      expect(apiFetch).toHaveBeenLastCalledWith('/decks/7/restore', { method: 'POST' });
+    });
+
+    it('a delete the server refuses brings the tile back and says so', async () => {
+      apiFetch.mockRejectedValue(new Error('boom'));
+      renderTile(makeDeck({ id: 7, name: 'Rhinar Blitz v2' }));
+
+      fireEvent.click(screen.getByRole('button', { name: /excluir rhinar blitz v2/i }));
+      await flush();
+      await act(async () => { await vi.advanceTimersByTimeAsync(600); });
+
       expect(screen.getByTestId('deckbox')).toBeInTheDocument();
+      expect(screen.getByText('Não foi possível excluir o deck. Tente de novo.')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Desfazer' })).not.toBeInTheDocument();
     });
   });
 
@@ -231,5 +267,70 @@ describe('DeckTile', () => {
       expect(screen.queryByTestId('deck-upgrades')).toBeNull();
       expect(screen.queryByText(/upgrade/i)).toBeNull();
     });
+  });
+});
+
+describe('DeckTile stage and verdict', () => {
+  const blitzProblem = (): ITrackedDeckListItem['legality'] => ({
+    category: 'illegal',
+    reasons: ['x'],
+    details: Array.from({ length: 8 }, (_, index) => ({
+      code: 'too_many_copies',
+      params: { card: `c${index}`, cardIdentifier: `c${index}`, pitch: 1, count: 2, limit: 1, format: 'Blitz', legendary: false, restricted: false },
+    })),
+  });
+  const shortOf40 = {
+    code: 'mainboard_not_exact',
+    params: { card: null, count: 31, limit: 40, format: 'Blitz' },
+  };
+
+  it('no rule problem shows the stage chip with the size when short', () => {
+    const { unmount } = renderTile(makeDeck({ status: 'ready', deckSize: 60, legality: { category: 'legal', reasons: [] } }));
+    expect(screen.getByTestId('deck-stage-chip')).toHaveTextContent('Pronto');
+    expect(screen.getByTestId('deck-size')).toHaveTextContent('60 cartas');
+    unmount();
+
+    renderTile(
+      makeDeck({
+        status: 'building',
+        format: 'Blitz',
+        deckSize: 31,
+        legality: { category: 'incomplete', reasons: ['x'], details: [shortOf40] },
+      }),
+    );
+    expect(screen.getByTestId('deck-stage-chip')).toHaveTextContent('Montando · 31 de 40 cartas');
+    expect(screen.queryByTestId('deck-verdict')).not.toBeInTheDocument();
+  });
+
+  it('a rule problem shows the verdict, the cause and the stage in grey', () => {
+    const { unmount } = renderTile(makeDeck({ status: 'active', format: 'Blitz', deckSize: 40, legality: blitzProblem() }));
+    const tile = screen.getByRole('article');
+    const text = tile.textContent ?? '';
+    const order = ['Não vale no Blitz', '8 cartas com 2 cópias', 'Etapa: Jogando · 40 cartas'];
+    let cursor = -1;
+    for (const part of order) {
+      const at = text.indexOf(part, cursor + 1);
+      expect(at, part).toBeGreaterThan(cursor);
+      cursor = at;
+    }
+    expect(screen.queryByTestId('deck-stage-chip')).not.toBeInTheDocument();
+    unmount();
+
+    renderTile(
+      makeDeck({
+        status: 'building',
+        format: 'Blitz',
+        deckSize: 31,
+        legality: { ...blitzProblem(), details: [...(blitzProblem().details ?? []), shortOf40] },
+      }),
+    );
+    expect(screen.getByTestId('deck-stage-line')).toHaveTextContent('Etapa: Montando · 31 de 40 cartas');
+  });
+
+  it('an unchecked format reads Formato não conferido', () => {
+    renderTile(makeDeck({ status: 'ready', deckSize: 60, legality: { category: 'unchecked', reasons: [] } }));
+
+    expect(screen.getByTestId('deck-verdict')).toHaveTextContent('Formato não conferido');
+    expect(screen.getByTestId('deck-stage-line')).toHaveTextContent('Etapa: Pronto · 60 cartas');
   });
 });

@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { setChatAccess } from '../chat-grant';
-import { TokenGeneratorService } from '../../auth/services/token-generator.service';
 import { PASSWORD } from '../../replacements/__tests__/replacements-e2e.fixture';
 import { bootChatFixture, IChatFixture } from './chat-e2e.fixture';
+import { sessionCookieHeader } from '../../auth/__tests__/session-test-helpers';
 
 const SOME_UUID = '3f1d2c3b-4a5b-4c6d-8e7f-001122334455';
 
@@ -31,25 +31,24 @@ describe('chat access (E2E)', () => {
     await fixture.close();
   });
 
-  function call(method: string, path: string, jwt: string): request.Test {
+  function call(method: string, path: string, sessionToken: string): request.Test {
     const server = request(fixture.app.getHttpServer());
     const test = method === 'get' ? server.get(path) : method === 'delete' ? server.delete(path) : server.post(path);
-    return test.set('Authorization', `Bearer ${jwt}`);
+    return test.set('Cookie', sessionCookieHeader(sessionToken));
   }
 
   it('auth me reports the flag and a grant takes effect at once', async () => {
     const user = await fixture.chatUser({ access: false });
     const [row] = (await fixture.dataSource.query(`SELECT "chatAccess" FROM "user" WHERE email = $1`, [user.email])) as Array<{ chatAccess: boolean }>;
     expect(row!.chatAccess).toBe(false);
-    expect((await fixture.get('/api/auth/me', user.jwt).expect(200)).body.chatAccess).toBe(false);
+    expect((await fixture.get('/api/auth/me', user.sessionToken).expect(200)).body.chatAccess).toBe(false);
 
     await fixture.grant(user.email);
 
-    expect((await fixture.get('/api/auth/me', user.jwt).expect(200)).body.chatAccess).toBe(true);
+    expect((await fixture.get('/api/auth/me', user.sessionToken).expect(200)).body.chatAccess).toBe(true);
   });
 
-  it('sign-in, verify-email and reset-password return chatAccess over HTTP', async () => {
-    const tokens = new TokenGeneratorService();
+  it('sign-in returns chatAccess over HTTP', async () => {
     const user = await fixture.chatUser({ access: false });
     const server = fixture.app.getHttpServer();
     const signIn = async (password: string) =>
@@ -59,22 +58,7 @@ describe('chat access (E2E)', () => {
     await fixture.grant(user.email);
     const granted = await signIn(PASSWORD);
 
-    const verifyToken = tokens.generateRawToken();
-    await fixture.dataSource.query(
-      `UPDATE "user" SET "verificationTokenHash" = $2, "verificationTokenExpiresAt" = now() + interval '1 hour' WHERE email = $1`,
-      [user.email, tokens.hashToken(verifyToken)],
-    );
-    const verified = (await request(server).post('/api/auth/verify-email').send({ token: verifyToken }).expect(200)).body.user.chatAccess as boolean;
-
-    const resetToken = tokens.generateRawToken();
-    await fixture.dataSource.query(
-      `UPDATE "user" SET "passwordResetTokenHash" = $2, "passwordResetTokenExpiresAt" = now() + interval '1 hour' WHERE email = $1`,
-      [user.email, tokens.hashToken(resetToken)],
-    );
-    const reset = (await request(server).post('/api/auth/reset-password').send({ token: resetToken, newPassword: 'another-password-123' }).expect(200)).body.user
-      .chatAccess as boolean;
-
-    expect([refused, granted, verified, reset]).toEqual([false, true, true, true]);
+    expect([refused, granted]).toEqual([false, true]);
   });
 
   it('every chat route refuses a user without access', async () => {
@@ -83,7 +67,7 @@ describe('chat access (E2E)', () => {
     const outsider = await fixture.chatUser({ access: false });
 
     const responses = await Promise.all(
-      routes(conversationId).map(([method, path]) => call(method, path, outsider.jwt).send({ text: 'hello' })),
+      routes(conversationId).map(([method, path]) => call(method, path, outsider.sessionToken).send({ text: 'hello' })),
     );
 
     expect(responses.map((response) => [response.status, response.body.code])).toEqual(
@@ -113,11 +97,11 @@ describe('chat access (E2E)', () => {
 
   it('a revoke takes effect on the next request', async () => {
     const user = await fixture.chatUser();
-    await fixture.get('/api/chat/conversations', user.jwt).expect(200);
+    await fixture.get('/api/chat/conversations', user.sessionToken).expect(200);
 
     await fixture.grant(user.email, false);
 
-    const refused = await fixture.get('/api/chat/conversations', user.jwt).expect(403);
+    const refused = await fixture.get('/api/chat/conversations', user.sessionToken).expect(403);
     expect(refused.body.code).toBe('CHAT_ACCESS_DENIED');
   });
 

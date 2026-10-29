@@ -45,7 +45,7 @@ export function ThemeToggle(): React.ReactElement {
     const next = value as TTheme;
     applyLocally(next);
 
-    patchUserSettings(next, auth.token).catch((err) => {
+    patchUserSettings(next).catch((err) => {
       // Server write failed. Per plan: localStorage stays updated (flash prevention
       // is the hard requirement); user gets explicit divergence copy so silent
       // cross-device desync doesn't accumulate.

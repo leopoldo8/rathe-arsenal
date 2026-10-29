@@ -18,14 +18,25 @@ const mockPatchMutation = {
   mutate: mockMutate,
   isPending: false,
 };
+const mockUploadAsync = vi.fn();
 
 vi.mock('../../../api/csv-sources', () => ({
   usePatchCsvSourceMutation: () => mockPatchMutation,
+  useUploadCsvMutation: () => ({ mutateAsync: mockUploadAsync, isPending: false }),
   useDeleteCsvSourceMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   usePreviewDeleteCsvSource: () => vi.fn().mockResolvedValue({ cardsRemoved: 0, affectedDecks: [] }),
 }));
 
 const mockShow = vi.fn();
+// The row links to the import's versions page; the tests render it without a router.
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children, to, params, className }: { children: React.ReactNode; to: string; params?: Record<string, string>; className?: string }) => (
+    <a href={Object.entries(params ?? {}).reduce((path, [key, value]) => path.replace(`$${key}`, value), to)} className={className}>
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock('../../ui/Toast/useToast', () => ({
   useToast: () => ({ show: mockShow }),
 }));
@@ -72,6 +83,7 @@ function buildSource(overrides: Partial<ICsvSource> = {}): ICsvSource {
     sourceUrl: null,
     contentHash: 'abc',
     cardCount: 42,
+    copies: 42,
     active: true,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
@@ -83,10 +95,10 @@ function createQueryClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } });
 }
 
-function renderRow(source: ICsvSource) {
+function renderRow(source: ICsvSource, pendingCount = 0) {
   return render(
     <QueryClientProvider client={createQueryClient()}>
-      <CsvSourceRow source={source} />
+      <CsvSourceRow source={source} pendingCount={pendingCount} />
     </QueryClientProvider>,
   );
 }
@@ -233,62 +245,155 @@ describe('CsvSourceRow', () => {
       });
     });
 
-    it('renders card count and relative date', () => {
-      renderRow(buildSource({ cardCount: 42 }));
+    it('renders the copies and the lines still to resolve, with no date', () => {
+      renderRow(buildSource({ copies: 612 }), 11);
 
-      expect(screen.getByText(/42 cartas/)).toBeInTheDocument();
-      expect(screen.getByText('2 days ago')).toBeInTheDocument();
+      expect(screen.getByRole('listitem')).toHaveTextContent('My Collection · 612 cópias · 11 para resolver');
+      expect(screen.queryByText('2 days ago')).not.toBeInTheDocument();
+    });
+
+    it('leaves the pending count out when no line waits', () => {
+      renderRow(buildSource({ copies: 1 }), 0);
+
+      expect(screen.getByRole('listitem')).toHaveTextContent('My Collection · 1 cópia');
+      expect(screen.getByRole('listitem')).not.toHaveTextContent('para resolver');
     });
   });
 
-  describe('type badge (LIB-05)', () => {
+  describe('a new version of an import (r6-update-import-a-phone)', () => {
+    const OVERLAP = {
+      kind: 'partial-overlap' as const,
+      existingSourceId: 'src-001',
+      existingLabel: 'My Collection',
+      similarityScore: 0.5,
+      delta: {
+        added: Array.from({ length: 5 }, (_, index) => ({ cardIdentifier: `added-${index}`, quantity: 1 })),
+        removed: [],
+        increased: [{ cardIdentifier: 'up', previousQuantity: 1, newQuantity: 2 }],
+        decreased: [
+          { cardIdentifier: 'down-1', previousQuantity: 3, newQuantity: 2 },
+          { cardIdentifier: 'down-2', previousQuantity: 2, newQuantity: 1 },
+        ],
+      },
+      cardCount: 10,
+      skippedRows: [],
+    };
+    const csvFile = (): File => new File(['Name,Quantity\nSnatch (Red),2\n'], 'nova-versao.csv', { type: 'text/csv' });
+    const fileInput = (): HTMLInputElement => document.querySelector('input[type="file"]') as HTMLInputElement;
+
+    async function openMenu(): Promise<void> {
+      await userEvent.click(screen.getByRole('button', { name: /opções para.*my collection/i }));
+    }
+
+    beforeEach(() => {
+      mockUploadAsync.mockReset().mockResolvedValue(OVERLAP);
+      mockShow.mockReset();
+    });
+
+    it('the menu lists Renomear, Enviar nova versão, a separator and Excluir in that order', async () => {
+      renderRow(buildSource());
+
+      await openMenu();
+
+      const items = screen.getAllByRole('menuitem');
+      expect(items.map((item) => item.textContent)).toEqual(['Renomear', 'Enviar nova versão', 'Excluir']);
+      const separator = screen.getByRole('separator');
+      const follows = (first: Node, second: Node): boolean => Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(follows(items[1]!, separator)).toBe(true);
+      expect(follows(separator, items[2]!)).toBe(true);
+    });
+
+    it('Enviar nova versão sends the file for this import and each window action re-sends it', async () => {
+      const file = csvFile();
+      renderRow(buildSource());
+      expect(fileInput().getAttribute('accept')).toContain('.csv');
+
+      await openMenu();
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Enviar nova versão' }));
+      await userEvent.upload(fileInput(), file);
+
+      await waitFor(() => expect(mockUploadAsync).toHaveBeenCalledTimes(1));
+      expect(mockUploadAsync).toHaveBeenLastCalledWith({ file, targetSourceId: 'src-001' });
+      const windowTitle = await screen.findByText('Atualizar fonte existente?');
+      const counts = windowTitle.closest('[role="dialog"]') as HTMLElement;
+      expect(counts).toHaveTextContent('Cartas novas5');
+      expect(counts).toHaveTextContent('Aumentaram1');
+      expect(counts).toHaveTextContent('Diminuíram2');
+      expect(counts).toHaveTextContent('Removidas0');
+
+      mockUploadAsync.mockResolvedValueOnce({ kind: 'updated', sourceId: 'src-001', cardCount: 9, delta: OVERLAP.delta, skippedRows: [] });
+      await userEvent.click(screen.getByRole('button', { name: 'Atualizar a existente' }));
+      await waitFor(() => expect(mockUploadAsync).toHaveBeenCalledTimes(2));
+      expect(mockUploadAsync).toHaveBeenLastCalledWith({ file, action: 'update', targetSourceId: 'src-001' });
+      await waitFor(() => expect(screen.queryByText('Atualizar fonte existente?')).toBeNull());
+      expect(mockShow).toHaveBeenCalledTimes(1);
+      expect(mockShow).toHaveBeenCalledWith({ kind: 'success', message: 'CSV importado com sucesso.' });
+    });
+
+    it('Substituir pela nova re-sends with replace, and Cancelar sends nothing', async () => {
+      const file = csvFile();
+      renderRow(buildSource());
+
+      await openMenu();
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Enviar nova versão' }));
+      await userEvent.upload(fileInput(), file);
+      await screen.findByText('Atualizar fonte existente?');
+      mockUploadAsync.mockResolvedValueOnce({ kind: 'replaced', sourceId: 'src-002', cardCount: 9, skippedRows: [] });
+      await userEvent.click(screen.getByRole('button', { name: 'Substituir pela nova' }));
+      await waitFor(() => expect(mockUploadAsync).toHaveBeenCalledTimes(2));
+      expect(mockUploadAsync).toHaveBeenLastCalledWith({ file, action: 'replace', targetSourceId: 'src-001' });
+
+      await openMenu();
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Enviar nova versão' }));
+      await userEvent.upload(fileInput(), csvFile());
+      await screen.findByText('Atualizar fonte existente?');
+      await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+      await waitFor(() => expect(screen.queryByText('Atualizar fonte existente?')).toBeNull());
+      expect(mockUploadAsync).toHaveBeenCalledTimes(3);
+    });
+
+    it('a file over 2 MB shows the size error and sends nothing', async () => {
+      renderRow(buildSource());
+      const big = new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'grande.csv', { type: 'text/csv' });
+
+      await openMenu();
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Enviar nova versão' }));
+      await userEvent.upload(fileInput(), big);
+
+      expect(mockShow).toHaveBeenCalledWith({ kind: 'error', message: 'Arquivo grande demais: o máximo é 2 MB.' });
+      expect(mockUploadAsync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('what the row leaves out (r3-imports-phone)', () => {
     it.each([
-      ['csv', { kind: 'csv', sourceUrl: null }, 'CSV'],
-      ['fabrary', { kind: 'csv', sourceUrl: 'https://fabrary.net/decks/ABC' }, 'Fabrary'],
-    ] as const)('renders the %s badge', (_kind, overrides, text) => {
+      ['a csv', { kind: 'csv', sourceUrl: null }],
+      ['a fabrary deck', { kind: 'fabrary', sourceUrl: 'https://fabrary.net/decks/ABC' }],
+      ['the manual source', { kind: 'manual', label: 'Manual entries' }],
+    ] as const)('draws no type badge on %s', (_name, overrides) => {
       renderRow(buildSource(overrides as Partial<ICsvSource>));
-      expect(screen.getByText(text, { selector: 'span' })).toHaveClass(styles.badge!);
-    });
-
-    it('renders no badge for the manual source, whose name already says what it is', () => {
-      renderRow(buildSource({ kind: 'manual', label: 'Manual entries' }));
-      expect(screen.queryByText('Manual', { selector: 'span' })).not.toBeInTheDocument();
       expect(document.querySelector(`.${styles.badge!}`)).toBeNull();
-    });
-  });
-
-  describe('active state (LIB-06)', () => {
-    it('shows the Ativa label and no dim class when active', () => {
-      renderRow(buildSource({ active: true }));
-      expect(screen.getByText('Ativa')).toBeInTheDocument();
-      expect(screen.queryByText('Inativa')).not.toBeInTheDocument();
-      expect(screen.getByRole('listitem')).not.toHaveClass(styles['row--inactive']!);
+      expect(screen.queryByText('CSV', { selector: 'span' })).not.toBeInTheDocument();
     });
 
-    it('flips the label to Inativa and dims the row when inactive', () => {
-      renderRow(buildSource({ active: false }));
-      expect(screen.getByText('Inativa')).toBeInTheDocument();
+    it('says neither Ativa nor Inativa and dims only an inactive row', () => {
+      const active = renderRow(buildSource({ active: true }));
       expect(screen.queryByText('Ativa')).not.toBeInTheDocument();
-      expect(screen.getByRole('listitem')).toHaveClass(styles['row--inactive']!);
-    });
+      expect(screen.getByRole('listitem')).not.toHaveClass(styles['row--inactive']!);
+      active.unmount();
 
-    it('localizes the active labels under en-US', async () => {
-      await setTestLocale('en-US');
-      const { unmount } = renderRow(buildSource({ active: true }));
-      expect(screen.getByText('Active')).toBeInTheDocument();
-      unmount();
       renderRow(buildSource({ active: false }));
-      expect(screen.getByText('Inactive')).toBeInTheDocument();
+      expect(screen.queryByText('Inativa')).not.toBeInTheDocument();
+      expect(screen.getByRole('listitem')).toHaveClass(styles['row--inactive']!);
     });
   });
 
   describe('manual source row', () => {
-    const manual = { kind: 'manual', label: 'Manual entries', originalFilename: null, cardCount: 7 } as const;
+    const manual = { kind: 'manual', label: 'Manual entries', originalFilename: null, cardCount: 7, copies: 4 } as const;
 
-    it('shows the localized name and the card count', () => {
+    it('shows the localized name and the copies', () => {
       renderRow(buildSource(manual));
-      expect(screen.getByText('Entradas manuais')).toBeInTheDocument();
-      expect(screen.getByText(/7 cartas/)).toBeInTheDocument();
+      expect(screen.getByRole('listitem')).toHaveTextContent('Entradas à mão · 4 cópias');
     });
 
     it('renders no toggle, because the backend cannot deactivate it', () => {
@@ -302,20 +407,30 @@ describe('CsvSourceRow', () => {
       expect(screen.queryByRole('button', { name: /renomear/i })).not.toBeInTheDocument();
     });
 
-    it('explains why instead of showing an active label', () => {
+    it('says it is always included instead of showing a switch', () => {
       renderRow(buildSource(manual));
-      expect(
-        screen.getByText('Sempre incluída: cartas adicionadas à mão não podem ser desativadas.'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Sempre incluídas')).toBeInTheDocument();
       expect(screen.queryByText('Ativa')).not.toBeInTheDocument();
     });
 
-    it('localizes the explanation under en-US', async () => {
+    it('localizes the name and the note under en-US', async () => {
       await setTestLocale('en-US');
       renderRow(buildSource(manual));
-      expect(
-        screen.getByText("Always included — manually added cards can't be deactivated."),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('listitem')).toHaveTextContent('Hand entries · 4 copies');
+      expect(screen.getByText('Always included')).toBeInTheDocument();
+    });
+  });
+  describe('versions link', () => {
+    it('each import links to its versions', () => {
+      renderRow(buildSource({ id: 'source-lista' }));
+      renderRow(buildSource({ id: 'source-manual', kind: 'manual', label: null, originalFilename: null }));
+
+      const links = screen.getAllByRole('link', { name: 'Versões desta importação' });
+
+      expect(links.map((link) => link.getAttribute('href'))).toEqual([
+        '/library-csv-sources/source-lista/versions',
+        '/library-csv-sources/source-manual/versions',
+      ]);
     });
   });
 });

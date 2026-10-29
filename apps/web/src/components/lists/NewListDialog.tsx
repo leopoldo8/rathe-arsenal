@@ -100,7 +100,20 @@ function NewListForm({ initialKind, onClose }: { readonly initialKind: TListKind
 
         <fieldset className={styles.fieldset}>
           <legend className={dialog.label}>{t('lists.create.startLabel')}</legend>
-          <div className={styles.radioStack}>
+          <div className={styles.radioStack} data-testid="new-list-starts">
+            {kind === 'sell' && (
+              <button
+                type="button"
+                className={styles.startRow}
+                onClick={() => {
+                  onClose();
+                  void navigate({ to: '/spare' });
+                }}
+              >
+                <span className={styles.radioTitle}>{t('lists.create.fromSpare')}</span>
+                <span className={styles.chevron} aria-hidden="true">&#8250;</span>
+              </button>
+            )}
             <RadioCard
               name="start"
               value="deck"
@@ -109,7 +122,7 @@ function NewListForm({ initialKind, onClose }: { readonly initialKind: TListKind
               hint={t(kind === 'want' ? 'lists.create.fromDeckWantHint' : 'lists.create.fromDeckSellHint')}
               onSelect={() => setStart('deck')}
             />
-            <RadioCard name="start" value="scratch" checked={start === 'scratch'} title={t('lists.create.fromScratch')} hint={t('lists.create.fromScratchHint')} onSelect={() => setStart('scratch')} />
+            <RadioCard name="start" value="scratch" checked={start === 'scratch'} title={t('lists.create.fromScratch')} hint={t(kind === 'sell' ? 'lists.create.fromScratchSellHint' : 'lists.create.fromScratchHint')} onSelect={() => setStart('scratch')} />
           </div>
         </fieldset>
 

@@ -1,5 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { pitchWord } from '../../lib/card-name';
+import { GlossaryTerm } from '../glossary/GlossaryTerm';
+import type { TGlossaryOwnData } from '../glossary/glossary-model';
 import { VarFill } from './VarFill';
 import {
   buildCostBars,
@@ -14,24 +17,27 @@ interface IDeckAnalysisRowProps {
   readonly items: readonly IDeckListItem[];
 }
 
-const PITCH_LABEL_KEY = {
-  1: 'deckDetail.pitchRed',
-  2: 'deckDetail.pitchYellow',
-  3: 'deckDetail.pitchBlue',
-} as const;
-
 const PITCH_SEGMENT_CLASS = {
   1: styles.pitchRed ?? '',
   2: styles.pitchYellow ?? '',
   3: styles.pitchBlue ?? '',
 } as const;
 
+function ownPitchCounts(slices: readonly IPitchSlice[]): TGlossaryOwnData {
+  const countOf = (pitch: number): number => slices.find((slice) => slice.pitch === pitch)?.count ?? 0;
+  return { kind: 'pitch', red: countOf(1), yellow: countOf(2), blue: countOf(3) };
+}
+
 function PitchCard({ slices }: { readonly slices: readonly IPitchSlice[] }): React.ReactElement {
   const { t } = useTranslation();
   const visible = slices.filter((slice) => slice.count > 0);
   return (
     <article className={styles.card} data-testid="analysis-pitch">
-      <h2 className={styles.cardTitle}>{t('deckDetail.pitchTitle')}</h2>
+      <h2 className={styles.cardTitle}>
+        <GlossaryTerm term="pitch" own={ownPitchCounts(slices)}>
+          {t('deckDetail.pitchTitle')}
+        </GlossaryTerm>
+      </h2>
       {visible.length === 0 ? (
         <p className={styles.empty}>{t('deckDetail.pitchEmpty')}</p>
       ) : (
@@ -47,13 +53,17 @@ function PitchCard({ slices }: { readonly slices: readonly IPitchSlice[] }): Rea
             ))}
           </div>
           <ul className={styles.legend}>
-            {slices.map((slice) => (
+            {slices.map((slice, index) => (
               <li key={slice.pitch} className={styles.legendItem} data-testid={`pitch-legend-${slice.pitch}`}>
-                <span className={`${styles.dot} ${PITCH_SEGMENT_CLASS[slice.pitch]}`} aria-hidden="true" />
                 {t('deckDetail.pitchLegendItem', {
-                  label: t(PITCH_LABEL_KEY[slice.pitch]),
+                  label: pitchWord(slice.pitch, t) ?? '',
                   count: slice.count,
                 })}
+                {index < slices.length - 1 && (
+                  <span className={styles.legendSeparator} aria-hidden="true">
+                    {' · '}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -68,7 +78,9 @@ function CostCard({ bars }: { readonly bars: readonly ICostBar[] }): React.React
   const peak = Math.max(1, ...bars.map((bar) => bar.count));
   return (
     <article className={styles.card} data-testid="analysis-cost">
-      <h2 className={styles.cardTitle}>{t('deckDetail.costTitle')}</h2>
+      <h2 className={styles.cardTitle}>
+        <GlossaryTerm term="costCurve">{t('deckDetail.costTitle')}</GlossaryTerm>
+      </h2>
       <ul className={styles.curve}>
         {bars.map((bar) => {
           const label = bar.id === '4plus' ? t('deckDetail.costFourPlus') : bar.id;

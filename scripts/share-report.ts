@@ -1,6 +1,7 @@
 import { config } from 'dotenv';
 import { resolve } from 'path';
 import { Client } from 'pg';
+import { countVisitorEvents, formatVisitorEventLines } from '../apps/api/src/sharing/share-report-queries';
 
 /**
  * Sharing success numbers (see .design/sharing.md), read straight from
@@ -93,6 +94,11 @@ async function main(): Promise<void> {
       console.log(`  opens:                   ${row.openedEvents} (${row.openedBy} distinct signed-in visitors)`);
       console.log(`  sign-ups via a link:     ${row.signedUpEvents}`);
     }
+
+    const visitorEvents = await countVisitorEvents(client, { since, until });
+    console.log('\nVisitor actions (offer, quote_sent, buy) by intent and list kind');
+    if (visitorEvents.length === 0) console.log('  none');
+    for (const line of formatVisitorEventLines(visitorEvents)) console.log(line);
 
     console.log('\nUsers created with a referrer in the period');
     if (referred.rows.length === 0) console.log('  none');

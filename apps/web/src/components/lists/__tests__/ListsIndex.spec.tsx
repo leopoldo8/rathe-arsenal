@@ -96,7 +96,7 @@ describe('ListsIndex', () => {
 
     await user.click(await screen.findByRole('button', { name: /Nova lista/ }));
     const dialog = await screen.findByTestId('new-list-dialog');
-    await user.click(within(dialog).getByRole('radio', { name: /A partir de um deck/ }));
+    await user.click(within(dialog).getByRole('radio', { name: /De um deck/ }));
     expect(within(dialog).getByRole('option', { name: 'Oscilio Azul Tempo (faltam 15 de 60)' })).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Nome da lista')).toHaveValue('Faltam pro Oscilio Azul Tempo');
     await user.click(within(dialog).getByRole('button', { name: 'Criar lista' }));
@@ -115,7 +115,7 @@ describe('ListsIndex', () => {
     await user.click(await screen.findByRole('button', { name: 'Criar lista de venda' }));
     const dialog = await screen.findByTestId('new-list-dialog');
     expect(within(dialog).getByRole('radio', { name: /Vendo/ })).toBeChecked();
-    await user.click(within(dialog).getByRole('radio', { name: /A partir de um deck/ }));
+    await user.click(within(dialog).getByRole('radio', { name: /De um deck/ }));
     await user.selectOptions(within(dialog).getByLabelText('Deck'), '12');
     expect(within(dialog).getByLabelText('Nome da lista')).toHaveValue('Rhinar Rampage');
     await user.click(within(dialog).getByRole('button', { name: 'Criar lista' }));
@@ -126,6 +126,37 @@ describe('ListsIndex', () => {
       name: 'Rhinar Rampage',
       fromDeckId: 12,
     });
+  });
+
+  it('a new sell list starts from spare copies first', async () => {
+    serve([]);
+    const user = userEvent.setup();
+    renderWithProviders(<ListsIndex />);
+
+    await user.click(await screen.findByRole('button', { name: 'Criar lista de venda' }));
+    const dialog = await screen.findByTestId('new-list-dialog');
+    const starts = within(dialog).getByTestId('new-list-starts');
+
+    const titles = Array.from(starts.children).map((child) => child.querySelector('span[class*="radioTitle"]')?.textContent);
+    expect(titles).toEqual(['Vender o que sobra na sua coleção', 'De um deck', 'Do zero']);
+    expect(within(starts).getByText('Para cartas que não estão no app')).toBeInTheDocument();
+
+    await user.click(within(starts).getByRole('button', { name: /Vender o que sobra na sua coleção/ }));
+
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/spare' });
+    expect(api.calls.some((call) => call.key === 'POST /lists')).toBe(false);
+  });
+
+  it('a new want list has no spare start', async () => {
+    serve([]);
+    const user = userEvent.setup();
+    renderWithProviders(<ListsIndex />);
+
+    await user.click(await screen.findByRole('button', { name: 'Criar lista de procuro' }));
+    const starts = within(await screen.findByTestId('new-list-dialog')).getByTestId('new-list-starts');
+
+    expect(within(starts).queryByRole('button', { name: /Vender o que sobra/ })).not.toBeInTheDocument();
+    expect(within(starts).getAllByRole('radio')).toHaveLength(2);
   });
 
   it('creates an empty list from nothing and needs a name first', async () => {

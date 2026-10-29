@@ -14,7 +14,6 @@ import {
   HttpStatus,
   INestApplication,
   NotFoundException,
-  ValidationPipe,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock } from '@golevelup/ts-jest';
@@ -24,6 +23,7 @@ import { DecksController } from '../decks.controller';
 import { DecksService } from '../decks.service';
 import { OwnsTrackedDeckGuard } from '../../auth/guards/owns-tracked-deck.guard';
 import { ITrackedDeckDetailResponse } from '../dtos/tracked-deck-detail.response.dto';
+import { configureHttpApp } from '../../http/configure-http-app';
 
 const USER_ID = 'user-uuid-patch-int';
 const DECK_ID = 42;
@@ -44,6 +44,7 @@ function buildDetailResponse(
     trackedAt: '2026-05-17T10:00:00.000Z',
     updatedAt: '2026-05-17T10:00:00.000Z',
     totalCards: 0,
+    cards: [],
     latestSnapshot: null,
     shoppingLine: null,
     legality: { category: 'incomplete', reasons: [], details: [] },
@@ -79,14 +80,7 @@ async function buildApp(opts: {
     next();
   });
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
+  configureHttpApp(app);
 
   await app.listen(0, '127.0.0.1');
   return app;
@@ -118,7 +112,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ status: 'active' })
         .expect(HttpStatus.OK);
 
@@ -140,7 +134,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ name: 'New name' })
         .expect(HttpStatus.OK);
 
@@ -157,7 +151,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ addTagIds: [1, 2] })
         .expect(HttpStatus.OK);
 
@@ -174,7 +168,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ removeTagIds: [3] })
         .expect(HttpStatus.OK);
 
@@ -195,7 +189,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ status: 'ready', name: 'X', addTagIds: [1], removeTagIds: [2] })
         .expect(HttpStatus.OK);
 
@@ -228,7 +222,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ status: 'idea' })
         .expect(HttpStatus.OK);
 
@@ -247,7 +241,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
     it('returns 400 when status is "archived" (not in allowed values)', async () => {
       // Act
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ status: 'archived' })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -256,7 +250,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
     it('returns 400 when status is an empty string', async () => {
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ status: '' })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -271,7 +265,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
         );
 
         await request(app.getHttpServer())
-          .patch(`/decks/${DECK_ID}`)
+          .patch(`/api/decks/${DECK_ID}`)
           .send({ status })
           .expect(HttpStatus.OK);
       },
@@ -289,7 +283,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
       // Act
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ name: longName })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -305,7 +299,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
       // Act
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ name: maxLengthName })
         .expect(HttpStatus.OK);
     });
@@ -317,7 +311,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
       decksService.updateMeta.mockResolvedValue(buildDetailResponse({ notes }));
 
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ notes })
         .expect(HttpStatus.OK);
 
@@ -330,7 +324,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
     it('returns 400 when notes exceed 2000 characters', async () => {
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ notes: 'n'.repeat(2001) })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -341,7 +335,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
       decksService.updateMeta.mockResolvedValue(buildDetailResponse({ notes: null }));
 
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ notes: null })
         .expect(HttpStatus.OK);
 
@@ -354,7 +348,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
     it('returns 400 when notes is not a string', async () => {
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ notes: 42 })
         .expect(HttpStatus.BAD_REQUEST);
     });
@@ -367,7 +361,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
         decksService.updateMeta.mockResolvedValue(buildDetailResponse({ format }));
 
         await request(app.getHttpServer())
-          .patch(`/decks/${DECK_ID}`)
+          .patch(`/api/decks/${DECK_ID}`)
           .send({ format })
           .expect(HttpStatus.OK);
 
@@ -381,7 +375,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
     it('returns 400 for an unsupported format', async () => {
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ format: 'Commoner' })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -396,7 +390,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
   describe('DTO validation — addTagIds / removeTagIds', () => {
     it('returns 400 when addTagIds contains a non-integer value', async () => {
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ addTagIds: ['not-a-number'] })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -407,7 +401,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
       const tooMany = Array.from({ length: 51 }, (_, i) => i + 1);
 
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ addTagIds: tooMany })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -416,7 +410,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
     it('returns 400 when addTagIds is not an array', async () => {
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ addTagIds: 1 })
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -428,7 +422,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
       decksService.updateMeta.mockResolvedValue(buildDetailResponse());
 
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ addTagIds: exactly50 })
         .expect(HttpStatus.OK);
     });
@@ -446,7 +440,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({})
         .expect(HttpStatus.OK);
 
@@ -480,7 +474,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
       // Act
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ status: 'active' })
         .expect(HttpStatus.NOT_FOUND);
 
@@ -501,7 +495,7 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
       // Act
       await request(app.getHttpServer())
-        .patch(`/decks/${DECK_ID}`)
+        .patch(`/api/decks/${DECK_ID}`)
         .send({ addTagIds: [99] })
         .expect(HttpStatus.NOT_FOUND);
     });
@@ -522,10 +516,10 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
 
       const [res1, res2] = await Promise.all([
         request(app.getHttpServer())
-          .patch(`/decks/${DECK_ID}`)
+          .patch(`/api/decks/${DECK_ID}`)
           .send({ status: 'building' }),
         request(app.getHttpServer())
-          .patch(`/decks/${DECK_ID}`)
+          .patch(`/api/decks/${DECK_ID}`)
           .send({ status: 'ready' }),
       ]);
 

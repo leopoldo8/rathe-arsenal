@@ -193,6 +193,67 @@
   color: var(--ra-ready-low);
 }
 
+/* ---- Admin: Firecrawl credits ---- */
+.credits {
+  margin-top: var(--ra-space-4);
+  padding-top: var(--ra-space-3);
+  border-top: 1px solid var(--ra-border);
+}
+
+.creditsHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--ra-space-3);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+}
+
+.creditsNumbers {
+  font-family: var(--ra-font-mono);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-primary);
+  white-space: nowrap;
+}
+
+.meter {
+  height: var(--ra-space-2);
+  margin-top: var(--ra-space-2);
+  /* r5-credits-b-phone draws 4 px ends; no radius token is that small. */
+  border-radius: 4px;
+  background: var(--ra-bg-raised);
+  overflow: hidden;
+}
+
+.meterSvg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.meterFill {
+  fill: var(--ra-accent);
+}
+
+.meterStopped .meterFill {
+  fill: var(--ra-ready-mid);
+}
+
+.stopLine {
+  margin: var(--ra-space-3) 0 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  line-height: var(--ra-leading-normal);
+  color: var(--ra-ready-mid-accent);
+}
+
+.stopLineNote {
+  display: block;
+  margin-top: var(--ra-space-1);
+  color: var(--ra-fg-tertiary);
+}
+
 @media (max-width: 639px) {
   .pageHeading {
     font-size: var(--ra-text-h2);

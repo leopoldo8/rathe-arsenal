@@ -5,8 +5,7 @@
  * LSS Tournament Rules and Policy as of @flesh-and-blood/types@^3.6.243.
  */
 
-import { FORMAT_RULES } from '../../src/legality/rules';
-import { Rarity } from '../../src/catalog/types';
+import { FORMAT_RULES, RULE_CHANGES } from '../../src/legality/rules';
 
 describe('FORMAT_RULES', () => {
   describe('Classic Constructed', () => {
@@ -32,10 +31,6 @@ describe('FORMAT_RULES', () => {
       expect(rules.requiresYoungHero).toBe(false);
     });
 
-    it('has no rarity restrictions (null)', () => {
-      expect(rules.allowedRarities).toBeNull();
-    });
-
     it('has a non-empty source URL', () => {
       expect(rules.source).toMatch(/fabtcg\.com/);
     });
@@ -56,16 +51,12 @@ describe('FORMAT_RULES', () => {
       expect(rules.maxCardPool).toBe(52);
     });
 
-    it('allows 2 copies max', () => {
-      expect(rules.maxCopies).toBe(2);
+    it('allows 1 copy max', () => {
+      expect(rules.maxCopies).toBe(1);
     });
 
     it('requires a young hero', () => {
       expect(rules.requiresYoungHero).toBe(true);
-    });
-
-    it('has no rarity restrictions (null)', () => {
-      expect(rules.allowedRarities).toBeNull();
     });
 
     it('has a non-empty source URL', () => {
@@ -96,10 +87,6 @@ describe('FORMAT_RULES', () => {
       expect(rules.requiresYoungHero).toBe(false);
     });
 
-    it('has no rarity restrictions (null)', () => {
-      expect(rules.allowedRarities).toBeNull();
-    });
-
     it('has a non-empty source URL', () => {
       expect(rules.source).toMatch(/fabtcg\.com/);
     });
@@ -116,8 +103,8 @@ describe('FORMAT_RULES', () => {
       expect(rules.exactMainboard).toBe(40);
     });
 
-    it('has correct max card pool (52)', () => {
-      expect(rules.maxCardPool).toBe(52);
+    it('has correct max card pool (55)', () => {
+      expect(rules.maxCardPool).toBe(55);
     });
 
     it('allows 2 copies max', () => {
@@ -126,19 +113,6 @@ describe('FORMAT_RULES', () => {
 
     it('requires a young hero', () => {
       expect(rules.requiresYoungHero).toBe(true);
-    });
-
-    it('only allows Common, Rare, Basic, and Token rarities', () => {
-      expect(rules.allowedRarities).not.toBeNull();
-      expect(rules.allowedRarities!.has(Rarity.Common)).toBe(true);
-      expect(rules.allowedRarities!.has(Rarity.Rare)).toBe(true);
-      expect(rules.allowedRarities!.has(Rarity.Basic)).toBe(true);
-      expect(rules.allowedRarities!.has(Rarity.Token)).toBe(true);
-      // Majestic, Legendary, Fabled are NOT allowed
-      expect(rules.allowedRarities!.has(Rarity.Majestic)).toBe(false);
-      expect(rules.allowedRarities!.has(Rarity.Legendary)).toBe(false);
-      expect(rules.allowedRarities!.has(Rarity.Fabled)).toBe(false);
-      expect(rules.allowedRarities!.has(Rarity.SuperRare)).toBe(false);
     });
 
     it('has a non-empty source URL', () => {
@@ -155,6 +129,22 @@ describe('FORMAT_RULES', () => {
     expect(keys).toContain('Silver Age');
   });
 
+  it('copy and pool limits per format', () => {
+    const limits = Object.fromEntries(
+      Object.entries(FORMAT_RULES).map(([format, rules]) => [format, [rules.maxCopies, rules.maxCardPool]]),
+    );
+
+    expect(limits).toEqual({
+      'Classic Constructed': [3, 80],
+      'Living Legend': [3, 80],
+      Blitz: [1, 52],
+      'Silver Age': [2, 55],
+    });
+    for (const rules of Object.values(FORMAT_RULES)) {
+      expect(rules).not.toHaveProperty('allowedRarities');
+    }
+  });
+
   it('FORMAT_RULES object itself is frozen (immutable)', () => {
     expect(Object.isFrozen(FORMAT_RULES)).toBe(true);
   });
@@ -163,5 +153,20 @@ describe('FORMAT_RULES', () => {
     for (const rules of Object.values(FORMAT_RULES)) {
       expect(Object.isFrozen(rules)).toBe(true);
     }
+  });
+});
+
+describe('RULE_CHANGES', () => {
+  it('RULE_CHANGES shape and first entry', () => {
+    expect(Array.isArray(RULE_CHANGES)).toBe(true);
+    for (const entry of RULE_CHANGES) {
+      expect(Object.keys(entry).sort()).toEqual(['effectiveDate', 'format', 'sourceUrl', 'summaryKey']);
+      expect(entry.effectiveDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+
+    const [first] = RULE_CHANGES;
+    expect(first?.format).toBe('Blitz');
+    expect(first?.effectiveDate).toBe('2026-03-09');
+    expect(first?.sourceUrl).toBe('https://fabtcg.com/rules-and-policy-center/change-log-tournament-rules-and-policy/');
   });
 });

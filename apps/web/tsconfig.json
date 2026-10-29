@@ -12,7 +12,8 @@
     "isolatedModules": true,
     "types": ["node", "vite/client", "vite-plugin-svgr/client", "vitest/globals", "@testing-library/jest-dom"],
     "experimentalDecorators": false,
-    "emitDecoratorMetadata": false
+    "emitDecoratorMetadata": false,
+    "paths": { "@rathe-arsenal/engine/legality": ["../../packages/engine/src/legality/index.ts"] }
   },
-  "include": ["src", "vite.config.ts", "vitest.config.ts"]
+  "include": ["src", "vite.config.ts", "vitest.config.ts", "engine-legality-alias.ts"]
 }

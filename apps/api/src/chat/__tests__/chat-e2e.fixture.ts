@@ -4,11 +4,12 @@ import { TGeminiFetch } from '../../recommendations/gemini-client';
 import { setChatAccess } from '../chat-grant';
 import { ChatRunnerService, drainChatOnce } from '../chat-runner.service';
 import { ChatTurnQueueService } from '../chat-turn-queue.service';
+import { sessionCookieHeader } from '../../auth/__tests__/session-test-helpers';
 
 export { KATSU, EMISSARY, FLEX, COAX, TALISHAR, mainboard } from '../../replacements/__tests__/replacements-e2e.fixture';
 
 export interface IChatUser {
-  readonly jwt: string;
+  readonly sessionToken: string;
   readonly email: string;
   readonly userId: string;
   readonly deckId: number;
@@ -22,7 +23,7 @@ export interface IScriptedFetch {
 export interface IChatFixture extends IFixture {
   chatUser(options?: { readonly access?: boolean }): Promise<IChatUser>;
   grant(email: string, granted?: boolean): Promise<void>;
-  del(path: string, jwt: string): request.Test;
+  del(path: string, sessionToken: string): request.Test;
   conversation(user: IChatUser, body?: Record<string, unknown>): Promise<string>;
   send(user: IChatUser, conversationId: string, text: string, locale?: string): Promise<{ userMessageId: string; assistantMessageId: string }>;
   seedUsage(userId: string, costUsd: number, createdAt?: Date): Promise<void>;
@@ -81,14 +82,14 @@ export async function bootChatFixture(options: { readonly throttle?: boolean } =
     async grant(email, granted = true) {
       await setChatAccess(base.dataSource, email, granted);
     },
-    del: (path, jwt) => request(server).delete(path).set('Authorization', `Bearer ${jwt}`),
+    del: (path, sessionToken) => request(server).delete(path).set('Cookie', sessionCookieHeader(sessionToken)),
     async conversation(user, body = {}) {
-      const created = await base.post('/api/chat/conversations', user.jwt).send(body).expect(201);
+      const created = await base.post('/api/chat/conversations', user.sessionToken).send(body).expect(201);
       return created.body.id as string;
     },
     async send(user, conversationId, text, locale = 'en-US') {
       const sent = await base
-        .post(`/api/chat/conversations/${conversationId}/messages`, user.jwt)
+        .post(`/api/chat/conversations/${conversationId}/messages`, user.sessionToken)
         .set('Accept-Language', locale)
         .send({ text })
         .expect(202);

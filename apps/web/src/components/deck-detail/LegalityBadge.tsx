@@ -1,5 +1,5 @@
 /**
- * LegalityBadge — three-state legality chip for the deck-detail sidebar.
+ * LegalityBadge — legality chip for the deck-detail sidebar.
  *
  * Variants:
  *  - `legal`      : Inert green `<span>` with aria-label. No popover, not focusable.
@@ -7,6 +7,7 @@
  *                   Radix Popover listing the engine's reasons[].
  *  - `illegal`    : Focusable `<button>` (red-muted border) that opens the same
  *                   Radix Popover with the full reasons list.
+ *  - `unchecked`  : Inert grey `<span>`: the format has no rules to check against.
  *
  * Key technical decision: the `legal` branch MUST NOT be a button or carry
  * aria-haspopup because a popover that only says "legal" is empty content
@@ -77,6 +78,18 @@ export function LegalityBadge({ legality, format }: ILegalityBadgeProps): React.
     );
   }
 
+  if (legality.category === 'unchecked') {
+    return (
+      <span
+        className={`${styles.badge} ${styles['badge--unchecked']}`}
+        data-testid="legality-badge"
+        data-legality="unchecked"
+      >
+        <span className={styles.badgeText}>{t('decks.formatUnchecked')}</span>
+      </span>
+    );
+  }
+
   // ---- Incomplete or Illegal: interactive button with popover ----
   const isIncomplete = legality.category === 'incomplete';
 
@@ -119,7 +132,7 @@ function buildIncompleteLabel(legality: IDeckLegality, t: TTranslate): string {
     (detail) => detail.code === 'mainboard_too_small' || detail.code === 'mainboard_not_exact',
   );
   if (!sizeDetail) return t('decks.incomplete');
-  return t('decks.incompleteWithCount', { count: sizeDetail.params.total, total: sizeDetail.params.required });
+  return t('decks.incompleteWithCount', { count: sizeDetail.params.count, total: sizeDetail.params.limit });
 }
 
 

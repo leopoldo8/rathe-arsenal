@@ -64,6 +64,8 @@ export interface IShoppingLineVariant {
 export interface IShoppingLineLine {
   readonly cardIdentifier: string;
   readonly cardName: string;
+  /** The card's pitch (1 to 3), null for a card with no pitch. */
+  readonly pitch: number | null;
   readonly quantityNeeded: number;
   readonly quantityAvailable: number;
   /** Null when price is on-request ("sob consulta"). */

@@ -59,6 +59,7 @@ function buildDetailResponse(
     trackedAt: '2026-05-17T10:00:00.000Z',
     updatedAt: '2026-05-17T10:00:00.000Z',
     totalCards: 0,
+    cards: [],
     latestSnapshot: null,
     shoppingLine: null,
     legality: { category: 'incomplete', reasons: [], details: [] },
@@ -179,9 +180,11 @@ describe('DecksService.updateMeta', () => {
   function setupTransaction(opts: {
     manager: ReturnType<typeof buildQueryBuilderMock>;
     getDetailResult?: ITrackedDeckDetailResponse;
+    storedDeck?: { id: number; format: string; hero: string; name: string };
   }): jest.SpyInstance {
     const manager = createMock<EntityManager>();
     (manager.createQueryBuilder as jest.Mock).mockReturnValue(opts.manager);
+    if (opts.storedDeck) (manager.findOne as jest.Mock).mockResolvedValue(opts.storedDeck);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (dataSource.transaction as jest.MockedFunction<any>).mockImplementation(
@@ -247,6 +250,7 @@ describe('DecksService.updateMeta', () => {
       setupTransaction({
         manager: qb,
         getDetailResult: buildDetailResponse({ format: 'Blitz' }),
+        storedDeck: { id: DECK_ID, format: 'Classic Constructed', hero: 'Dorinthea Ironsong', name: 'Meu deck' },
       });
 
       const result = await service.updateMeta(DECK_ID, USER_ID, { format: 'Blitz' });
@@ -257,6 +261,57 @@ describe('DecksService.updateMeta', () => {
       expect(qb.set).toHaveBeenCalledWith({ format: 'Blitz' });
       expect(qb.delete).not.toHaveBeenCalled();
       expect(qb.insert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('the automatic name', () => {
+    it('the automatic name follows the format', async () => {
+      const qb = buildQueryBuilderMock();
+      setupTransaction({
+        manager: qb,
+        storedDeck: { id: DECK_ID, format: 'Blitz', hero: 'Rhinar', name: 'Rhinar - Blitz' },
+      });
+
+      await service.updateMeta(DECK_ID, USER_ID, { format: 'Silver Age' });
+
+      expect(qb.set).toHaveBeenCalledWith({ format: 'Silver Age', name: 'Rhinar - Silver Age' });
+    });
+
+    it('keeps a name the player chose', async () => {
+      const qb = buildQueryBuilderMock();
+      setupTransaction({
+        manager: qb,
+        storedDeck: { id: DECK_ID, format: 'Blitz', hero: 'Rhinar', name: 'Meu Rhinar' },
+      });
+
+      await service.updateMeta(DECK_ID, USER_ID, { format: 'Silver Age' });
+
+      expect(qb.set).toHaveBeenCalledWith({ format: 'Silver Age' });
+    });
+
+    it('lets a name sent with the format win over the automatic one', async () => {
+      const qb = buildQueryBuilderMock();
+      setupTransaction({
+        manager: qb,
+        storedDeck: { id: DECK_ID, format: 'Blitz', hero: 'Rhinar', name: 'Rhinar - Blitz' },
+      });
+
+      await service.updateMeta(DECK_ID, USER_ID, { format: 'Silver Age', name: 'Rhinar do Caio' });
+
+      expect(qb.set).toHaveBeenCalledWith({ name: 'Rhinar do Caio' });
+      expect(qb.set).toHaveBeenCalledWith({ format: 'Silver Age' });
+    });
+
+    it('does not rename when the format stays the same', async () => {
+      const qb = buildQueryBuilderMock();
+      setupTransaction({
+        manager: qb,
+        storedDeck: { id: DECK_ID, format: 'Blitz', hero: 'Rhinar', name: 'Rhinar - Blitz' },
+      });
+
+      await service.updateMeta(DECK_ID, USER_ID, { format: 'Blitz' });
+
+      expect(qb.set).toHaveBeenCalledWith({ format: 'Blitz' });
     });
   });
 

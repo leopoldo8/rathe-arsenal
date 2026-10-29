@@ -48,6 +48,7 @@ const PATH_B_DATA: IShoppingLinePopulated = {
     {
       cardIdentifier: 'pummel',
       cardName: 'Pummel',
+      pitch: null,
       quantityNeeded: 3,
       quantityAvailable: 3,
       unitPriceCents: 1330,
@@ -177,5 +178,37 @@ describe('ShoppingLine — error state', () => {
 
     expect(reloadSpy).not.toHaveBeenCalled();
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ShoppingLine: card names carry the pitch', () => {
+  it('the row names the pitch', () => {
+    const data: IShoppingLinePopulated = {
+      ...PATH_B_DATA,
+      lines: [
+        {
+          cardIdentifier: 'pack-hunt-red',
+          cardName: 'Pack Hunt',
+          pitch: 1,
+          quantityNeeded: 1,
+          quantityAvailable: 1,
+          unitPriceCents: 500,
+          productUrl: 'https://www.cupuladt.com.br/?view=ecom/item&id=7',
+          lastFetchedAt: TWO_HOURS_AGO,
+        },
+      ],
+    };
+
+    render(<ShoppingLine data={data} />);
+
+    const row = screen.getByText('Pack Hunt (Vermelho)', { exact: false }).closest('li')!;
+    expect(row).toHaveTextContent('Pack Hunt (Vermelho)');
+    expect(row).not.toHaveTextContent(/Pack Hunt(?! \(Vermelho\))/);
+    expect(
+      screen.getByRole('link', { name: 'Abrir Pack Hunt (Vermelho) na Cupula DT em uma nova aba' }),
+    ).toBeInTheDocument();
+    const labels = Array.from(row.querySelectorAll('[aria-label]')).map((node) => node.getAttribute('aria-label'));
+    expect(labels.length).toBeGreaterThan(0);
+    expect(labels.filter((label) => /Pack Hunt/.test(label ?? '') && !/Pack Hunt \(Vermelho\)/.test(label ?? ''))).toEqual([]);
   });
 });

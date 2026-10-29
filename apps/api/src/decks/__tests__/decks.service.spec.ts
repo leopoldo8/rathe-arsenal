@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock } from '@golevelup/ts-jest';
-import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import { DataSource, IsNull, Repository, SelectQueryBuilder } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
@@ -38,6 +38,7 @@ function buildTrackedDeck(
     notes: null,
     trackedAt: new Date('2025-01-15T10:00:00Z'),
     updatedAt: new Date('2025-01-15T10:00:00Z'),
+    deletedAt: null,
     user: {} as TrackedDeckEntity['user'],
     ...overrides,
   };
@@ -151,7 +152,7 @@ describe('DecksService', () => {
         aggregateShoppingLine: null,
       });
       expect(trackedDeckRepo.find).toHaveBeenCalledWith({
-        where: { userId: USER_ID },
+        where: { userId: USER_ID, deletedAt: IsNull() },
         order: { trackedAt: 'DESC' },
       });
     });
@@ -218,8 +219,14 @@ describe('DecksService', () => {
         updatedAt: deck.updatedAt.toISOString(),
         legality: {
           category: 'illegal',
-          reasons: ['Hero not recognized — please re-select in Edit mode'],
-          details: [{ code: 'hero_unrecognized', params: {} }],
+          reasons: [
+            'Hero not recognized — please re-select in Edit mode',
+            'Deck has 0 mainboard cards but Classic Constructed requires at least 60.',
+          ],
+          details: [
+            { code: 'hero_unrecognized', params: {} },
+            { code: 'mainboard_too_small', params: { card: null, count: 0, limit: 60, format: 'Classic Constructed' } },
+          ],
         },
         trackedAt: deck.trackedAt.toISOString(),
         latestSnapshot: {
@@ -232,6 +239,7 @@ describe('DecksService', () => {
         heroImageUrl: null,
         representativeCards: [],
         cardCounts: { owned: 0, missing: 0, total: 0 },
+        deckSize: 0,
         clearUpgradeCount: 0,
       });
       // Default mock returns null — aggregateShoppingLine is null when no missing cards.
@@ -827,6 +835,7 @@ const trackedDeck = result.trackedDecks[0]!;
           trackedDeckId: 1,
           cardIdentifier: 'card-a',
           quantity: 2,
+          inventoryQuantity: 0,
           slot: 'main',
           trackedDeck: {} as DeckCardEntity['trackedDeck'],
         },
@@ -914,6 +923,7 @@ const trackedDeck = result.trackedDecks[0]!;
             name: id,
             legalFormats: ['Classic Constructed'],
             legalHeroes: ['Kayo'],
+            keywords: [],
             bannedFormats: id === 'card-b' ? ['Blitz'] : undefined,
           }) as unknown as ReturnType<typeof catalogService.getCard>,
       );
@@ -974,37 +984,29 @@ const trackedDeck = result.trackedDecks[0]!;
     });
   });
 
-  describe('untrack', () => {
-    it('should assert ownership and delete the deck', async () => {
+  describe('permanentDelete', () => {
+    it('should delete the deck of the caller', async () => {
       // Arrange
-      authzService.assertOwnsTrackedDeck.mockResolvedValue(undefined);
       trackedDeckRepo.delete.mockResolvedValue({ affected: 1, raw: [] });
 
       // Act
-      await service.untrack(USER_ID, 1);
+      await service.permanentDelete(USER_ID, 1);
 
       // Assert
-      expect(authzService.assertOwnsTrackedDeck).toHaveBeenCalledWith(
-        USER_ID,
-        1,
-      );
       expect(trackedDeckRepo.delete).toHaveBeenCalledWith({
         id: 1,
         userId: USER_ID,
       });
     });
 
-    it('should throw NotFoundException when user does not own the deck', async () => {
+    it('should throw NotFoundException when no deck of the caller was deleted', async () => {
       // Arrange
-      authzService.assertOwnsTrackedDeck.mockRejectedValue(
-        new NotFoundException('Tracked deck not found'),
-      );
+      trackedDeckRepo.delete.mockResolvedValue({ affected: 0, raw: [] });
 
       // Act & Assert
-      await expect(service.untrack(OTHER_USER_ID, 1)).rejects.toThrow(
+      await expect(service.permanentDelete(OTHER_USER_ID, 1)).rejects.toThrow(
         NotFoundException,
       );
-      expect(trackedDeckRepo.delete).not.toHaveBeenCalled();
     });
   });
 });

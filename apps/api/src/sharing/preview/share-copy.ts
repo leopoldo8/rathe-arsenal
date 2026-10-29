@@ -53,8 +53,8 @@ const DESCRIPTION_LINES = 4;
 
 function missingDescription(summary: IMissingDeckSummary): string {
   if (summary.missingCount === 0) return `${summary.sharerName} já tem todas as cartas deste deck`;
-  const noun = summary.missingCount === 1 ? 'carta' : 'cartas';
-  const shown = summary.lines.slice(0, DESCRIPTION_LINES).map((line) => `${line.quantity}x ${line.name}`);
+  const noun = summary.missingCount === 1 ? 'cópia' : 'cópias';
+  const shown = summary.lines.slice(0, DESCRIPTION_LINES).map((line) => `${line.quantity} ${line.name}`);
   const rest = summary.lines.length - shown.length;
   const list = rest > 0 ? `${shown.join(', ')} e mais ${rest}` : shown.join(', ');
   return `${summary.sharerName} procura ${summary.missingCount} ${noun}: ${list}`;
@@ -69,6 +69,24 @@ export function buildMissingShareMeta(
   return {
     title: `Procuro cartas para ${summary.name}`,
     description: missingDescription(summary),
+    imageUrl: versionedImageUrl(`${base}/api/shared/decks/${token}/image`, summary),
+    pageUrl: `${base}/d/${token}`,
+  };
+}
+
+export interface IQuoteDeckSummary {
+  readonly name: string;
+  readonly sharerName: string;
+  readonly copies: number;
+}
+
+/** A store opens this address from a message: it says what is asked and never names a store or a price. */
+export function buildQuoteShareMeta(summary: IQuoteDeckSummary, token: string, baseUrl: string): IShareMeta {
+  const base = trimTrailingSlash(baseUrl);
+  const noun = summary.copies === 1 ? 'cópia' : 'cópias';
+  return {
+    title: `Orçamento: cartas para ${summary.name}`,
+    description: `${summary.sharerName} pede orçamento de ${summary.copies} ${noun}.`,
     imageUrl: versionedImageUrl(`${base}/api/shared/decks/${token}/image`, summary),
     pageUrl: `${base}/d/${token}`,
   };

@@ -69,6 +69,11 @@ vi.mock('../../../api/collection', () => ({
   }),
 }));
 
+const mockUsePendingLinesQuery = vi.fn();
+vi.mock('../../../api/collection-imports', () => ({
+  usePendingLinesQuery: () => mockUsePendingLinesQuery(),
+}));
+
 vi.mock('../../../api/catalog', () => ({
   useSearchCardsQuery: () => ({ data: { results: [] }, isFetching: false, isSuccess: true }),
   CATALOG_SEARCH_QUERY_KEY: ['catalog', 'search'],
@@ -148,6 +153,10 @@ function renderLibraryPage() {
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+beforeEach(() => {
+  mockUsePendingLinesQuery.mockReturnValue({ data: { imports: [] } });
+});
 
 describe('LibraryPage — loading state', () => {
   beforeEach(() => {
@@ -241,7 +250,7 @@ describe('LibraryPage — populated: 20 cards', () => {
     // pattern that LibraryGrid attaches to every card cell.
     await waitFor(() => {
       const cells = screen.getAllByRole('listitem', {
-        name: /Card \d+, na coleção: 1/,
+        name: /Card \d+ \(Vermelho\), na coleção: 1/,
       });
       expect(cells).toHaveLength(20);
     });
@@ -448,7 +457,7 @@ describe('LibraryPage — group-by regroups without refetching (LIB-03)', () => 
   }
 
   it.each([
-    ['Tipo', ['Attack Action', 'Equipment']],
+    ['Tipo', ['Ações', 'Equipamentos']],
     ['Pitch', ['Vermelho', 'Azul']],
     ['Set', ['CRU', 'WTR']],
     ['Lista', []],
@@ -530,7 +539,7 @@ describe('LibraryPage — quantity stepper survives (LIB-01, ruling 3.4)', () =>
 
   it('adds one copy from the cell', async () => {
     renderLibraryPage();
-    await userEvent.click(screen.getByRole('button', { name: 'Adicionar uma cópia de Multi Card' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Adicionar uma cópia de Multi Card (Vermelho)' }));
     expect(mockMutate).toHaveBeenCalledWith(
       expect.objectContaining({ cardIdentifier: 'M1', quantity: 1 }),
     );
@@ -538,10 +547,69 @@ describe('LibraryPage — quantity stepper survives (LIB-01, ruling 3.4)', () =>
 
   it('opens the source picker on remove when copies come from more than one source', async () => {
     renderLibraryPage();
-    await userEvent.click(screen.getByRole('button', { name: 'Remover uma cópia de Multi Card' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remover uma cópia de Multi Card (Vermelho)' }));
     expect(screen.getByRole('menu', { name: /De qual fonte remover 1 cópia de/ })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Planilha/ })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /Manual entries/ })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Entradas à mão/ })).toBeInTheDocument();
     expect(mockDecrementMutate).not.toHaveBeenCalled();
+  });
+});
+
+describe('LibraryPage — pending lines', () => {
+  it('matches r3-pending-phone: the pending banner sits above the collection', () => {
+    mockUsePendingLinesQuery.mockReturnValue({
+      data: {
+        imports: [
+          {
+            sourceId: 'source-1',
+            label: 'colecao-lucas.csv',
+            lines: Array.from({ length: 11 }, (_unused, index) => ({ id: index + 1, lineNumber: index + 2 })),
+          },
+        ],
+      },
+    });
+    const cards = [
+      makeCard({ cardIdentifier: 'bare-fangs-red', name: 'Bare Fangs', ownedQuantity: 1 }),
+      makeCard({ cardIdentifier: 'clash-of-agility-red', name: 'Clash of Agility', ownedQuantity: 2 }),
+    ];
+    mockUseLibraryQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: {
+        ...makeLibraryResponse(cards),
+        stats: { ...makeLibraryResponse(cards).stats, totalCopies: 612, uniqueCount: 241 },
+      },
+    });
+
+    const { container } = renderLibraryPage();
+
+    const text = container.textContent ?? '';
+    const order = [
+      '11 linhas de colecao-lucas.csv para resolver',
+      'Resolver',
+      'Coleção',
+      'Importações',
+      '612 cópias (241 cartas)',
+      'Bare Fangs (Vermelho)',
+    ].map((fragment) => text.indexOf(fragment));
+    expect(order.every((position) => position >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Coleção');
+    expect(screen.getByRole('link', { name: 'Importações' })).toHaveAttribute('href', '/library-csv-sources');
+    expect(screen.getByRole('link', { name: 'Resolver' })).toBeInTheDocument();
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+  });
+
+  it('shows no banner when no import has lines left', () => {
+    mockUseLibraryQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: makeLibraryResponse([makeCard()]),
+    });
+
+    renderLibraryPage();
+
+    expect(screen.queryByRole('link', { name: 'Resolver' })).not.toBeInTheDocument();
   });
 });

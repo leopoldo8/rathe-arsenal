@@ -4,6 +4,7 @@ import { plainToInstance } from 'class-transformer';
 import { createMock } from '@golevelup/ts-jest';
 import { UsersController } from '../users.controller';
 import { UsersService } from '../users.service';
+import { AuthService } from '../../auth/auth.service';
 import { PatchThemeDto } from '../dtos/user-settings.dto';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
 import { EUserRole } from '../../database/entities/user.entity';
@@ -16,7 +17,7 @@ function buildController(serviceOverrides: Partial<{
   service.getSettings = serviceOverrides.getSettings ?? jest.fn().mockResolvedValue({ theme: 'dark' });
   service.patchSettings = serviceOverrides.patchSettings ?? jest.fn().mockResolvedValue({ theme: 'dark' });
 
-  const controller = new UsersController(service as unknown as UsersService);
+  const controller = new UsersController(service as unknown as UsersService, createMock<AuthService>());
   return { controller, service };
 }
 

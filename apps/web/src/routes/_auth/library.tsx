@@ -14,6 +14,8 @@ import { LibraryFilterDrawer } from '../../components/library/LibraryFilterDrawe
 import { LibraryGrid } from '../../components/library/LibraryGrid';
 import { LibraryEmptyState } from '../../components/library/LibraryEmptyState';
 import { RecentlyAddedBanner } from '../../components/library/RecentlyAddedBanner';
+import { SpareBanner } from '../../components/library/SpareBanner';
+import { PendingBanner } from '../../components/collection-reader/PendingBanner';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { Button } from '../../components/ui/Button/Button';
 import {
@@ -131,6 +133,7 @@ export function LibraryPageInner({
             an import that didn't resolve to any countable cards still
             tells the user something landed (e.g. a Fabrary deck whose
             identifiers all fell outside the catalog). */}
+        <PendingBanner />
         <RecentlyAddedBanner />
         <LibraryEmptyState />
       </div>
@@ -141,6 +144,7 @@ export function LibraryPageInner({
 
   return (
     <div className={styles.page}>
+      <PendingBanner />
       <header className={styles.pageHeader}>
         <div className={styles.headerText}>
           <h1 className={styles.title}>{t('library.libraryTitle')}</h1>
@@ -160,8 +164,19 @@ export function LibraryPageInner({
           <Link to="/add-cards" className={styles.addCardsLink}>
             <span aria-hidden="true">→</span> {t('library.addCardsLink')}
           </Link>
+          <Link to="/library-csv-sources" className={styles.addCardsLink}>
+            {t('library.importsLink')}
+          </Link>
         </div>
       </header>
+      {stats && (
+        <p className={styles.collectionSummary}>
+          {t('collectionReader.copiesCount', { count: stats.totalCopies })} (
+          {t('collectionReader.cardsCount', { count: stats.uniqueCount })})
+        </p>
+      )}
+
+      <SpareBanner />
 
       <div className={styles.layout}>
         <div className={styles.railSlot}>

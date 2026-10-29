@@ -1,0 +1,34 @@
+.wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ra-space-3);
+}
+
+.button {
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-4);
+  background: transparent;
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--ra-accent);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.hint {
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+}

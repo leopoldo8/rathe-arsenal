@@ -1,9 +1,13 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
 
+import type { TEdition, TFinish } from './collection-versions';
+
 export interface ICollectorCodePrinting {
   readonly code: string;
   readonly image?: string | null;
+  readonly editions?: readonly TEdition[];
+  readonly finishes?: readonly TFinish[];
 }
 
 export interface ICollectorCodeCard {

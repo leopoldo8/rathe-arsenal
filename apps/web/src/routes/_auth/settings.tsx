@@ -3,12 +3,46 @@ import { useState } from 'react';
 import { useAuth } from '../../auth/useAuth';
 import { DeleteAccountModal } from '../../components/delete-account-modal';
 import { ThemeToggle } from '../../components/shell/ThemeToggle';
+import { AccountSetting } from '../../components/settings/AccountSetting';
 import { ContactSetting } from '../../components/settings/ContactSetting';
 import { DisplayNameSetting } from '../../components/settings/DisplayNameSetting';
+import { SpareRuleSetting } from '../../components/settings/SpareRuleSetting';
 import { LanguageToggle } from '../../components/shell/LanguageToggle';
 import { useTranslation } from 'react-i18next';
-import { useTriggerUrlSyncMutation, useUrlSyncStatusQuery } from '../../api/store-admin';
+import { useCreditsQuery, useTriggerUrlSyncMutation, useUrlSyncStatusQuery } from '../../api/store-admin';
 import styles from './settings.module.css';
+
+function CreditsLine() {
+  const { t } = useTranslation();
+  const { data: credits } = useCreditsQuery();
+  if (!credits) return null;
+  const { creditsUsed, budget, lookupsStopped } = credits;
+  const percentUsed = budget > 0 ? Math.min(100, Math.round((creditsUsed / budget) * 100)) : 100;
+  const numbers = { used: creditsUsed, budget };
+  return (
+    <div className={styles.credits} data-testid="store-credits">
+      <div className={styles.creditsHead}>
+        <span>{t('settings.creditsLabel')}</span>
+        <b className={styles.creditsNumbers}>{t('settings.creditsOf', numbers)}</b>
+      </div>
+      <div
+        className={lookupsStopped ? `${styles.meter} ${styles.meterStopped}` : styles.meter}
+        role="img"
+        aria-label={t('settings.creditsMeterLabel', numbers)}
+      >
+        <svg className={styles.meterSvg} aria-hidden="true">
+          <rect className={styles.meterFill} width={`${percentUsed}%`} height="100%" />
+        </svg>
+      </div>
+      {lookupsStopped && (
+        <p className={styles.stopLine} data-testid="store-credits-stopped">
+          {t('settings.lookupsStopped')}
+          <span className={styles.stopLineNote}>{t('settings.manualSyncStillWorks')}</span>
+        </p>
+      )}
+    </div>
+  );
+}
 
 /**
  * Admin-only control to trigger the store catalog URL-sync (productUrl + name
@@ -62,6 +96,7 @@ function StoreSyncAdminSection() {
       {trigger.isError && (
         <p className={styles.syncError}>{t('settings.couldNotQueueSync')}</p>
       )}
+      <CreditsLine />
     </section>
   );
 }
@@ -90,20 +125,22 @@ export function SettingsPage() {
     <div className={styles.page}>
       <h1 className={styles.pageHeading}>{t('settings.accountSettings')}</h1>
 
+      {/* ---- Section: Account (e-mail and password) ---- */}
+      <AccountSetting className={styles.section} />
+
       {/* ---- Section 1: Profile ---- */}
       <section className={styles.section} aria-labelledby="section-profile">
         <h2 id="section-profile" className={styles.sectionHeading}>
           {t('settings.yourProfile')}
         </h2>
-        <div className={styles.emailRow}>
-          <span className={styles.emailLabel}>{t('settings.emailAddress')}</span>
-          <span className={styles.emailValue}>{user?.email ?? '—'}</span>
-        </div>
         <DisplayNameSetting />
       </section>
 
       {/* ---- Section: Contact (optional WhatsApp number shown on shared links) ---- */}
       <ContactSetting className={styles.section} />
+
+      {/* ---- Section: the rule for counting spare copies ---- */}
+      <SpareRuleSetting className={styles.section} />
 
       {/* ---- Section 2: Theme ---- */}
       <section className={styles.section} aria-labelledby="section-theme">

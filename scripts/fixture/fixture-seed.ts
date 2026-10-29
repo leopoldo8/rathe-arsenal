@@ -11,7 +11,8 @@ export interface IFixtureCredentials {
 }
 
 export interface IFixtureHandles {
-  readonly jwt: string;
+  /** The `ra_session` cookie value of the fixture user's session (door 17). */
+  readonly sessionToken: string;
   readonly swapDeckId: number;
   readonly readyDeckId: number;
 }
@@ -19,8 +20,15 @@ export interface IFixtureHandles {
 interface IDeckSummary {
   readonly id: number;
   readonly name: string;
-  readonly fabraryUlid: string | null;
   readonly tags: readonly string[];
+}
+
+type TDeckSlot = 'mainboard' | 'equipment' | 'weapon' | 'hero';
+
+interface IReadyDeckSpec {
+  readonly name: string;
+  readonly hero: string;
+  readonly cards: ReadonlyArray<readonly [slot: TDeckSlot, cardIdentifier: string, quantity: number]>;
 }
 
 interface IDeckDetail {
@@ -35,13 +43,100 @@ export const SWAP_DECK_NAME = 'Rhinar Swap Test';
 export const FIXTURE_TAG = 'liga local';
 
 const SWAP_DECK_HERO = 'rhinar-reckless-rampage';
-const FABRARY_DECK_URLS = [
-  'https://fabrary.net/decks/01J027FSFWMBYYDR457YVXM5QT',
-  'https://fabrary.net/decks/01HYW5BJE6PD6K25Z3SK758DE8',
-];
 const MIN_SUGGESTIONS = 3;
 const SIGN_IN_RETRY_MS = 15_000;
 const SIGN_IN_MAX_WAIT_MS = 150_000;
+
+const READY_DECK_HERO = 'kayo-armed-and-dangerous';
+const READY_DECK_FORMAT = 'Classic Constructed';
+
+// The two Kayo decks the fixture used to import from fabrary.net, written out as plain compositions so the
+// seed never needs the network (CI runners are blocked by Fabrary). The first one is the "ready deck" the
+// browser tests open; both names show on the home page.
+const READY_DECKS: readonly IReadyDeckSpec[] = [
+  {
+    name: '[CC/CURRENT] Kayo',
+    hero: READY_DECK_HERO,
+    cards: [
+      ['hero', READY_DECK_HERO, 1],
+      ['weapon', 'mandible-claw', 1],
+      ['equipment', 'beaten-trackers', 1],
+      ['equipment', 'hide-tanner', 1],
+      ['equipment', 'savage-sash', 1],
+      ['equipment', 'scowling-flesh-bag', 1],
+      ['mainboard', 'agile-windup-blue', 3],
+      ['mainboard', 'agile-windup-yellow', 3],
+      ['mainboard', 'assault-and-battery-blue', 3],
+      ['mainboard', 'bare-fangs-red', 3],
+      ['mainboard', 'bare-fangs-yellow', 3],
+      ['mainboard', 'beast-within-yellow', 3],
+      ['mainboard', 'bloodrush-bellow-yellow', 3],
+      ['mainboard', 'clash-of-agility-red', 3],
+      ['mainboard', 'command-and-conquer-red', 1],
+      ['mainboard', 'enlightened-strike-red', 2],
+      ['mainboard', 'erase-face-red', 1],
+      ['mainboard', 'mighty-windup-blue', 3],
+      ['mainboard', 'pack-hunt-red', 3],
+      ['mainboard', 'pulping-red', 3],
+      ['mainboard', 'reckless-swing-blue', 1],
+      ['mainboard', 'riled-up-blue', 3],
+      ['mainboard', 'run-roughshod-blue', 3],
+      ['mainboard', 'savage-feast-red', 3],
+      ['mainboard', 'send-packing-yellow', 3],
+      ['mainboard', 'smash-instinct-blue', 3],
+      ['mainboard', 'wild-ride-red', 3],
+      ['mainboard', 'wild-ride-yellow', 3],
+      ['mainboard', 'wrecker-romp-blue', 2],
+    ],
+  },
+  {
+    name: '[CC/GOAL] Kayo',
+    hero: READY_DECK_HERO,
+    cards: [
+      ['hero', READY_DECK_HERO, 1],
+      ['weapon', 'mandible-claw', 1],
+      ['equipment', 'apex-bonebreaker', 1],
+      ['equipment', 'beaten-trackers', 1],
+      ['equipment', 'savage-sash', 1],
+      ['equipment', 'scowling-flesh-bag', 1],
+      ['mainboard', 'agile-windup-blue', 3],
+      ['mainboard', 'agile-windup-yellow', 3],
+      ['mainboard', 'bare-fangs-yellow', 3],
+      ['mainboard', 'beast-within-yellow', 3],
+      ['mainboard', 'bloodrush-bellow-yellow', 3],
+      ['mainboard', 'clash-of-agility-red', 3],
+      ['mainboard', 'command-and-conquer-red', 3],
+      ['mainboard', 'enlightened-strike-red', 3],
+      ['mainboard', 'mighty-windup-blue', 3],
+      ['mainboard', 'pack-hunt-red', 3],
+      ['mainboard', 'pulping-red', 3],
+      ['mainboard', 'reckless-swing-blue', 2],
+      ['mainboard', 'riled-up-blue', 3],
+      ['mainboard', 'run-roughshod-blue', 3],
+      ['mainboard', 'savage-feast-red', 3],
+      ['mainboard', 'send-packing-yellow', 1],
+      ['mainboard', 'smash-instinct-blue', 3],
+      ['mainboard', 'swing-big-red', 3],
+      ['mainboard', 'wild-ride-red', 3],
+      ['mainboard', 'wild-ride-yellow', 3],
+      ['mainboard', 'wrecker-romp-blue', 3],
+    ],
+  },
+];
+
+export const READY_DECK_NAME = READY_DECKS[0]!.name;
+const READY_DECK_NAMES: ReadonlySet<string> = new Set(READY_DECKS.map((deck) => deck.name));
+
+/** The most copies of each card any ready deck asks for: the player owns the decks, as the old import said. */
+function ownedByReadyDecks(): Readonly<Record<string, number>> {
+  const owned: Record<string, number> = {};
+  for (const deck of READY_DECKS) {
+    for (const [, cardIdentifier, quantity] of deck.cards) {
+      owned[cardIdentifier] = Math.max(owned[cardIdentifier] ?? 0, quantity);
+    }
+  }
+  return owned;
+}
 
 // Cards the user must own for the swap deck below to produce its
 // suggestions. The deck's pitch curve has to stay within the engine's tolerance,
@@ -85,34 +180,46 @@ const SWAP_DECK_COMPOSITION: ReadonlyArray<readonly [string, number]> = [
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
+const SESSION_COOKIE = 'ra_session';
+
+/** The session token a response set in its `ra_session` cookie, or null when it set none. */
+function sessionTokenOf(res: Response): string | null {
+  for (const header of res.headers.getSetCookie()) {
+    const [pair] = header.split(';');
+    if (pair?.startsWith(`${SESSION_COOKIE}=`)) return pair.slice(SESSION_COOKIE.length + 1);
+  }
+  return null;
+}
+
+/** Sends the session as a `Cookie` header, as a browser would; no bearer header exists any more (door 17). */
 async function request<T>(
   baseUrl: string,
   method: string,
   path: string,
-  jwt: string | null,
+  sessionToken: string | null,
   body?: unknown,
-): Promise<{ status: number; data: T }> {
+): Promise<{ status: number; data: T; sessionToken: string | null }> {
   const res = await fetch(`${baseUrl}/api${path}`, {
     method,
     headers: {
       'Content-Type': 'application/json',
-      ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+      ...(sessionToken ? { Cookie: `${SESSION_COOKIE}=${sessionToken}` } : {}),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await res.text();
   const data = (text ? JSON.parse(text) : null) as T;
-  return { status: res.status, data };
+  return { status: res.status, data, sessionToken: sessionTokenOf(res) };
 }
 
 async function authed<T>(
   creds: IFixtureCredentials,
-  jwt: string,
+  sessionToken: string,
   method: string,
   path: string,
   body?: unknown,
 ): Promise<T> {
-  const { status, data } = await request<T>(creds.baseUrl, method, path, jwt, body);
+  const { status, data } = await request<T>(creds.baseUrl, method, path, sessionToken, body);
   if (status >= 400) {
     throw new Error(`${method} ${path} failed with ${status}: ${JSON.stringify(data)}`);
   }
@@ -122,14 +229,14 @@ async function authed<T>(
 async function trySignIn(creds: IFixtureCredentials): Promise<string | null> {
   const deadline = Date.now() + SIGN_IN_MAX_WAIT_MS;
   for (;;) {
-    const { status, data } = await request<{ jwt?: string }>(
+    const { status, sessionToken } = await request<unknown>(
       creds.baseUrl,
       'POST',
       '/auth/sign-in',
       null,
       { email: creds.email, password: creds.password },
     );
-    if (status === 200 && data.jwt) return data.jwt;
+    if (status === 200 && sessionToken) return sessionToken;
     if (status !== 429) return null;
     if (Date.now() > deadline) throw new Error('sign-in stayed rate limited for too long');
     await sleep(SIGN_IN_RETRY_MS);
@@ -168,47 +275,71 @@ async function signInFixtureUser(creds: IFixtureCredentials): Promise<string> {
   return created;
 }
 
-async function listDecks(creds: IFixtureCredentials, jwt: string): Promise<readonly IDeckSummary[]> {
-  const { trackedDecks } = await authed<{ trackedDecks: IDeckSummary[] }>(creds, jwt, 'GET', '/decks');
+async function listDecks(creds: IFixtureCredentials, sessionToken: string): Promise<readonly IDeckSummary[]> {
+  const { trackedDecks } = await authed<{ trackedDecks: IDeckSummary[] }>(creds, sessionToken, 'GET', '/decks');
   return trackedDecks;
 }
 
-async function ensureOwnedCards(creds: IFixtureCredentials, jwt: string): Promise<void> {
+async function ensureOwnedCards(creds: IFixtureCredentials, sessionToken: string): Promise<void> {
   const { cards } = await authed<{ cards: Array<{ cardIdentifier: string; ownedQuantity: number }> }>(
     creds,
-    jwt,
+    sessionToken,
     'GET',
     '/collection/library',
   );
   const owned = new Map(cards.map((card) => [card.cardIdentifier, card.ownedQuantity]));
-  for (const [cardIdentifier, wanted] of Object.entries(REQUIRED_OWNED)) {
+  const wantedByCard = new Map<string, number>();
+  for (const [cardIdentifier, quantity] of [...Object.entries(ownedByReadyDecks()), ...Object.entries(REQUIRED_OWNED)]) {
+    wantedByCard.set(cardIdentifier, Math.max(wantedByCard.get(cardIdentifier) ?? 0, quantity));
+  }
+  for (const [cardIdentifier, wanted] of wantedByCard) {
     const missing = wanted - (owned.get(cardIdentifier) ?? 0);
     if (missing <= 0) continue;
-    await authed(creds, jwt, 'POST', '/collection/cards', { cardIdentifier, quantity: missing });
+    await authed(creds, sessionToken, 'POST', '/collection/cards', { cardIdentifier, quantity: missing });
   }
 }
 
-async function ensureFabraryDeck(creds: IFixtureCredentials, jwt: string): Promise<number> {
-  let decks = await listDecks(creds, jwt);
-  if (!decks.some((deck) => deck.fabraryUlid !== null)) {
-    await authed(creds, jwt, 'POST', '/decks/import', { urls: FABRARY_DECK_URLS });
-    decks = await listDecks(creds, jwt);
+async function putReadyDeckComposition(
+  creds: IFixtureCredentials,
+  sessionToken: string,
+  deckId: number,
+  spec: IReadyDeckSpec,
+): Promise<void> {
+  await authed(creds, sessionToken, 'PUT', `/decks/${deckId}`, {
+    heroIdentifier: spec.hero,
+    format: READY_DECK_FORMAT,
+    cards: spec.cards.map(([slot, cardIdentifier, quantity]) => ({ cardIdentifier, quantity, slot })),
+  });
+}
+
+/** Creates the ready decks from their plain compositions over the app's own API; returns the first one's id. */
+async function ensureReadyDecks(creds: IFixtureCredentials, sessionToken: string): Promise<number> {
+  let decks = await listDecks(creds, sessionToken);
+  for (const spec of READY_DECKS) {
+    if (decks.some((deck) => deck.name === spec.name)) continue;
+    const created = await authed<{ id: number }>(creds, sessionToken, 'POST', '/decks', {
+      heroIdentifier: spec.hero,
+      format: READY_DECK_FORMAT,
+    });
+    await putReadyDeckComposition(creds, sessionToken, created.id, spec);
+    await authed(creds, sessionToken, 'PATCH', `/decks/${created.id}`, { name: spec.name, status: 'building' });
+    decks = await listDecks(creds, sessionToken);
   }
-  const ready = [...decks].filter((deck) => deck.fabraryUlid !== null).sort((a, b) => a.id - b.id)[0];
-  if (!ready) throw new Error('no Fabrary-imported deck available for the fixture user');
+  const ready = [...decks].filter((deck) => deck.name === READY_DECK_NAME).sort((a, b) => a.id - b.id)[0];
+  if (!ready) throw new Error(`the fixture has no deck named ${READY_DECK_NAME}`);
   return ready.id;
 }
 
-async function ensureTag(creds: IFixtureCredentials, jwt: string): Promise<number> {
-  const { tags } = await authed<{ tags: Array<{ id: number; name: string }> }>(creds, jwt, 'GET', '/tags');
+async function ensureTag(creds: IFixtureCredentials, sessionToken: string): Promise<number> {
+  const { tags } = await authed<{ tags: Array<{ id: number; name: string }> }>(creds, sessionToken, 'GET', '/tags');
   const found = tags.find((tag) => tag.name.toLowerCase() === FIXTURE_TAG);
   if (found) return found.id;
-  const created = await authed<{ id: number }>(creds, jwt, 'POST', '/tags', { name: FIXTURE_TAG });
+  const created = await authed<{ id: number }>(creds, sessionToken, 'POST', '/tags', { name: FIXTURE_TAG });
   return created.id;
 }
 
-async function putSwapDeckComposition(creds: IFixtureCredentials, jwt: string, deckId: number): Promise<void> {
-  await authed(creds, jwt, 'PUT', `/decks/${deckId}`, {
+async function putSwapDeckComposition(creds: IFixtureCredentials, sessionToken: string, deckId: number): Promise<void> {
+  await authed(creds, sessionToken, 'PUT', `/decks/${deckId}`, {
     heroIdentifier: SWAP_DECK_HERO,
     format: 'Classic Constructed',
     cards: SWAP_DECK_COMPOSITION.map(([cardIdentifier, quantity]) => ({
@@ -219,19 +350,19 @@ async function putSwapDeckComposition(creds: IFixtureCredentials, jwt: string, d
   });
 }
 
-async function ensureSwapDeck(creds: IFixtureCredentials, jwt: string): Promise<number> {
-  const decks = await listDecks(creds, jwt);
+async function ensureSwapDeck(creds: IFixtureCredentials, sessionToken: string): Promise<number> {
+  const decks = await listDecks(creds, sessionToken);
   let deckId = decks.find((deck) => deck.name === SWAP_DECK_NAME)?.id;
   if (deckId === undefined) {
-    const created = await authed<{ id: number }>(creds, jwt, 'POST', '/decks', {
+    const created = await authed<{ id: number }>(creds, sessionToken, 'POST', '/decks', {
       heroIdentifier: SWAP_DECK_HERO,
       format: 'Classic Constructed',
     });
     deckId = created.id;
   }
-  await putSwapDeckComposition(creds, jwt, deckId);
-  const tagId = await ensureTag(creds, jwt);
-  await authed(creds, jwt, 'PATCH', `/decks/${deckId}`, {
+  await putSwapDeckComposition(creds, sessionToken, deckId);
+  const tagId = await ensureTag(creds, sessionToken);
+  await authed(creds, sessionToken, 'PATCH', `/decks/${deckId}`, {
     name: SWAP_DECK_NAME,
     status: 'building',
     addTagIds: [tagId],
@@ -239,25 +370,25 @@ async function ensureSwapDeck(creds: IFixtureCredentials, jwt: string): Promise<
   return deckId;
 }
 
-async function pruneExtraDecks(creds: IFixtureCredentials, jwt: string): Promise<void> {
-  const decks = await listDecks(creds, jwt);
+async function pruneExtraDecks(creds: IFixtureCredentials, sessionToken: string): Promise<void> {
+  const decks = await listDecks(creds, sessionToken);
   for (const deck of decks) {
-    if (deck.fabraryUlid !== null || deck.name === SWAP_DECK_NAME) continue;
-    await authed(creds, jwt, 'DELETE', `/decks/${deck.id}`);
+    if (READY_DECK_NAMES.has(deck.name) || deck.name === SWAP_DECK_NAME) continue;
+    await authed(creds, sessionToken, 'DELETE', `/decks/${deck.id}`);
   }
 }
 
 /**
  * Puts the fixture user back to the state the specs assume: the swap deck with
  * its composition (which closes any replacement a spec left behind) and its
- * suggestions, and no decks beyond the imported ones and the swap deck.
+ * suggestions, and no decks beyond the ready decks and the swap deck.
  */
-export async function resetFixtureState(creds: IFixtureCredentials, jwt: string): Promise<void> {
-  await pruneExtraDecks(creds, jwt);
-  const deckId = (await listDecks(creds, jwt)).find((deck) => deck.name === SWAP_DECK_NAME)?.id;
+export async function resetFixtureState(creds: IFixtureCredentials, sessionToken: string): Promise<void> {
+  await pruneExtraDecks(creds, sessionToken);
+  const deckId = (await listDecks(creds, sessionToken)).find((deck) => deck.name === SWAP_DECK_NAME)?.id;
   if (deckId === undefined) throw new Error(`the fixture has no deck named ${SWAP_DECK_NAME}`);
-  await putSwapDeckComposition(creds, jwt, deckId);
-  const detail = await authed<IDeckDetail>(creds, jwt, 'GET', `/decks/${deckId}`);
+  await putSwapDeckComposition(creds, sessionToken, deckId);
+  const detail = await authed<IDeckDetail>(creds, sessionToken, 'GET', `/decks/${deckId}`);
   const suggested = new Set(
     (detail.latestSnapshot?.breakdown.substituted ?? []).map(
       (entry) => `${entry.original.cardIdentifier}::${entry.original.slot}`,
@@ -269,10 +400,10 @@ export async function resetFixtureState(creds: IFixtureCredentials, jwt: string)
 }
 
 export async function seedFixture(creds: IFixtureCredentials): Promise<IFixtureHandles> {
-  const jwt = await signInFixtureUser(creds);
-  await ensureOwnedCards(creds, jwt);
-  const readyDeckId = await ensureFabraryDeck(creds, jwt);
-  const swapDeckId = await ensureSwapDeck(creds, jwt);
-  await resetFixtureState(creds, jwt);
-  return { jwt, swapDeckId, readyDeckId };
+  const sessionToken = await signInFixtureUser(creds);
+  await ensureOwnedCards(creds, sessionToken);
+  const readyDeckId = await ensureReadyDecks(creds, sessionToken);
+  const swapDeckId = await ensureSwapDeck(creds, sessionToken);
+  await resetFixtureState(creds, sessionToken);
+  return { sessionToken, swapDeckId, readyDeckId };
 }

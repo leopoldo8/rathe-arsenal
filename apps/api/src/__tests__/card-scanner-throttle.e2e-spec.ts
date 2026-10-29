@@ -5,13 +5,14 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../app.module';
 import { configureHttpApp } from '../http/configure-http-app';
+import { sessionCookieHeader, sessionTokenOf } from '../auth/__tests__/session-test-helpers';
 
 const GLOBAL_LIMIT_PER_MINUTE = 120;
 
 describe('card scanner routes under the global throttler (E2E)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
-  let jwt: string;
+  let sessionToken: string;
   const email = `scanner-throttle-${Date.now().toString(36)}@test.local`;
   const password = 'scanner-throttle-password-123';
 
@@ -33,11 +34,11 @@ describe('card scanner routes under the global throttler (E2E)', () => {
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());
 
     const server = app.getHttpServer();
-    const signUp = await request(server).post('/api/auth/sign-up').send({ email, password }).expect(202);
+    const signUp = await request(server).post('/api/auth/sign-up').send({ email, password }).expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
     await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     const signIn = await request(server).post('/api/auth/sign-in').send({ email, password }).expect(200);
-    jwt = signIn.body.jwt as string;
+    sessionToken = sessionTokenOf(signIn);
   }, 60_000);
 
   afterAll(async () => {
@@ -50,11 +51,11 @@ describe('card scanner routes under the global throttler (E2E)', () => {
     async () => {
       const server = app.getHttpServer();
       const routes: readonly (() => request.Test)[] = [
-        () => request(server).get('/api/catalog/collector-codes').set('Authorization', `Bearer ${jwt}`),
+        () => request(server).get('/api/catalog/collector-codes').set('Cookie', sessionCookieHeader(sessionToken)),
         () =>
           request(server)
             .post('/api/collection/cards/batch')
-            .set('Authorization', `Bearer ${jwt}`)
+            .set('Cookie', sessionCookieHeader(sessionToken))
             .send({ items: [] }),
       ];
 

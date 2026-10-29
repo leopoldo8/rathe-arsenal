@@ -18,12 +18,12 @@ export const csvSources = {
 
   // SumExplainer
   sumExplainerTrigger: 'Se a mesma carta aparece em duas fontes, as quantidades somam.',
-  manualSourceLabel: 'Entradas manuais',
+  manualSourceLabel: 'Entradas à mão',
   activeLabel: 'Ativa',
   inactiveLabel: 'Inativa',
   sourceBadgeCsv: 'CSV',
   sourceBadgeFabrary: 'Fabrary',
-  manualAlwaysIncluded: 'Sempre incluída: cartas adicionadas à mão não podem ser desativadas.',
+  manualAlwaysIncluded: 'Sempre incluídas',
   untitledSourceLabel: 'CSV sem título',
   deleteFallbackLabel: 'Este CSV',
   sourcesCountLine_one: '{{count}} fonte, {{activeCount}} em uso',
@@ -47,10 +47,10 @@ export const csvSources = {
   // CsvSourceRow
   toggleAriaLabel: 'Ativar ou desativar "{{label}}"',
   renameAriaLabel: 'Renomear "{{label}}"',
-  renameTitle: 'Clique para renomear',
   editSourceNameAriaLabel: 'Editar nome da fonte',
   optionsAriaLabel: 'Opções para "{{label}}"',
   renameMenuItem: 'Renomear',
+  newVersionMenuItem: 'Enviar nova versão',
   deleteMenuItem: 'Excluir',
   cardSingular: 'carta',
   cardPlural: 'cartas',
@@ -122,9 +122,9 @@ export const csvSources = {
   skipReasonEmptyName: 'Nome da carta vazio',
 
   // Library CSV sources route
-  csvSourcesBackLink: 'Biblioteca',
-  csvSourcesTitle: 'Fontes da biblioteca',
-  csvSourcesSubtitle: 'Cada fonte é uma importação da sua coleção. Desative uma fonte para tirar as cartas dela da biblioteca sem perder o arquivo. Cartas adicionadas à mão e importadas do Fabrary também aparecem aqui.',
+  csvSourcesBackLink: 'Coleção',
+  csvSourcesTitle: 'Importações',
+  importsNote: 'Se a mesma carta aparece em duas importações, as quantidades somam. Desligue uma importação que repete cartas que você já tinha.',
   csvSourcesErrorBanner: 'Não foi possível carregar as fontes.',
   csvSourcesRetryButton: 'Tentar novamente',
 

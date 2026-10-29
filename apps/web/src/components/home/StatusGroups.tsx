@@ -8,8 +8,6 @@ import styles from './StatusGroups.module.css';
 
 interface IStatusGroupsProps {
   readonly decks: readonly ITrackedDeckListItem[];
-  readonly onUntrack: (deckId: number) => void;
-  readonly untrackingDeckId: number | null;
   /** True when every tracked deck is retired, regardless of the active filters. */
   readonly isAllRetired: boolean;
 }
@@ -43,20 +41,16 @@ function writeRetiredExpanded(expanded: boolean): void {
 
 interface IDeckGridProps {
   readonly decks: readonly ITrackedDeckListItem[];
-  readonly onUntrack: (deckId: number) => void;
-  readonly untrackingDeckId: number | null;
   readonly id?: string;
 }
 
-function DeckGrid({ decks, onUntrack, untrackingDeckId, id }: IDeckGridProps): React.ReactElement {
+function DeckGrid({ decks, id }: IDeckGridProps): React.ReactElement {
   return (
     <div id={id} className={styles.deckGrid}>
       {decks.map((deck) => (
         <DeckTile
           key={deck.id}
           deck={deck}
-          onUntrack={onUntrack}
-          isUntracking={untrackingDeckId === deck.id}
         />
       ))}
     </div>
@@ -90,16 +84,12 @@ function GroupHead({ group, headingId, count, children }: IGroupHeadProps): Reac
 interface IRetiredGroupProps {
   readonly decks: readonly ITrackedDeckListItem[];
   readonly headingId: string;
-  readonly onUntrack: (deckId: number) => void;
-  readonly untrackingDeckId: number | null;
   readonly isAllRetired: boolean;
 }
 
 function RetiredGroup({
   decks,
   headingId,
-  onUntrack,
-  untrackingDeckId,
   isAllRetired,
 }: IRetiredGroupProps): React.ReactElement {
   const { t } = useTranslation();
@@ -148,8 +138,6 @@ function RetiredGroup({
         <DeckGrid
           id={`${headingId}-content`}
           decks={decks}
-          onUntrack={onUntrack}
-          untrackingDeckId={untrackingDeckId}
         />
       )}
     </section>
@@ -163,8 +151,6 @@ function RetiredGroup({
  */
 export function StatusGroups({
   decks,
-  onUntrack,
-  untrackingDeckId,
   isAllRetired,
 }: IStatusGroupsProps): React.ReactElement {
   const baseId = useId();
@@ -182,8 +168,6 @@ export function StatusGroups({
               key={group}
               decks={groupDecks}
               headingId={headingId}
-              onUntrack={onUntrack}
-              untrackingDeckId={untrackingDeckId}
               isAllRetired={isAllRetired}
             />
           );
@@ -194,8 +178,6 @@ export function StatusGroups({
             <GroupHead group={group} headingId={headingId} count={groupDecks.length} />
             <DeckGrid
               decks={groupDecks}
-              onUntrack={onUntrack}
-              untrackingDeckId={untrackingDeckId}
             />
           </section>
         );

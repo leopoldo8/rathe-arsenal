@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 import { MULTIPLIER_MAX, type IListLine, type IListSummary, type TListKind } from '../../api/lists';
-import { withPitch } from '../deck-detail/recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 
 export type TTranslate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -53,6 +53,11 @@ export function parseMultiplier(raw: string): { readonly valid: true; readonly v
   if (!/^\d+(\.\d{1,2})?$/.test(text)) return { valid: false };
   const value = Number(text);
   return value > 0 && value <= MULTIPLIER_MAX ? { valid: true, value } : { valid: false };
+}
+
+/** "5,5" in pt-BR, "5.5" in en-US: the multiplier as the field shows it, with no grouping and at most two decimals. */
+export function formatMultiplier(value: number, language: string): string {
+  return new Intl.NumberFormat(language, { maximumFractionDigits: 2, useGrouping: false }).format(value);
 }
 
 /** Value for a money input: "6,50", no symbol. */
@@ -138,7 +143,7 @@ type TTextLine = ITextList['lines'][number];
 function lineText(line: TTextLine, kind: TListKind, t: TTranslate): string {
   const head = t('lists.text.line', {
     count: line.quantity,
-    name: withPitch(line.name, line.pitch, (key) => t(key)),
+    name: cardName(line.name, line.pitch, (key) => t(key)),
   });
   if (kind === 'want') return head;
   const extras = [

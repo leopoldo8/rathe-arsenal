@@ -2,6 +2,15 @@ export const onboarding = {
   // OnboardingWizard
   wizardAriaLabel: 'Getting started',
 
+  // FirstRunChooser (r3-first-run-phone)
+  firstRunTitle: 'How do you want to start?',
+  firstRunProduct: 'I bought a ready-made deck',
+  firstRunProductHint: 'Armory Deck, Blitz Deck or Silver Age, in the box',
+  firstRunPaste: 'Have a link or a list? Paste it here',
+  firstRunCsv: 'Upload a spreadsheet (.csv)',
+  firstRunScan: 'Take photos of the cards or type them',
+  firstRunSkip: 'Skip for now',
+
   // StepIndicator — nav + items
   stepNavAriaLabel: 'Step {{current}} of {{total}}',
   stepItemAriaLabel: 'Step {{number}} of {{total}}: {{label}}, {{state}}',
@@ -22,11 +31,6 @@ export const onboarding = {
   step1FormatError: 'Must be a valid Fabrary deck URL (e.g. https://fabrary.net/decks/…)',
   step1TimeoutError:
     'That URL took too long to respond — the deck may be unreachable or the server is unavailable.',
-  step1PrivateDeckError:
-    'That deck is set to private on Fabrary. Make it public or use a different URL.',
-  step1NotFabError: 'That URL does not appear to be a Flesh and Blood deck.',
-  step1AlreadyTrackedError: 'This deck is already in your arsenal: {{reason}}',
-  step1GenericError: 'Failed to import deck. Please try again.',
   skipForNow: 'Skip for now',
   continueButton: 'Continue',
 

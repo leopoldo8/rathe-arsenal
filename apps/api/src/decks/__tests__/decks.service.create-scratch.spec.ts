@@ -32,6 +32,7 @@ function buildSavedDeck(overrides: Partial<TrackedDeckEntity> = {}): TrackedDeck
     notes: null,
     trackedAt: new Date('2026-05-17T10:00:00Z'),
     updatedAt: new Date('2026-05-17T10:00:00Z'),
+    deletedAt: null,
     user: {} as TrackedDeckEntity['user'],
     ...overrides,
   };
@@ -167,23 +168,34 @@ describe('DecksService.createScratch', () => {
       expect(result.latestSnapshot).toBeNull();
     });
 
-    it('composes name as "{heroDisplayName} — {format}"', async () => {
+    it.each<[string, CreateScratchDeckDto['format'], string]>([
+      ['Dorinthea Ironsong', 'Classic Constructed', 'Dorinthea Ironsong - Classic Constructed'],
+      ['Rhinar', 'Blitz', 'Rhinar - Blitz'],
+    ])('composes name as "{heroDisplayName} - {format}" (%s, %s)', async (heroName, format, expected) => {
       // Arrange
       const dto: CreateScratchDeckDto = {
         heroIdentifier: 'dorinthea-ironsong',
-        format: 'Classic Constructed',
+        format,
       };
-      const saved = buildSavedDeck({ name: 'Dorinthea Ironsong — Classic Constructed' });
-      setupTransaction(saved);
+      const saved = buildSavedDeck({ name: expected });
+      const manager = createMock<EntityManager>();
+      manager.create.mockReturnValue(saved as unknown as ReturnType<EntityManager['create']>);
+      manager.save.mockResolvedValue(saved as unknown as ReturnType<EntityManager['save']>);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dataSource.transaction as jest.MockedFunction<any>).mockImplementation(
+        async (cb: (m: EntityManager) => Promise<TrackedDeckEntity>) => cb(manager),
+      );
       catalogService.getCard.mockReturnValue(
-        buildCatalogCard() as ReturnType<typeof catalogService.getCard>,
+        buildCatalogCard({ name: heroName }) as ReturnType<typeof catalogService.getCard>,
       );
 
       // Act
-      const result = await service.createScratch(USER_ID, dto);
+      await service.createScratch(USER_ID, dto);
 
-      // Assert — name is the composed value persisted in the DB
-      expect(result.name).toBe('Dorinthea Ironsong — Classic Constructed');
+      // Assert: the name handed to the entity uses a plain hyphen, never U+2014
+      const created = manager.create.mock.calls[0]![1] as unknown as { name: string };
+      expect(created.name).toBe(expected);
+      expect(created.name).not.toContain('\u2014');
     });
 
     it('includes legality with category=incomplete for a 0-card deck', async () => {

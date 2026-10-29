@@ -1,8 +1,11 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ITrackedDeckListItem, TDeckStatus } from '../../../api/decks';
 import { ToastProvider } from '../../../components/ui/Toast/ToastProvider';
+import { AuthContext } from '../../../auth/AuthContext';
+import { makeAuth } from '../../../components/auth/__tests__/accountTestKit';
 
 const mockNavigate = vi.fn();
 let mockSearch: { tag: string[] } = { tag: [] };
@@ -40,8 +43,24 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   };
 });
 
+const apiFetch = vi.hoisted(() => vi.fn());
+vi.mock('../../../lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/api-client')>();
+  return { ...actual, useApiClient: () => apiFetch };
+});
+
+const mockUseDeletedDecks = vi.fn();
+vi.mock('../../../api/deleted-decks', () => ({
+  useDeletedDecksQuery: () => mockUseDeletedDecks(),
+}));
+
+function withClient(node: React.ReactElement): React.ReactElement {
+  return <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>{node}</QueryClientProvider>;
+}
+
 const mockUseDecksQuery = vi.fn();
 vi.mock('../../../api/decks', () => ({
+  DECKS_QUERY_KEY: ['decks'],
   useDecksQuery: () => mockUseDecksQuery(),
   useUntrackDeckMutation: () => ({ mutate: vi.fn(), isPending: false, variables: null }),
 }));
@@ -87,11 +106,13 @@ function seed(decks: readonly ITrackedDeckListItem[], totalCardsMissing: number 
   });
 }
 
-function renderHome(): void {
-  render(
-    <ToastProvider>
-      <HomePage />
-    </ToastProvider>,
+function renderHome() {
+  return render(
+    withClient(
+      <ToastProvider>
+        <HomePage />
+      </ToastProvider>,
+    ),
   );
 }
 
@@ -106,6 +127,12 @@ const ALL_STATUSES = [
   makeDeck(4, 'idea', 'Idea Deck', { latestSnapshot: null, cardCounts: null }),
   makeDeck(5, 'retired', 'Retired Deck'),
 ];
+
+beforeEach(() => {
+  apiFetch.mockReset();
+  apiFetch.mockResolvedValue({});
+  mockUseDeletedDecks.mockReturnValue({ data: { decks: [] } });
+});
 
 describe('Home route', () => {
   beforeEach(() => {
@@ -275,6 +302,15 @@ describe('Home route', () => {
     expect(screen.queryByTestId('deckbox')).not.toBeInTheDocument();
   });
 
+  it('an account with no deck, no card and no import opening /home sees the empty state, not a redirect', () => {
+    seed([], null);
+    renderHome();
+
+    expect(screen.getByRole('heading', { name: 'Comece por um deck' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Importar meu primeiro deck' })).toHaveAttribute('href', '/decks/new');
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
   it('renders the aggregate line inside the armory header, not after the groups', () => {
     mockUseDecksQuery.mockReturnValue({
       isLoading: false,
@@ -303,5 +339,217 @@ describe('Home route', () => {
     expect(
       firstGroup.compareDocumentPosition(callout) & Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();
+  });
+});
+
+describe('Home route, unconfirmed e-mail', () => {
+  const CONFIRM_LINE = 'Confirme bia.souza@gmail.com para criar links de compartilhar';
+
+  function renderHomeAs(emailConfirmed: boolean): void {
+    const user = { id: 'u1', email: 'bia.souza@gmail.com', role: 'user' as const, chatAccess: false, emailConfirmed };
+    render(
+      withClient(
+        <AuthContext.Provider value={makeAuth({ user })}>
+          <ToastProvider>
+            <HomePage />
+          </ToastProvider>
+        </AuthContext.Provider>,
+      ),
+    );
+  }
+
+  beforeEach(() => {
+    mockSearch = { tag: [] };
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+    seed(ALL_STATUSES);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('an unconfirmed account sees the confirm line', () => {
+    renderHomeAs(false);
+
+    const line = screen.getByText((_, element) => element?.tagName === 'P' && element.textContent === `${CONFIRM_LINE} · Reenviar · Errei o e-mail`);
+    expect(within(line).getByRole('button', { name: 'Reenviar' })).toBeInTheDocument();
+    expect(within(line).getByRole('button', { name: 'Errei o e-mail' })).toBeInTheDocument();
+  });
+
+  it('shows no confirm line once the e-mail is confirmed', () => {
+    renderHomeAs(true);
+
+    expect(screen.queryByText(new RegExp(CONFIRM_LINE))).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reenviar' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Home route, the stage and the verdict', () => {
+  beforeEach(() => {
+    mockSearch = { tag: [] };
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const copiesProblem = (count: number, copies: number, limit: number, format: string) => ({
+    category: 'illegal' as const,
+    reasons: ['x'],
+    details: Array.from({ length: count }, (_, index) => ({
+      code: 'too_many_copies',
+      params: { card: `c${index}`, cardIdentifier: `c${index}`, pitch: 1, count: copies, limit, format, legendary: false, restricted: false },
+    })),
+  });
+
+  it('each card of r3-stage-a-phone carries its exact lines', () => {
+    seed([
+      makeDeck(1, 'active', 'Rhinar Blitz', { format: 'Blitz', deckSize: 40, legality: copiesProblem(8, 2, 1, 'Blitz') }),
+      makeDeck(2, 'building', 'Rhinar - Blitz', {
+        format: 'Blitz',
+        deckSize: 31,
+        legality: {
+          ...copiesProblem(1, 2, 1, 'Blitz'),
+          details: [
+            ...copiesProblem(1, 2, 1, 'Blitz').details,
+            { code: 'mainboard_not_exact', params: { card: null, count: 31, limit: 40, format: 'Blitz' } },
+          ],
+        },
+      }),
+      makeDeck(3, 'ready', 'Rhinar CC', { deckSize: 60, legality: copiesProblem(1, 4, 3, 'Classic Constructed') }),
+    ]);
+    renderHome();
+
+    const lines: Record<string, readonly string[]> = {
+      'Rhinar Blitz': ['Não vale no Blitz', '8 cartas com 2 cópias', 'Etapa: Jogando · 40 cartas'],
+      'Rhinar - Blitz': ['Não vale no Blitz', '1 carta com 2 cópias', 'Etapa: Montando · 31 de 40 cartas'],
+      'Rhinar CC': ['Não vale no Classic Constructed', '1 carta com 4 cópias', 'Etapa: Pronto · 60 cartas'],
+    };
+    for (const [name, expected] of Object.entries(lines)) {
+      const text = screen.getByLabelText(name).textContent ?? '';
+      let cursor = -1;
+      for (const part of expected) {
+        const at = text.indexOf(part, cursor + 1);
+        expect({ name, part, at: at > cursor }).toEqual({ name, part, at: true });
+        cursor = at;
+      }
+    }
+  });
+
+  it('puts each card of r3-stage-a-phone under its group, with every line as its own exact text', () => {
+    seed([
+      makeDeck(1, 'active', 'Rhinar Blitz', { format: 'Blitz', deckSize: 40, legality: copiesProblem(8, 2, 1, 'Blitz') }),
+      makeDeck(2, 'building', 'Rhinar - Blitz', {
+        format: 'Blitz',
+        deckSize: 31,
+        legality: {
+          ...copiesProblem(1, 2, 1, 'Blitz'),
+          details: [
+            ...copiesProblem(1, 2, 1, 'Blitz').details,
+            { code: 'mainboard_not_exact', params: { card: null, count: 31, limit: 40, format: 'Blitz' } },
+          ],
+        },
+      }),
+      makeDeck(3, 'ready', 'Rhinar CC', { deckSize: 60, legality: copiesProblem(1, 4, 3, 'Classic Constructed') }),
+    ]);
+    renderHome();
+
+    const expected: ReadonlyArray<readonly [string, string, readonly string[]]> = [
+      ['Ativos', 'Rhinar Blitz', ['Não vale no Blitz', '8 cartas com 2 cópias', 'Etapa: Jogando · 40 cartas']],
+      ['Ativos', 'Rhinar CC', ['Não vale no Classic Constructed', '1 carta com 4 cópias', 'Etapa: Pronto · 60 cartas']],
+      ['Construindo', 'Rhinar - Blitz', ['Não vale no Blitz', '1 carta com 2 cópias', 'Etapa: Montando · 31 de 40 cartas']],
+    ];
+    for (const [groupName, deckName, lines] of expected) {
+      const card = within(group(groupName)).getByLabelText(deckName);
+      for (const line of lines) {
+        expect(within(card).getByText(line)).toBeInTheDocument();
+      }
+    }
+    expect(within(group('Ativos')).queryByLabelText('Rhinar - Blitz')).not.toBeInTheDocument();
+    expect(within(group('Construindo')).queryByLabelText('Rhinar Blitz')).not.toBeInTheDocument();
+    expect(within(group('Construindo')).queryByLabelText('Rhinar CC')).not.toBeInTheDocument();
+  });
+});
+
+describe('Home route, deleting a deck', () => {
+  const deleted = (id: number, name: string) => ({
+    id,
+    name,
+    status: 'idea',
+    format: 'Blitz',
+    totalCards: 12,
+    deletedAt: new Date().toISOString(),
+    purgeAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+  });
+  const flush = (): Promise<void> => act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+
+  beforeEach(() => {
+    mockSearch = { tag: [] };
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('leaving the home keeps the recorded delete', async () => {
+    seed([makeDeck(1, 'building', 'Rhinar Blitz v2'), makeDeck(2, 'ready', 'Outro')]);
+    const view = renderHome();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Excluir Rhinar Blitz v2' }));
+    await flush();
+    expect(screen.getByText('Rhinar Blitz v2 foi para Excluídos recentemente')).toBeInTheDocument();
+    view.unmount();
+    await flush();
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 60)); });
+
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    expect(apiFetch).toHaveBeenCalledWith('/decks/1', { method: 'DELETE' });
+  });
+
+  it('the recently deleted row appears only with deleted decks', () => {
+    seed(ALL_STATUSES);
+    mockUseDeletedDecks.mockReturnValue({ data: { decks: [deleted(9, 'Rhinar Blitz v2')] } });
+    const view = renderHome();
+
+    expect(screen.getByTestId('deleted-decks-row')).toHaveTextContent('Excluídos recentemente (1) · ficam 30 dias');
+    expect(screen.getByTestId('deleted-decks-row')).toHaveAttribute('href', '/decks/deleted');
+    view.unmount();
+
+    mockUseDeletedDecks.mockReturnValue({ data: { decks: [] } });
+    renderHome();
+    expect(screen.queryByTestId('deleted-decks-row')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Excluídos recentemente/)).not.toBeInTheDocument();
+  });
+
+  it('matches r2-delete-toast-phone with the stage rule', async () => {
+    const blitzProblem = {
+      category: 'illegal' as const,
+      reasons: ['x'],
+      details: Array.from({ length: 8 }, (_, index) => ({
+        code: 'too_many_copies',
+        params: { card: `c${index}`, cardIdentifier: `c${index}`, pitch: 1, count: 2, limit: 1, format: 'Blitz', legendary: false, restricted: false },
+      })),
+    };
+    seed([
+      makeDeck(1, 'active', 'Rhinar Blitz', { format: 'Blitz', deckSize: 40, legality: blitzProblem }),
+      makeDeck(2, 'idea', 'Rhinar Blitz v2', { format: 'Blitz', deckSize: 12, latestSnapshot: null, cardCounts: null }),
+    ]);
+    mockUseDeletedDecks.mockReturnValue({ data: { decks: [deleted(2, 'Rhinar Blitz v2')] } });
+    renderHome();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Excluir Rhinar Blitz v2' }));
+    await flush();
+
+    const card = screen.getByLabelText('Rhinar Blitz');
+    expect(screen.queryByLabelText('Rhinar Blitz v2')).not.toBeInTheDocument();
+    expect(card).toHaveTextContent('Não vale no Blitz');
+    expect(card).toHaveTextContent('Etapa: Jogando · 40 cartas');
+    expect(card).not.toHaveTextContent('não pode jogar');
+    const row = screen.getByTestId('deleted-decks-row');
+    expect(row).toHaveTextContent('Excluídos recentemente (1) · ficam 30 dias');
+    const toast = screen.getByText('Rhinar Blitz v2 foi para Excluídos recentemente');
+    expect(card.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(row.compareDocumentPosition(toast) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Desfazer' })).toBeInTheDocument();
   });
 });

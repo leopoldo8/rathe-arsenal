@@ -130,13 +130,13 @@ export class ChatRunnerService {
          LEFT JOIN LATERAL (
            SELECT "effectivePercent" FROM deck_readiness_snapshot WHERE "trackedDeckId" = d.id ORDER BY "computedAt" DESC, id DESC LIMIT 1
          ) s ON true
-        WHERE d."userId" = $1 ORDER BY d.id`,
+        WHERE d."userId" = $1 AND d."deletedAt" IS NULL ORDER BY d.id`,
       [userId],
     )) as IDeckSummary[];
   }
 
   private async boundDeck(userId: string, trackedDeckId: number): Promise<IBoundDeck | null> {
-    const [deck] = (await this.dataSource.query(`SELECT id, name, "heroIdentifier" FROM tracked_deck WHERE id = $1 AND "userId" = $2`, [
+    const [deck] = (await this.dataSource.query(`SELECT id, name, "heroIdentifier" FROM tracked_deck WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NULL`, [
       trackedDeckId,
       userId,
     ])) as Array<{ id: number; name: string; heroIdentifier: string | null }>;

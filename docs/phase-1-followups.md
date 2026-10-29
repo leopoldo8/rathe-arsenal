@@ -98,7 +98,9 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ## Auth & security trade-offs (from Clerk → DIY swap, 2026-04-09)
 
-### A1. No CSRF middleware (`csurf`, double-submit cookie, etc.)
+### A1. No CSRF middleware (`csurf`, double-submit cookie, etc.) — RESOLVED (door 17, persona-rethink S32)
+
+**Resolution:** the session became the httpOnly `ra_session` cookie (`SameSite=Lax`), and the same change added the protection this entry asked for: every `POST`, `PUT`, `PATCH` and `DELETE` whose `Origin` header differs from the origin of `APP_BASE_URL` answers `403` `ORIGIN_REJECTED` (`apps/api/src/http/origin-check.middleware.ts`, mounted in `configureHttpApp`). A write with no `Origin` header is judged by its session alone. The text below is the Phase 0 record.
 
 **Phase 0 posture:** none. The app uses Bearer tokens in the `Authorization` header, not cookies, for authentication. Traditional CSRF attacks (browser auto-attaching cookies cross-origin) do not apply when there is no cookie-based session.
 
@@ -131,7 +133,9 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ---
 
-### A3. JWT stored in `localStorage` (not httpOnly cookie)
+### A3. JWT stored in `localStorage` (not httpOnly cookie) — RESOLVED (door 17, persona-rethink S32)
+
+**Resolution:** no JWT exists any more. The session is an opaque token in the httpOnly `ra_session` cookie, stored hashed in `user_session`; the web removes the old `rathe-arsenal:jwt` key on load and sends no `Authorization` header. The text below is the Phase 0 record.
 
 **Phase 0 posture:** the frontend stores the JWT under `rathe-arsenal:jwt` in `localStorage`. Reads it on mount, attaches it to every API request via `Authorization: Bearer`.
 
@@ -427,6 +431,29 @@ Shared deck links, share attribution, generated link-preview images and copying 
 ### SH6. Visual baselines are stale for the deck detail and Settings
 **Posture:** the deck detail gained the sharing card and Settings gained the display name and contact panels; the local Playwright visual suite (not run in CI) will report those screens as changed.
 **Trigger:** the next run of the visual suite. **Work:** review the diffs and update the baselines on purpose, as PR #151 did.
+
+---
+
+## Sign-in by code (2026-10-27)
+
+### AU1. A stranger can keep an address's code requests blocked for as long as they keep at it
+**Posture:** once an address has 5 codes asked and never tried in the last hour, or 10 failed tries across its codes, the next code request answers `429` with the exact `Retry-After`. A stranger who knows the address asks for a code the moment a slot frees, so the block lasts as long as they keep at it. Every request of theirs also replaces the owner's live code, so a code the owner just received stops working. This predates the limit change of D59 (C404), which did not widen it: it only stopped burnt tries from locking the owner out. Password sign-in and sessions that already exist are not affected. An account with no password cannot sign in on a new device while the block lasts.
+**Trigger:** the log event `auth.code.address_limit` showing repeated hits for one address. **Work (known, not built):** let a browser that already signed in to that account skip the per-address limit, recognised by a device cookie.
+
+### AU2. A stranger can take over an address by signing up with it first
+**Posture:** the attacker signs up with the victim's address and a password of their own, then waits.
+If the victim opens the confirmation e-mail and clicks its button instead of signing in by code, the address becomes confirmed and the attacker's password still opens the account.
+It was left open because the one change that closes it (the confirmation clears the password and ends every session) breaks C398, where an honest owner signs up, confirms in another browser and keeps using the first one.
+The owner decided on 2026-10-27 not to apply it.
+A code sign-in already closes the hole: a code that reached the inbox drops a password still on an unconfirmed account and ends its sessions.
+**Trigger:** any report of an account someone else had a password on, or a decision to change the confirmation screen.
+**Work (known, not built):** a question "Foi você que criou esta conta?" on the confirm page, whose answers and effects are not designed yet. It needs mockups.
+The unapplied patch is `x2-d56.patch` in the session scratchpad; that path is machine-local and may be gone.
+
+### AU3. Two more sign-ups in the web e2e suite, or two runs within an hour, fail with 429
+**Posture:** the web e2e suite signs up about 18 accounts per run from one client address, and the API allows 20 sign-ups per address per hour. Two more sign-ups in the suite, or two web e2e runs within one hour against the same API process, answer `429`.
+**Trigger:** adding any web e2e test that signs up.
+**Work (known, not built):** give each Playwright worker or test its own client address that the API trusts in test (check how the API reads the client IP: `main.ts` sets `trust proxy` to 1, so `X-Forwarded-For` is read from the first hop and the test run would need to send it), or a test-only limit set through an environment variable that refuses to start in production, like `EXPOSE_DEV_SECRETS`.
 
 ---
 

@@ -20,9 +20,13 @@
   --ra-ready-low-bg: rgba(208, 100, 90, 0.08);
   --ra-status-building: #4a7fc0;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'crumb crumb'
+    'actions actions'
+    'identity medallion';
+  align-content: space-between;
   gap: var(--ra-space-4);
   min-block-size: 210px;
   margin-inline: calc(-1 * var(--ra-space-6));
@@ -83,20 +87,10 @@
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.15), var(--hero-overlay-end));
 }
 
-.top,
-.bottom {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--ra-space-4);
-}
-
-.bottom {
-  align-items: flex-end;
-}
-
 .breadcrumb {
+  position: relative;
+  grid-area: crumb;
+  justify-self: start;
   display: inline-flex;
   text-shadow: var(--hero-text-shadow);
   align-items: center;
@@ -118,11 +112,32 @@
 }
 
 .actions {
+  position: relative;
+  grid-area: actions;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: var(--ra-space-2);
+}
+
+.medallion {
+  position: relative;
+  grid-area: medallion;
+  align-self: end;
+}
+
+/* From a tablet up the actions share the top row with the breadcrumb, at the right. */
+@media (min-width: 720px) {
+  .banner {
+    grid-template-areas:
+      'crumb actions'
+      'identity medallion';
+  }
+
+  .actions {
+    justify-content: flex-end;
+  }
 }
 
 .editBtn {
@@ -179,6 +194,9 @@
 }
 
 .identity {
+  position: relative;
+  grid-area: identity;
+  align-self: end;
   min-inline-size: 0;
   text-shadow: var(--hero-text-shadow);
 }
@@ -188,7 +206,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--ra-space-2);
-  margin-block-end: var(--ra-space-1);
+  margin-block-start: var(--ra-space-1);
 }
 
 .eyebrow {
@@ -215,4 +233,31 @@
   color: var(--ra-fg-secondary);
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
+}
+
+.verdictChip {
+  padding: 2px var(--ra-space-2);
+  border: 1px solid var(--ra-ready-low);
+  border-radius: var(--ra-radius-sm);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  color: var(--ra-ready-low);
+}
+
+.stageLine {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  color: var(--ra-fg-secondary);
+}
+
+.stageChip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ra-space-1) var(--ra-space-3);
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
 }

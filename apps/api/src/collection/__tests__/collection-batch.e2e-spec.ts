@@ -7,6 +7,7 @@ import { DataSource } from 'typeorm';
 import { AppModule } from '../../app.module';
 import { CatalogService } from '../../catalog/catalog.service';
 import { configureHttpApp } from '../../http/configure-http-app';
+import { sessionCookieHeader, sessionTokenOf } from '../../auth/__tests__/session-test-helpers';
 
 const PASSWORD = 'collection-batch-e2e-password-123';
 const CARD_A = 'nimblism-red';
@@ -16,7 +17,7 @@ const CARD_D = 'knife-through-butter-yellow';
 
 interface ITestUser {
   readonly id: string;
-  readonly jwt: string;
+  readonly sessionToken: string;
 }
 
 describe('POST /api/collection/cards/batch (E2E)', () => {
@@ -33,17 +34,17 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
     const server = app.getHttpServer();
     const email = `batch-${label}-${suffix}@test.local`;
     emails.push(email);
-    const signUpRes = await request(server).post('/api/auth/sign-up').send({ email, password: PASSWORD }).expect(202);
+    const signUpRes = await request(server).post('/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
     const token = new URL(signUpRes.body._devVerificationLink as string).searchParams.get('token');
     await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     const signIn = await request(server).post('/api/auth/sign-in').send({ email, password: PASSWORD }).expect(200);
     const [row] = await dataSource.query(`SELECT id FROM "user" WHERE email = $1`, [email]);
-    return { id: row.id as string, jwt: signIn.body.jwt as string };
+    return { id: row.id as string, sessionToken: sessionTokenOf(signIn) };
   }
 
   function batch(user: ITestUser | null, items: unknown): request.Test {
     const req = request(app.getHttpServer()).post('/api/collection/cards/batch');
-    return (user ? req.set('Authorization', `Bearer ${user.jwt}`) : req).send({ items });
+    return (user ? req.set('Cookie', sessionCookieHeader(user.sessionToken)) : req).send({ items });
   }
 
   async function quantityOf(user: ITestUser, cardIdentifier: string): Promise<number> {
@@ -142,6 +143,56 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
     expect(await quantityOf(owner, CARD_C)).toBe(after);
   });
 
+  async function versionRows(
+    user: ITestUser,
+    cardIdentifier: string,
+  ): Promise<Array<{ printingCode: string; edition: string; finish: string; condition: string; quantity: number }>> {
+    return dataSource.query(
+      `SELECT "printingCode", edition, finish, condition, quantity FROM collection_card
+       WHERE "userId" = $1 AND "cardIdentifier" = $2 ORDER BY id`,
+      [user.id, cardIdentifier],
+    );
+  }
+
+  it('copies with no version increment one row and cap at 20', async () => {
+    await batch(owner, [{ cardIdentifier: CARD_A, quantity: 2 }]).expect(201);
+    await batch(owner, [{ cardIdentifier: CARD_A, quantity: 2 }]).expect(201);
+
+    expect(await versionRows(owner, CARD_A)).toEqual([
+      { printingCode: '', edition: '', finish: '', condition: '', quantity: 4 },
+    ]);
+
+    await seed(owner, CARD_B, 19);
+    const response = await batch(owner, [{ cardIdentifier: CARD_B, quantity: 2 }]).expect(201);
+
+    expect(response.body.results).toEqual([{ cardIdentifier: CARD_B, newQuantity: 20, capped: true }]);
+    expect(await versionRows(owner, CARD_B)).toEqual([
+      { printingCode: '', edition: '', finish: '', condition: '', quantity: 20 },
+    ]);
+  });
+
+  it("the batch records the scanned printing code", async () => {
+    await batch(owner, [{ cardIdentifier: 'snatch-red', quantity: 1, printingCode: 'WTR167' }]).expect(201);
+    await batch(owner, [{ cardIdentifier: 'snatch-red', quantity: 1, printingCode: 'WTR167' }]).expect(201);
+    await batch(owner, [{ cardIdentifier: 'snatch-red', quantity: 2 }]).expect(201);
+
+    expect(await versionRows(owner, 'snatch-red')).toEqual([
+      { printingCode: 'WTR167', edition: '', finish: '', condition: '', quantity: 2 },
+      { printingCode: '', edition: '', finish: '', condition: '', quantity: 2 },
+    ]);
+
+    await resetCollection(owner);
+    await batch(owner, [{ cardIdentifier: CARD_A, quantity: 1 }]).expect(201);
+    expect(await versionRows(owner, CARD_A)).toEqual([
+      { printingCode: '', edition: '', finish: '', condition: '', quantity: 1 },
+    ]);
+
+    const refused = await batch(owner, [{ cardIdentifier: CARD_A, quantity: 1, printingCode: 12 }]).expect(400);
+    // The body parser turns the number into the text "12", which no printing of the card carries.
+    expect(refused.body.code).toBe('VERSION_NOT_AVAILABLE');
+    expect(await versionRows(owner, CARD_A)).toHaveLength(1);
+  });
+
   it('sums duplicate identifiers', async () => {
     await batch(owner, [
       { cardIdentifier: CARD_A, quantity: 2 },
@@ -233,13 +284,13 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
     const deckWith = async (cardIdentifiers: readonly string[]): Promise<number> => {
       const created = await request(server)
         .post('/api/decks')
-        .set('Authorization', `Bearer ${owner.jwt}`)
+        .set('Cookie', sessionCookieHeader(owner.sessionToken))
         .send({ heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed' })
         .expect(201);
       const deckId = created.body.id as number;
       await request(server)
         .put(`/api/decks/${deckId}`)
-        .set('Authorization', `Bearer ${owner.jwt}`)
+        .set('Cookie', sessionCookieHeader(owner.sessionToken))
         .send({
           heroIdentifier: 'katsu-the-wanderer',
           format: 'Classic Constructed',

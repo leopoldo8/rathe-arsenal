@@ -47,7 +47,7 @@ describe('card replacements (E2E)', () => {
   });
 
   async function pick(owner: IScenario, overrides: Record<string, unknown> = {}, expected = 201) {
-    return fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.jwt).send(pickBody(overrides)).expect(expected);
+    return fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.sessionToken).send(pickBody(overrides)).expect(expected);
   }
 
   async function replacementId(owner: IScenario, overrides: Record<string, unknown> = {}): Promise<string> {
@@ -72,6 +72,7 @@ describe('card replacements (E2E)', () => {
       originalCardIdentifier: EMISSARY,
       replacementCardIdentifier: COAX,
       quantity: 2,
+      side: 'deck',
       pickedFrom: 'very_close',
       status: 'active',
       createdAt: expect.any(String),
@@ -82,12 +83,70 @@ describe('card replacements (E2E)', () => {
     expect(cards[`${COAX}@mainboard`]).toBe(2);
 
     const partial = await fixture.scenario([mainboard(COAX, 1)]);
-    await fixture.own(partial.jwt, [{ cardIdentifier: EMISSARY, quantity: 1 }]);
+    await fixture.own(partial.sessionToken, [{ cardIdentifier: EMISSARY, quantity: 1 }]);
     const moved = await pick(partial);
     expect(moved.body.replacement.quantity).toBe(1);
     const partialCards = await fixture.deckCards(partial.deckId);
     expect(partialCards[`${EMISSARY}@mainboard`]).toBe(1);
     expect(partialCards[`${COAX}@mainboard`]).toBe(2);
+  });
+
+  it('a pick with quantity 2 moves 2 copies and leaves the third on the list', async () => {
+    const owner = await fixture.scenario([mainboard(ADRENALINE, 3)]);
+
+    const res = await pick(owner, { originalCardIdentifier: ADRENALINE, quantity: 2 });
+
+    expect(res.body.replacement).toMatchObject({ quantity: 2, side: 'deck', originalCardIdentifier: ADRENALINE });
+    const cards = await fixture.deckCards(owner.deckId);
+    expect(cards[`${ADRENALINE}@mainboard`]).toBe(1);
+    expect(cards[`${COAX}@mainboard`]).toBe(2);
+    const breakdown = await fixture.latestBreakdown(owner.deckId);
+    expect(breakdown.missing).toEqual(expect.arrayContaining([expect.objectContaining({ cardIdentifier: ADRENALINE, quantity: 1 })]));
+    const list = await fixture.get(`/api/decks/${owner.deckId}/missing`, owner.sessionToken).expect(200);
+    expect(list.body.lines.find((entry: { cardIdentifier: string }) => entry.cardIdentifier === ADRENALINE)).toMatchObject({ deckNeeded: 1 });
+
+    await fixture.post(`/api/replacements/${res.body.replacement.id}/revert`, owner.sessionToken).expect(200);
+    const reverted = await fixture.deckCards(owner.deckId);
+    expect(reverted[`${ADRENALINE}@mainboard`]).toBe(3);
+    expect(reverted[`${COAX}@mainboard`]).toBeUndefined();
+  });
+
+  it('a pick takes a quantity and a side', async () => {
+    const owner = await fixture.scenario();
+
+    const everyCopy = await pick(owner);
+    expect(everyCopy.body.replacement).toMatchObject({ quantity: 2, side: 'deck' });
+    const [stored] = await fixture.replacementRows(owner.deckId);
+    expect(stored).toMatchObject({ side: 'deck', quantity: 2 });
+
+    const withInventory = await fixture.scenario();
+    await fixture.dataSource.query(
+      `UPDATE deck_card SET quantity = 1, "inventoryQuantity" = 1 WHERE "trackedDeckId" = $1 AND "cardIdentifier" = $2`,
+      [withInventory.deckId, EMISSARY],
+    );
+    const inventoryPick = await pick(withInventory, { side: 'inventory' });
+    expect(inventoryPick.body.replacement).toMatchObject({ quantity: 1, side: 'inventory' });
+    const rows: Array<{ cardIdentifier: string; quantity: number; inventoryQuantity: number }> = await fixture.dataSource.query(
+      `SELECT "cardIdentifier", quantity, "inventoryQuantity" FROM deck_card WHERE "trackedDeckId" = $1 AND "cardIdentifier" IN ($2, $3) ORDER BY "cardIdentifier"`,
+      [withInventory.deckId, EMISSARY, COAX],
+    );
+    expect(rows).toEqual([
+      { cardIdentifier: COAX, quantity: 0, inventoryQuantity: 1 },
+      { cardIdentifier: EMISSARY, quantity: 1, inventoryQuantity: 0 },
+    ]);
+
+    const invalid = await fixture.scenario();
+    for (const body of [{ quantity: 0 }, { quantity: -1 }, { quantity: 1.5 }, { side: 'sideboard' }]) {
+      await pick(invalid, body, 400);
+    }
+    await pick(invalid, { quantity: 3 }, 409);
+    expect(await state(invalid)).toEqual({ deckCards: await fixture.deckCards(invalid.deckId), replacements: [] });
+    expect((await fixture.deckCards(invalid.deckId))[`${EMISSARY}@mainboard`]).toBe(2);
+    await fixture
+      .post('/api/decks/999999999/replacements', invalid.sessionToken)
+      .send(pickBody())
+      .expect(404);
+    expect((await pick(invalid, { quantity: 1 })).status).toBe(201);
   });
 
   it.each(['very_close', 'close', 'other_pitch', 'generic', 'search'])(
@@ -118,8 +177,8 @@ describe('card replacements (E2E)', () => {
   it('a later recompute gives a protected replacement no stand-in', async () => {
     const owner = await fixture.scenario();
     await pick(owner);
-    await fixture.own(owner.jwt, [{ cardIdentifier: coaxStandIn(), quantity: 3 }]);
-    await fixture.post('/api/collection/mark-owned', owner.jwt).send({ deckId: owner.deckId, cardIdentifier: FLEX }).expect(201);
+    await fixture.own(owner.sessionToken, [{ cardIdentifier: coaxStandIn(), quantity: 3 }]);
+    await fixture.post('/api/collection/mark-owned', owner.sessionToken).send({ deckId: owner.deckId, cardIdentifier: FLEX }).expect(201);
 
     const breakdown = await fixture.latestBreakdown(owner.deckId);
 
@@ -160,7 +219,7 @@ describe('card replacements (E2E)', () => {
 
   it('refuses a pick when nothing is missing', async () => {
     const owner = await fixture.scenario();
-    await fixture.own(owner.jwt, [{ cardIdentifier: EMISSARY, quantity: 2 }]);
+    await fixture.own(owner.sessionToken, [{ cardIdentifier: EMISSARY, quantity: 2 }]);
     const before = await state(owner);
 
     const res = await pick(owner, {}, 409);
@@ -173,8 +232,8 @@ describe('card replacements (E2E)', () => {
     const owner = await fixture.scenario();
 
     const responses = await Promise.all([
-      fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.jwt).send(pickBody({ replacementCardIdentifier: COAX })),
-      fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.jwt).send(pickBody({ replacementCardIdentifier: ADRENALINE })),
+      fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.sessionToken).send(pickBody({ replacementCardIdentifier: COAX })),
+      fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.sessionToken).send(pickBody({ replacementCardIdentifier: ADRENALINE })),
     ]);
 
     expect(responses.map((res) => res.status).sort()).toEqual([201, 409]);
@@ -205,7 +264,7 @@ describe('card replacements (E2E)', () => {
       pickBody({ replacementCardIdentifier: 'not-a-real-card-red' }),
       pickBody({ originalCardIdentifier: 'not-a-real-card-red' }),
     ]) {
-      await fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.jwt).send(body).expect(400);
+      await fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.sessionToken).send(body).expect(400);
     }
     expect(await state(owner)).toEqual(before);
   });
@@ -214,7 +273,7 @@ describe('card replacements (E2E)', () => {
     const owner = await fixture.scenario();
     const before = await state(owner);
     const post = (body: Record<string, unknown>) =>
-      fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.jwt).send(body);
+      fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.sessionToken).send(body);
 
     for (const field of ['originalCardIdentifier', 'replacementCardIdentifier']) {
       await post(pickBody({ [field]: '' })).expect(400);
@@ -228,8 +287,8 @@ describe('card replacements (E2E)', () => {
     await post(pickBody({ replacementCardIdentifier: 'c'.repeat(128) })).expect(400);
     await post(pickBody({ slot: 's'.repeat(64) })).expect(409);
 
-    await fixture.post('/api/decks/not-a-number/replacements', owner.jwt).send(pickBody()).expect(400);
-    await fixture.post('/api/decks/1.5/replacements', owner.jwt).send(pickBody()).expect(400);
+    await fixture.post('/api/decks/not-a-number/replacements', owner.sessionToken).send(pickBody()).expect(400);
+    await fixture.post('/api/decks/1.5/replacements', owner.sessionToken).send(pickBody()).expect(400);
     expect(await state(owner)).toEqual(before);
   });
 
@@ -237,7 +296,7 @@ describe('card replacements (E2E)', () => {
     const owner = await fixture.scenario();
     const id = await replacementId(owner);
 
-    const res = await fixture.post(`/api/replacements/${id}/revert`, owner.jwt).expect(200);
+    const res = await fixture.post(`/api/replacements/${id}/revert`, owner.sessionToken).expect(200);
 
     expect(res.body.replacement).toEqual(expect.objectContaining({ id, status: 'reverted', resolvedAt: expect.any(String) }));
     const cards = await fixture.deckCards(owner.deckId);
@@ -245,9 +304,9 @@ describe('card replacements (E2E)', () => {
     expect(cards[`${COAX}@mainboard`]).toBeUndefined();
 
     const partial = await fixture.scenario([mainboard(COAX, 1)]);
-    await fixture.own(partial.jwt, [{ cardIdentifier: EMISSARY, quantity: 1 }]);
+    await fixture.own(partial.sessionToken, [{ cardIdentifier: EMISSARY, quantity: 1 }]);
     const partialId = await replacementId(partial);
-    await fixture.post(`/api/replacements/${partialId}/revert`, partial.jwt).expect(200);
+    await fixture.post(`/api/replacements/${partialId}/revert`, partial.sessionToken).expect(200);
     const partialCards = await fixture.deckCards(partial.deckId);
     expect(partialCards[`${EMISSARY}@mainboard`]).toBe(2);
     expect(partialCards[`${COAX}@mainboard`]).toBe(1);
@@ -256,7 +315,7 @@ describe('card replacements (E2E)', () => {
   it('the snapshot after a revert shows the original', async () => {
     const owner = await fixture.scenario();
     const id = await replacementId(owner);
-    await fixture.post(`/api/replacements/${id}/revert`, owner.jwt).expect(200);
+    await fixture.post(`/api/replacements/${id}/revert`, owner.sessionToken).expect(200);
 
     const breakdown = await fixture.latestBreakdown(owner.deckId);
 
@@ -277,7 +336,7 @@ describe('card replacements (E2E)', () => {
       );
       for (const action of ['revert', 'keep']) {
         const before = await state(owner);
-        const res = await fixture.post(`/api/replacements/${id}/${action}`, owner.jwt).expect(409);
+        const res = await fixture.post(`/api/replacements/${id}/${action}`, owner.sessionToken).expect(409);
         expect({ status, action, code: res.body.code }).toEqual({ status, action, code: 'REPLACEMENT_NOT_ACTIVE' });
         expect(await state(owner)).toEqual(before);
       }
@@ -290,10 +349,10 @@ describe('card replacements (E2E)', () => {
     const stranger = await fixture.signUp('stranger');
 
     for (const action of ['revert', 'keep']) {
-      const foreign = await fixture.post(`/api/replacements/${id}/${action}`, stranger.jwt).expect(404);
-      const missing = await fixture.post(`/api/replacements/${RANDOM_UUID}/${action}`, stranger.jwt).expect(404);
+      const foreign = await fixture.post(`/api/replacements/${id}/${action}`, stranger.sessionToken).expect(404);
+      const missing = await fixture.post(`/api/replacements/${RANDOM_UUID}/${action}`, stranger.sessionToken).expect(404);
       expect(withoutTimestamp(foreign.body)).toEqual(withoutTimestamp(missing.body));
-      await fixture.post(`/api/replacements/not-a-uuid/${action}`, stranger.jwt).expect(400);
+      await fixture.post(`/api/replacements/not-a-uuid/${action}`, stranger.sessionToken).expect(400);
     }
   });
 
@@ -301,9 +360,9 @@ describe('card replacements (E2E)', () => {
     const owner = await fixture.scenario();
     const stranger = await fixture.signUp('stranger-deck');
     const requests = (deckId: number) => [
-      () => fixture.get(`/api/decks/${deckId}/alternatives`, stranger.jwt).query({ cardIdentifier: EMISSARY, slot: 'mainboard' }),
-      () => fixture.post(`/api/decks/${deckId}/replacements`, stranger.jwt).send(pickBody()),
-      () => fixture.get(`/api/decks/${deckId}`, stranger.jwt),
+      () => fixture.get(`/api/decks/${deckId}/alternatives`, stranger.sessionToken).query({ cardIdentifier: EMISSARY, slot: 'mainboard' }),
+      () => fixture.post(`/api/decks/${deckId}/replacements`, stranger.sessionToken).send(pickBody()),
+      () => fixture.get(`/api/decks/${deckId}`, stranger.sessionToken),
     ];
 
     const foreign = requests(owner.deckId);
@@ -324,7 +383,7 @@ describe('card replacements (E2E)', () => {
       { cardIdentifier: TALISHAR, quantity: 1, slot: 'weapon' },
     ];
 
-    await fixture.put(`/api/decks/${owner.deckId}`, owner.jwt)
+    await fixture.put(`/api/decks/${owner.deckId}`, owner.sessionToken)
       .send({ heroIdentifier: KATSU, format: 'Classic Constructed', cards: survivingCards })
       .expect(200);
 
@@ -342,17 +401,17 @@ describe('card replacements (E2E)', () => {
       quantity,
     }));
 
-    const kept = await fixture.put(`/api/decks/${owner.deckId}`, owner.jwt)
+    const kept = await fixture.put(`/api/decks/${owner.deckId}`, owner.sessionToken)
       .send({ heroIdentifier: KATSU, format: 'Classic Constructed', cards })
       .expect(200);
     expect(kept.body.replacements).toEqual([expect.objectContaining({ id, originalName: 'Emissary of Tides', quantity: 2 })]);
 
-    const dropped = await fixture.put(`/api/decks/${owner.deckId}`, owner.jwt)
+    const dropped = await fixture.put(`/api/decks/${owner.deckId}`, owner.sessionToken)
       .send({ heroIdentifier: KATSU, format: 'Classic Constructed', cards: cards.filter((c) => c.cardIdentifier !== COAX) })
       .expect(200);
     expect(dropped.body.replacements).toEqual([]);
 
-    const scratch = await fixture.post('/api/decks', owner.jwt)
+    const scratch = await fixture.post('/api/decks', owner.sessionToken)
       .send({ heroIdentifier: KATSU, format: 'Classic Constructed' })
       .expect(201);
     expect(scratch.body.replacements).toEqual([]);
@@ -364,23 +423,23 @@ describe('card replacements (E2E)', () => {
     const cardsBefore = await fixture.deckCards(owner.deckId);
     const snapshotsBefore = await fixture.snapshotCount(owner.deckId);
 
-    const res = await fixture.post(`/api/replacements/${id}/keep`, owner.jwt).expect(200);
+    const res = await fixture.post(`/api/replacements/${id}/keep`, owner.sessionToken).expect(200);
 
     expect(res.body.replacement).toEqual(expect.objectContaining({ id, status: 'kept', resolvedAt: expect.any(String) }));
     expect(await fixture.deckCards(owner.deckId)).toEqual(cardsBefore);
     expect(await fixture.snapshotCount(owner.deckId)).toBe(snapshotsBefore + 1);
-    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.jwt).expect(200);
+    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.sessionToken).expect(200);
     expect(detail.body.replacements).toEqual([]);
   });
 
   it('a kept replacement can get a stand-in', async () => {
     const owner = await fixture.scenario();
     const id = await replacementId(owner);
-    await fixture.post(`/api/replacements/${id}/keep`, owner.jwt).expect(200);
+    await fixture.post(`/api/replacements/${id}/keep`, owner.sessionToken).expect(200);
 
     // Enough copies for the deck's other missing card too, which the engine serves first.
-    await fixture.own(owner.jwt, [{ cardIdentifier: coaxStandIn(), quantity: 3 }]);
-    await fixture.post('/api/collection/mark-owned', owner.jwt).send({ deckId: owner.deckId, cardIdentifier: FLEX }).expect(201);
+    await fixture.own(owner.sessionToken, [{ cardIdentifier: coaxStandIn(), quantity: 3 }]);
+    await fixture.post('/api/collection/mark-owned', owner.sessionToken).send({ deckId: owner.deckId, cardIdentifier: FLEX }).expect(201);
 
     const breakdown = await fixture.latestBreakdown(owner.deckId);
     expect(breakdown.substituted.some((entry) => entry.original.cardIdentifier === COAX)).toBe(true);
@@ -397,7 +456,7 @@ describe('card replacements (E2E)', () => {
       );
     }
 
-    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.jwt).expect(200);
+    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.sessionToken).expect(200);
 
     expect(detail.body.replacements).toEqual([
       {
@@ -405,6 +464,7 @@ describe('card replacements (E2E)', () => {
         slot: 'mainboard',
         originalCardIdentifier: EMISSARY,
         originalName: 'Emissary of Tides',
+        originalPitch: 1,
         replacementCardIdentifier: COAX,
         quantity: 2,
         originalOwned: false,
@@ -416,7 +476,7 @@ describe('card replacements (E2E)', () => {
     const owner = await fixture.scenario([mainboard('a-moments-peace-blue', 1)]);
     await replacementId(owner, { originalCardIdentifier: 'a-moments-peace-blue' });
 
-    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.jwt).expect(200);
+    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.sessionToken).expect(200);
 
     expect(detail.body.replacements).toEqual([
       expect.objectContaining({ originalCardIdentifier: 'a-moments-peace-blue', originalName: "A Moment's Peace" }),
@@ -426,16 +486,16 @@ describe('card replacements (E2E)', () => {
   it('never deletes a replacement row', async () => {
     const owner = await fixture.scenario([mainboard('sink-below-red', 1)]);
     const first = await replacementId(owner);
-    await fixture.post(`/api/replacements/${first}/revert`, owner.jwt).expect(200);
+    await fixture.post(`/api/replacements/${first}/revert`, owner.sessionToken).expect(200);
     const second = await replacementId(owner);
-    await fixture.post(`/api/replacements/${second}/keep`, owner.jwt).expect(200);
+    await fixture.post(`/api/replacements/${second}/keep`, owner.sessionToken).expect(200);
     await replacementId(owner, { originalCardIdentifier: FLEX, replacementCardIdentifier: ADRENALINE });
     await replacementId(owner, { originalCardIdentifier: 'sink-below-red', replacementCardIdentifier: 'sink-below-blue' });
     // A save that drops only the adrenaline copies closes that record as removed.
     const cards = Object.entries(await fixture.deckCards(owner.deckId))
       .map(([key, quantity]) => ({ cardIdentifier: key.split('@')[0]!, slot: key.split('@')[1]!, quantity }))
       .filter((card) => card.cardIdentifier !== ADRENALINE);
-    await fixture.put(`/api/decks/${owner.deckId}`, owner.jwt)
+    await fixture.put(`/api/decks/${owner.deckId}`, owner.sessionToken)
       .send({ heroIdentifier: KATSU, format: 'Classic Constructed', cards })
       .expect(200);
 

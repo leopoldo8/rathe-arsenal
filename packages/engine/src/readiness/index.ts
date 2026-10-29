@@ -3,6 +3,7 @@ export type {
   ISubstitutedEntry,
   IReadinessBreakdown,
   IEffectiveReadinessResult,
+  IMissingCopies,
   TPath,
 } from './types';
 

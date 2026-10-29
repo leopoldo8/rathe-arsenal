@@ -1,0 +1,139 @@
+{
+  "key": "armory-kayo",
+  "name": "Armory Deck: Kayo",
+  "kind": "armory",
+  "format": "Classic Constructed",
+  "hero": "kayo-armed-and-dangerous",
+  "cards": [
+    {
+      "cardIdentifier": "kayo-armed-and-dangerous",
+      "printingCode": "AKO001",
+      "quantity": 1
+    },
+    {
+      "cardIdentifier": "beaten-trackers",
+      "printingCode": "AKO006",
+      "quantity": 1
+    },
+    {
+      "cardIdentifier": "hide-tanner",
+      "printingCode": "AKO005",
+      "quantity": 1
+    },
+    {
+      "cardIdentifier": "knucklehead",
+      "printingCode": "AKO003",
+      "quantity": 1
+    },
+    {
+      "cardIdentifier": "mandible-claw",
+      "printingCode": "AKO002",
+      "quantity": 1
+    },
+    {
+      "cardIdentifier": "savage-sash",
+      "printingCode": "AKO004",
+      "quantity": 1
+    },
+    {
+      "cardIdentifier": "bare-fangs-red",
+      "printingCode": "AKO007",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "clash-of-agility-red",
+      "printingCode": "AKO008",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "humble-red",
+      "printingCode": "AKO009",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "pulping-red",
+      "printingCode": "AKO010",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "rally-the-rearguard-red",
+      "printingCode": "AKO011",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "savage-beatdown-red",
+      "printingCode": "AKO012",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "strength-rules-all-red",
+      "printingCode": "AKO013",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "wild-ride-red",
+      "printingCode": "AKO014",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "wreck-havoc-red",
+      "printingCode": "AKO015",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "bare-fangs-yellow",
+      "printingCode": "AKO016",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "agile-windup-blue",
+      "printingCode": "AKO017",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "assault-and-battery-blue",
+      "printingCode": "AKO018",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "battlefront-bastion-blue",
+      "printingCode": "AKO019",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "mighty-windup-blue",
+      "printingCode": "AKO020",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "pound-town-blue",
+      "printingCode": "AKO021",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "reincarnate-blue",
+      "printingCode": "AKO022",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "riled-up-blue",
+      "printingCode": "AKO023",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "run-roughshod-blue",
+      "printingCode": "AKO024",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "smash-instinct-blue",
+      "printingCode": "AKO025",
+      "quantity": 3
+    },
+    {
+      "cardIdentifier": "wrecker-romp-blue",
+      "printingCode": "AKO026",
+      "quantity": 3
+    }
+  ]
+}

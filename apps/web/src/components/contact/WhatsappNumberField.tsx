@@ -7,10 +7,12 @@ interface IWhatsappNumberFieldProps {
   readonly value: string;
   readonly onChange: (value: string) => void;
   readonly error: string | null;
+  /** The hint inside the empty field; the Brazilian example by default. */
+  readonly placeholder?: string;
 }
 
 /** Number input with the fixed "+55" prefix; the value is what the person types after it. */
-export function WhatsappNumberField({ label, value, onChange, error }: IWhatsappNumberFieldProps): React.ReactElement {
+export function WhatsappNumberField({ label, value, onChange, error, placeholder = '53 99999-0000' }: IWhatsappNumberFieldProps): React.ReactElement {
   const { t } = useTranslation();
   const inputId = useId();
   const errorId = useId();
@@ -29,7 +31,7 @@ export function WhatsappNumberField({ label, value, onChange, error }: IWhatsapp
           type="tel"
           inputMode="tel"
           autoComplete="tel-national"
-          placeholder="53 99999-0000"
+          placeholder={placeholder}
           value={value}
           aria-invalid={error === null ? undefined : 'true'}
           aria-describedby={error === null ? undefined : errorId}

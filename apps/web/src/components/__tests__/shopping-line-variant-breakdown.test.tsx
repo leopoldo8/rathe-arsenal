@@ -57,6 +57,7 @@ function makeLine(overrides: Partial<IShoppingLineLine> = {}): IShoppingLineLine
   return {
     cardIdentifier: 'rhinar-brute-of-brokenbone',
     cardName: 'Rhinar, Brute of Brokenbone',
+    pitch: null,
     quantityNeeded: 1,
     quantityAvailable: 1,
     unitPriceCents: 35,
@@ -330,6 +331,7 @@ describe('Scenario 5: verified-unavailable vs never-checked unavailable', () => 
     const verifiedLine = makeLine({
       cardIdentifier: 'card-a',
       cardName: 'Card A',
+      pitch: null,
       quantityAvailable: 0,
       verificationStatus: 'verified_zero',
       hasVariantData: true,
@@ -337,6 +339,7 @@ describe('Scenario 5: verified-unavailable vs never-checked unavailable', () => 
     const neverCheckedLine = makeLine({
       cardIdentifier: 'card-b',
       cardName: 'Card B',
+      pitch: null,
       quantityAvailable: 0,
       hasVariantData: false,
     });
@@ -352,6 +355,7 @@ describe('Scenario 5: verified-unavailable vs never-checked unavailable', () => 
     const verifiedLine = makeLine({
       cardIdentifier: 'card-a',
       cardName: 'Verified Zero Card',
+      pitch: null,
       quantityAvailable: 0,
       verificationStatus: 'verified_zero',
       hasVariantData: true,
@@ -387,7 +391,7 @@ describe('Scenario 6: failed-fetch card retains listing estimate without breakin
       },
     });
 
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
+    render(<ShoppingLine data={data} />);
 
     // Line should still be rendered, no crash
     expect(screen.getByText(/rhinar, brute of brokenbone/i)).toBeInTheDocument();
@@ -494,6 +498,7 @@ describe('Scenario 8: backward compatibility - lines without variants field', ()
     const line: IShoppingLineLine = {
       cardIdentifier: 'old-card',
       cardName: 'Old Card',
+      pitch: null,
       quantityNeeded: 1,
       quantityAvailable: 1,
       unitPriceCents: 4990,
@@ -512,6 +517,7 @@ describe('Scenario 8: backward compatibility - lines without variants field', ()
     const line: IShoppingLineLine = {
       cardIdentifier: 'old-card',
       cardName: 'Old Card',
+      pitch: null,
       quantityNeeded: 1,
       quantityAvailable: 1,
       unitPriceCents: 4990,
@@ -546,6 +552,7 @@ describe('Scenario 8: backward compatibility - lines without variants field', ()
     const line: IShoppingLineLine = {
       cardIdentifier: 'old-card',
       cardName: 'Old Card',
+      pitch: null,
       quantityNeeded: 1,
       quantityAvailable: 1,
       unitPriceCents: 4990,
@@ -573,6 +580,7 @@ describe('Edge case: variant data takes precedence over null listing price', () 
     const line: IShoppingLineLine = {
       cardIdentifier: 'sob-consulta-card',
       cardName: 'Under Request Card',
+      pitch: null,
       quantityNeeded: 1,
       quantityAvailable: 1,
       // Listing price was "Sob consulta" at scrape time, so unitPriceCents is null.

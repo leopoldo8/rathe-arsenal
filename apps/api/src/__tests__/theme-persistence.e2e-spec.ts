@@ -18,14 +18,15 @@
  * - Unique email suffix prevents data collisions between runs.
  */
 
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getDataSourceToken } from '@nestjs/typeorm';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../app.module';
-import { HttpExceptionFilter } from '../common/filters/http-exception.filter';
+import { configureHttpApp } from '../http/configure-http-app';
+import { sessionCookieHeader, sessionTokenOf } from '../auth/__tests__/session-test-helpers';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -75,16 +76,7 @@ describe('Theme persistence (E2E, U8)', () => {
       .compile();
 
     app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-        transformOptions: { enableImplicitConversion: true },
-      }),
-    );
-    app.useGlobalFilters(new HttpExceptionFilter());
+    configureHttpApp(app);
     await app.listen(0, '127.0.0.1');
 
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());
@@ -109,7 +101,7 @@ describe('Theme persistence (E2E, U8)', () => {
       const signUpRes = await request(server)
         .post('/api/auth/sign-up')
         .send({ email: TEST_EMAIL, password: TEST_PASSWORD })
-        .expect(202);
+        .expect(201);
 
       expect(typeof signUpRes.body._devVerificationLink).toBe('string');
       const verificationToken = extractVerificationToken(
@@ -126,8 +118,8 @@ describe('Theme persistence (E2E, U8)', () => {
         .send({ email: TEST_EMAIL, password: TEST_PASSWORD })
         .expect(200);
 
-      const jwt: string = initialSignInRes.body.jwt as string;
-      expect(typeof jwt).toBe('string');
+      const sessionToken: string = sessionTokenOf(initialSignInRes);
+      expect(typeof sessionToken).toBe('string');
 
       // -----------------------------------------------------------------------
       // (a) GET /api/users/me/settings returns default { theme: 'dark' }
@@ -135,7 +127,7 @@ describe('Theme persistence (E2E, U8)', () => {
       // -----------------------------------------------------------------------
       const getRes = await request(server)
         .get('/api/users/me/settings')
-        .set('Authorization', `Bearer ${jwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .expect(200);
 
       expect(getRes.body).toEqual({ theme: 'dark' });
@@ -146,7 +138,7 @@ describe('Theme persistence (E2E, U8)', () => {
       // -----------------------------------------------------------------------
       const patchRes = await request(server)
         .patch('/api/users/me/settings')
-        .set('Authorization', `Bearer ${jwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .send({ theme: 'light' })
         .expect(200);
 
@@ -155,7 +147,7 @@ describe('Theme persistence (E2E, U8)', () => {
       // Confirm persistence via GET after PATCH.
       const getAfterPatchRes = await request(server)
         .get('/api/users/me/settings')
-        .set('Authorization', `Bearer ${jwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .expect(200);
 
       expect(getAfterPatchRes.body).toEqual({ theme: 'light' });
@@ -179,7 +171,7 @@ describe('Theme persistence (E2E, U8)', () => {
       // -----------------------------------------------------------------------
       await request(server)
         .patch('/api/users/me/settings')
-        .set('Authorization', `Bearer ${jwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .send({ theme: 'sepia' })
         .expect(400);
     },

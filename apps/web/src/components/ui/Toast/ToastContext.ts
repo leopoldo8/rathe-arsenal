@@ -21,6 +21,13 @@ export interface IToastPayload {
    * Optional generic action button. Shown alongside the close button.
    * Used for "Undo" patterns (e.g. optimistic untrack with deferred mutation).
    */
+  /**
+   * Stays on screen until it is dismissed, instead of closing after a few seconds. For a message that
+   * carries the only way back from something the player just did.
+   */
+  readonly persistent?: boolean;
+  /** Closes at the player's next action anywhere outside the toast: a tap or a key press. */
+  readonly dismissOnNextAction?: boolean;
   readonly action?: {
     readonly label: string;
     readonly onClick: () => void;

@@ -18,6 +18,11 @@ export interface IBreakdownEntry {
    */
   readonly name: string;
   readonly quantity: number;
+  /**
+   * Of `quantity`, the copies that belong to the deck line's inventory (door 3) and not to its
+   * starting deck. Absent when none do. Owned copies cover the deck copies first.
+   */
+  readonly inventoryQuantity?: number;
   readonly slot: string;
   /**
    * Card pitch (1 = red, 2 = yellow, 3 = blue).
@@ -73,6 +78,13 @@ export interface IReadinessBreakdown {
   readonly notOwned: readonly IBreakdownEntry[];
 }
 
+/** Copies the collection does not cover, in all and by where they go: the starting deck or the inventory. */
+export interface IMissingCopies {
+  readonly total: number;
+  readonly deck: number;
+  readonly inventory: number;
+}
+
 export interface IEffectiveReadinessResult {
   readonly rawPercent: number;
   readonly effectivePercent: number;
@@ -89,6 +101,8 @@ export interface IEffectiveReadinessResult {
    */
   readonly fidelityPercent: number;
   readonly breakdown: IReadinessBreakdown;
+  /** Copies not owned, summed from `breakdown.notOwned` and split by deck and inventory. */
+  readonly missingCopies: IMissingCopies;
   readonly substitutions: readonly ISubstitutionMatch[];
   readonly pitchCurve: {
     readonly original: IPitchCurve;

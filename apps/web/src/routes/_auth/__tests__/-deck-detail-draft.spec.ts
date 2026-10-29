@@ -57,4 +57,21 @@ describe('buildDraftInitialPayload', () => {
 
     expect(payload.cards[0]).toMatchObject({ legalFormats: [], legalHeroes: [], bannedFormats: [] });
   });
+
+  it('splits the inventory part of an entry from its deck copies', () => {
+    // The readiness entry counts the deck and the inventory together; `inventoryQuantity` is the share
+    // of `quantity` that sits in the inventory.
+    const snapshot = snapshotWith(
+      [entry('pack-hunt-red', { quantity: 2, inventoryQuantity: 1 })],
+      [entry('pack-hunt-red', { quantity: 2, inventoryQuantity: 1 }), entry('snatch-red', { quantity: 3, inventoryQuantity: 3 })],
+    );
+
+    const payload = buildDraftInitialPayload({ heroIdentifier: 'rhinar', format: 'Classic Constructed' }, snapshot);
+
+    expect(payload.cards.map((card) => [card.cardIdentifier, card.quantity, card.inventoryQuantity])).toEqual([
+      ['pack-hunt-red', 1, 1],
+      ['pack-hunt-red', 1, 1],
+      ['snatch-red', 0, 3],
+    ]);
+  });
 });

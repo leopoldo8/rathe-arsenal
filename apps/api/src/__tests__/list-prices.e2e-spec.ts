@@ -13,11 +13,12 @@ import { DataSource } from 'typeorm';
 import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { AppModule } from '../app.module';
 import { configureHttpApp } from '../http/configure-http-app';
-import { ICardPrinting, printingsOfCard } from '../lists/printing-key';
+import { ICardPrinting, printingsOfCard, printingVersion } from '../lists/printing-key';
 import { priceKeysOf } from '../prices/price-suggestion';
 import { MAX_CONSECUTIVE_GROUP_FAILURES, PRICE_SYNC_LOCK_KEY, PriceSyncService } from '../prices/price-sync.service';
 import { printingSubType } from '../prices/price-sub-type';
 import { ITcgcsvClient } from '../prices/tcgcsv-client';
+import { sessionCookieHeader, sessionTokenOf } from '../auth/__tests__/session-test-helpers';
 
 const PASSWORD = 'prices-test-password-123';
 const SUFFIX = Date.now().toString(36);
@@ -51,13 +52,13 @@ describe('Card list prices (E2E)', () => {
   let server: ReturnType<INestApplication['getHttpServer']>;
   const seededProductIds: string[] = [];
 
-  const auth = (jwt: string): [string, string] => ['Authorization', `Bearer ${jwt}`];
+  const auth = (sessionToken: string): [string, string] => ['Cookie', sessionCookieHeader(sessionToken)];
 
   async function createSession(label: string): Promise<string> {
-    const signUp = await request(server).post('/api/auth/sign-up').send({ email: emailFor(label), password: PASSWORD }).expect(202);
+    const signUp = await request(server).post('/api/auth/sign-up').send({ email: emailFor(label), password: PASSWORD }).expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
-    const verified = await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
-    return verified.body.jwt as string;
+    await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
+    return sessionTokenOf(signUp);
   }
 
   async function seedPrice(printing: ICardPrinting, market: number | null, mid: number | null): Promise<void> {
@@ -71,8 +72,8 @@ describe('Card list prices (E2E)', () => {
     );
   }
 
-  async function sellList(jwt: string): Promise<number> {
-    const res = await request(server).post('/api/lists').set(...auth(jwt)).send({ kind: 'sell', name: 'Prices' }).expect(201);
+  async function sellList(sessionToken: string): Promise<number> {
+    const res = await request(server).post('/api/lists').set(...auth(sessionToken)).send({ kind: 'sell', name: 'Prices' }).expect(201);
     return res.body.id as number;
   }
 
@@ -107,97 +108,97 @@ describe('Card list prices (E2E)', () => {
   });
 
   it('suggests the cheapest non-foil printing, or the chosen printing, times the multiplier in whole reais', async () => {
-    const jwt = await createSession('suggest');
-    const listId = await sellList(jwt);
+    const sessionToken = await createSession('suggest');
+    const listId = await sellList(sessionToken);
     await seedPrice(NORMAL, 200, 220);
     await seedPrice(FOIL, 100, 110);
     const base = { cardIdentifier: CARD.cardIdentifier, quantity: 1 };
 
-    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(jwt)).send(base).expect(201);
-    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(jwt)).send({ ...base, printing: FOIL.key }).expect(201);
-    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(jwt)).send({ cardIdentifier: NO_PRICE_CARD.cardIdentifier, quantity: 1 }).expect(201);
+    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send(base).expect(201);
+    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send({ ...base, ...printingVersion(FOIL) }).expect(201);
+    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send({ cardIdentifier: NO_PRICE_CARD.cardIdentifier, quantity: 1 }).expect(201);
 
-    const res = await request(server).get(`/api/lists/${listId}`).set(...auth(jwt)).expect(200);
+    const res = await request(server).get(`/api/lists/${listId}`).set(...auth(sessionToken)).expect(200);
     expect(res.body.lines[0].suggestion).toEqual({ cents: 1400, approximate: false, fetchedAt: FETCHED_AT, printing: NORMAL.key });
     expect(res.body.lines[1].suggestion).toEqual({ cents: 700, approximate: false, fetchedAt: FETCHED_AT, printing: FOIL.key });
     expect(res.body.lines[2].suggestion).toBeNull();
 
-    const sixX = await request(server).patch(`/api/lists/${listId}`).set(...auth(jwt)).send({ priceMultiplier: 6 }).expect(200);
+    const sixX = await request(server).patch(`/api/lists/${listId}`).set(...auth(sessionToken)).send({ priceMultiplier: 6 }).expect(200);
     expect(sixX.body.lines[0].suggestion.cents).toBe(1200);
-    const cleared = await request(server).patch(`/api/lists/${listId}`).set(...auth(jwt)).send({ priceMultiplier: null }).expect(200);
+    const cleared = await request(server).patch(`/api/lists/${listId}`).set(...auth(sessionToken)).send({ priceMultiplier: null }).expect(200);
     expect(cleared.body.lines.every((line: { suggestion: unknown }) => line.suggestion === null)).toBe(true);
   });
 
   it('marks a mid-price suggestion approximate', async () => {
-    const jwt = await createSession('approx');
-    const listId = await sellList(jwt);
+    const sessionToken = await createSession('approx');
+    const listId = await sellList(sessionToken);
     await seedPrice(NORMAL, null, 300);
     await seedPrice(FOIL, null, 500);
     const res = await request(server)
       .post(`/api/lists/${listId}/lines`)
-      .set(...auth(jwt))
+      .set(...auth(sessionToken))
       .send({ cardIdentifier: CARD.cardIdentifier, quantity: 1 })
       .expect(201);
     expect(res.body.lines[0].suggestion).toMatchObject({ cents: 2100, approximate: true, printing: NORMAL.key });
   });
 
   it('gives want lists no suggestion', async () => {
-    const jwt = await createSession('want');
+    const sessionToken = await createSession('want');
     await seedPrice(NORMAL, 200, 220);
-    const created = await request(server).post('/api/lists').set(...auth(jwt)).send({ kind: 'want', name: 'W' }).expect(201);
+    const created = await request(server).post('/api/lists').set(...auth(sessionToken)).send({ kind: 'want', name: 'W' }).expect(201);
     const res = await request(server)
       .post(`/api/lists/${created.body.id}/lines`)
-      .set(...auth(jwt))
+      .set(...auth(sessionToken))
       .send({ cardIdentifier: CARD.cardIdentifier, quantity: 1 })
       .expect(201);
     expect(res.body.lines[0].suggestion).toBeNull();
   });
 
   it('fills every available line without a price, overwrites chosen lines, and leaves lines without a suggestion alone', async () => {
-    const jwt = await createSession('apply');
-    const listId = await sellList(jwt);
+    const sessionToken = await createSession('apply');
+    const listId = await sellList(sessionToken);
     await seedPrice(NORMAL, 200, 220);
     await seedPrice(FOIL, 100, 110);
     const base = { cardIdentifier: CARD.cardIdentifier, quantity: 1 };
-    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(jwt)).send({ ...base, condition: 'NM' }).expect(201);
-    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(jwt)).send({ ...base, printing: FOIL.key }).expect(201);
+    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send({ ...base, condition: 'NM' }).expect(201);
+    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send({ ...base, ...printingVersion(FOIL) }).expect(201);
     await request(server)
       .post(`/api/lists/${listId}/lines`)
-      .set(...auth(jwt))
+      .set(...auth(sessionToken))
       .send({ cardIdentifier: NO_PRICE_CARD.cardIdentifier, quantity: 1, priceCents: 900 })
       .expect(201);
     const soldRes = await request(server)
       .post(`/api/lists/${listId}/lines`)
-      .set(...auth(jwt))
+      .set(...auth(sessionToken))
       .send({ ...base, condition: 'LP' })
       .expect(201);
     const [first, second, third, sold] = soldRes.body.lines as { id: number }[];
-    await request(server).patch(`/api/lists/${listId}/lines/${(sold as { id: number }).id}`).set(...auth(jwt)).send({ sold: true }).expect(200);
+    await request(server).patch(`/api/lists/${listId}/lines/${(sold as { id: number }).id}`).set(...auth(sessionToken)).send({ sold: true }).expect(200);
 
     const subset = await request(server)
       .post(`/api/lists/${listId}/apply-suggestions`)
-      .set(...auth(jwt))
+      .set(...auth(sessionToken))
       .send({ lineIds: [(second as { id: number }).id] })
       .expect(200);
     expect(subset.body.lines.map((line: { priceCents: number | null }) => line.priceCents)).toEqual([null, 700, 900, null]);
 
-    await request(server).patch(`/api/lists/${listId}/lines/${(second as { id: number }).id}`).set(...auth(jwt)).send({ priceCents: 1234 }).expect(200);
-    const all = await request(server).post(`/api/lists/${listId}/apply-suggestions`).set(...auth(jwt)).send({}).expect(200);
+    await request(server).patch(`/api/lists/${listId}/lines/${(second as { id: number }).id}`).set(...auth(sessionToken)).send({ priceCents: 1234 }).expect(200);
+    const all = await request(server).post(`/api/lists/${listId}/apply-suggestions`).set(...auth(sessionToken)).send({}).expect(200);
     expect(all.body.lines.map((line: { priceCents: number | null }) => line.priceCents)).toEqual([1400, 1234, 900, null]);
     expect((first as { id: number }).id).toBeDefined();
     expect((third as { id: number }).id).toBeDefined();
 
-    await request(server).post(`/api/lists/${listId}/apply-suggestions`).set(...auth(jwt)).send({ lineIds: ['x'] }).expect(400);
-    await request(server).post(`/api/lists/${listId}/apply-suggestions`).set(...auth(jwt)).send({ other: 1 }).expect(400);
+    await request(server).post(`/api/lists/${listId}/apply-suggestions`).set(...auth(sessionToken)).send({ lineIds: ['x'] }).expect(400);
+    await request(server).post(`/api/lists/${listId}/apply-suggestions`).set(...auth(sessionToken)).send({ other: 1 }).expect(400);
   });
 
   it('keeps prices already written when the multiplier changes, until the seller applies again', async () => {
-    const jwt = await createSession('stay');
-    const listId = await sellList(jwt);
+    const sessionToken = await createSession('stay');
+    const listId = await sellList(sessionToken);
     await seedPrice(NORMAL, 200, 220);
-    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(jwt)).send({ cardIdentifier: CARD.cardIdentifier, quantity: 1 }).expect(201);
-    await request(server).post(`/api/lists/${listId}/apply-suggestions`).set(...auth(jwt)).send({}).expect(200);
-    const changed = await request(server).patch(`/api/lists/${listId}`).set(...auth(jwt)).send({ priceMultiplier: 4 }).expect(200);
+    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send({ cardIdentifier: CARD.cardIdentifier, quantity: 1 }).expect(201);
+    await request(server).post(`/api/lists/${listId}/apply-suggestions`).set(...auth(sessionToken)).send({}).expect(200);
+    const changed = await request(server).patch(`/api/lists/${listId}`).set(...auth(sessionToken)).send({ priceMultiplier: 4 }).expect(200);
     expect(changed.body.lines[0]).toMatchObject({ priceCents: 1400 });
     expect(changed.body.lines[0].suggestion.cents).toBe(800);
   });
@@ -211,18 +212,18 @@ describe('Card list prices (E2E)', () => {
   });
 
   it('puts a suggestion on each printing in the printings route', async () => {
-    const jwt = await createSession('printings');
-    const listId = await sellList(jwt);
+    const sessionToken = await createSession('printings');
+    const listId = await sellList(sessionToken);
     await seedPrice(NORMAL, 200, 220);
     await seedPrice(FOIL, null, 150);
 
-    const res = await request(server).get(`/api/lists/${listId}/printings/${CARD.cardIdentifier}`).set(...auth(jwt)).expect(200);
+    const res = await request(server).get(`/api/lists/${listId}/printings/${CARD.cardIdentifier}`).set(...auth(sessionToken)).expect(200);
     const byKey = new Map((res.body as { printing: string; suggestion: { cents: number; approximate: boolean; printing: string } | null }[]).map((o) => [o.printing, o.suggestion]));
     expect(byKey.get(NORMAL.key)).toMatchObject({ cents: 1400, approximate: false, printing: NORMAL.key });
     expect(byKey.get(FOIL.key)).toMatchObject({ cents: 1100, approximate: true, printing: FOIL.key });
 
-    const want = await request(server).post('/api/lists').set(...auth(jwt)).send({ kind: 'want', name: 'W' }).expect(201);
-    const wantRes = await request(server).get(`/api/lists/${want.body.id}/printings/${CARD.cardIdentifier}`).set(...auth(jwt)).expect(200);
+    const want = await request(server).post('/api/lists').set(...auth(sessionToken)).send({ kind: 'want', name: 'W' }).expect(201);
+    const wantRes = await request(server).get(`/api/lists/${want.body.id}/printings/${CARD.cardIdentifier}`).set(...auth(sessionToken)).expect(200);
     expect(wantRes.body.every((option: { suggestion: unknown }) => option.suggestion === null)).toBe(true);
   });
 
@@ -282,14 +283,14 @@ describe('Card list prices (E2E)', () => {
     }
 
     it('reads every group once per UTC day and only after tcgcsv rebuilt', async () => {
-      const jwt = await createSession('sync');
-      const listId = await sellList(jwt);
+      const sessionToken = await createSession('sync');
+      const listId = await sellList(sessionToken);
       await dataSource.query(`DELETE FROM card_price WHERE "productId" = $1`, [NORMAL.productId]);
       await dataSource.query(`DELETE FROM card_price_group_sync WHERE "groupId" = $1`, [GROUP_ID]);
       await request(server)
         .post(`/api/lists/${listId}/lines`)
-        .set(...auth(jwt))
-        .send({ cardIdentifier: CARD.cardIdentifier, quantity: 1, printing: NORMAL.key })
+        .set(...auth(sessionToken))
+        .send({ cardIdentifier: CARD.cardIdentifier, quantity: 1, ...printingVersion(NORMAL) })
         .expect(201);
 
       const day1 = new Date('2026-10-18T21:00:00Z');
@@ -313,7 +314,7 @@ describe('Card list prices (E2E)', () => {
       expect(rebuilt.calls.filter((call) => call.startsWith('prices'))).toEqual([`prices:${GROUP_ID}`]);
       expect(await marketCents()).toBe(650);
 
-      const suggestion = await request(server).get(`/api/lists/${listId}`).set(...auth(jwt)).expect(200);
+      const suggestion = await request(server).get(`/api/lists/${listId}`).set(...auth(sessionToken)).expect(200);
       expect(suggestion.body.lines[0].suggestion).toMatchObject({ cents: 4600, printing: NORMAL.key });
     });
 

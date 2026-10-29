@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DELETE_SHARE_LINKS_FOR_DECK_SQL } from '../sharing/preview/share-link-cleanup';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
@@ -42,6 +42,31 @@ import { buildReplacementViews } from '../replacements/build-replacement-views';
 import { buildProtectedCopies, findBrokenReplacements } from '../replacements/replacement-copies';
 import { RecommendationQueueService } from '../recommendations/recommendation-queue.service';
 import { RecommendationsQueryService } from '../recommendations/recommendations-query.service';
+import { cardLegalityFacts, ICardLegalityFacts } from '../catalog/card-legality-facts';
+import { automaticDeckName, nameAfterFormatChange } from './automatic-deck-name';
+import { toCompositionRows } from './composition-rows';
+
+const DELETED_DECK_KEPT_MS = 30 * 24 * 60 * 60 * 1000;
+
+export interface IDeletedDeckItem {
+  readonly id: number;
+  readonly name: string;
+  readonly status: string;
+  readonly format: string;
+  readonly totalCards: number;
+  readonly deletedAt: string;
+  readonly purgeAt: string;
+}
+
+const NO_LEGALITY_FACTS: ICardLegalityFacts = {
+  legalFormats: [],
+  legalHeroes: [],
+  bannedFormats: [],
+  restrictedFormats: [],
+  legalOverrides: [],
+  specializations: [],
+  legendary: false,
+};
 
 interface IStoredSubstitutionMatch {
   readonly substitute?: { readonly cardIdentifier?: string };
@@ -78,6 +103,14 @@ export class DecksService {
     }
   }
 
+  private cardPitchOf(cardIdentifier: string): number | null {
+    try {
+      return this.catalogService.getCard(cardIdentifier).pitch ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   // Legacy snapshots persisted before B1 do not carry an entry-level `name`.
   // Enrich on read from the catalog so UI surfaces always render a human
   // name without forcing a DB migration. Fallback to the identifier so the
@@ -89,19 +122,15 @@ export class DecksService {
   private enrichBreakdown(breakdown: unknown): IBreakdown {
     const enrichEntry = (entry: IBreakdownEntry): IBreakdownEntry => {
       let name = entry.name && entry.name.length > 0 ? entry.name : entry.cardIdentifier;
-      let legalFormats: string[] = [];
-      let legalHeroes: string[] = [];
-      let bannedFormats: string[] = [];
+      let facts: ICardLegalityFacts = NO_LEGALITY_FACTS;
       try {
         const card = this.catalogService.getCard(entry.cardIdentifier);
         if (card?.name && !(entry.name && entry.name.length > 0)) name = card.name;
-        legalFormats = [...(card?.legalFormats ?? [])];
-        legalHeroes = [...(card?.legalHeroes ?? [])];
-        bannedFormats = [...(card?.bannedFormats ?? [])];
+        if (card) facts = cardLegalityFacts(card);
       } catch {
         // Card retired from catalog — keep the identifier name and empty legality.
       }
-      return { ...entry, name, legalFormats, legalHeroes, bannedFormats };
+      return { ...entry, name, ...facts };
     };
 
     const raw = breakdown as {
@@ -143,7 +172,7 @@ export class DecksService {
   async listForUser(userId: string): Promise<ITrackedDeckListResponse> {
     const [decks, collectionCardCount, aggregateShoppingLine] = await Promise.all([
       this.trackedDeckRepo.find({
-        where: { userId },
+        where: { userId, deletedAt: IsNull() },
         order: { trackedAt: 'DESC' },
       }),
       // countUniqueOwned sums across active sources so the home empty-state
@@ -224,6 +253,7 @@ export class DecksService {
     {
       const allDeckCards = await this.deckCardRepo.find({
         where: { trackedDeckId: In(decks.map((d) => d.id)) },
+        order: { id: 'ASC' },
       });
       for (const row of allDeckCards) {
         const list = deckCardsByDeckId.get(row.trackedDeckId) ?? [];
@@ -241,6 +271,7 @@ export class DecksService {
           cards: cards.map((row) => ({
             cardIdentifier: row.cardIdentifier,
             quantity: row.quantity,
+            inventoryQuantity: row.inventoryQuantity,
             slot: row.slot,
           })),
         },
@@ -291,6 +322,9 @@ export class DecksService {
         heroImageUrl,
         representativeCards: previewMeta.representativeCards,
         cardCounts: snap ? this.deriveCardCounts(snap.breakdown) : null,
+        deckSize: (deckCardsByDeckId.get(deck.id) ?? [])
+          .filter((row) => row.slot === 'mainboard')
+          .reduce((sum, row) => sum + row.quantity, 0),
         clearUpgradeCount: clearUpgradeCounts.get(deck.id) ?? 0,
       };
     });
@@ -506,6 +540,7 @@ export class DecksService {
 
     const deckCards = await this.deckCardRepo.find({
       where: { trackedDeckId: deckId },
+      order: { id: 'ASC' },
     });
 
     const totalCards = deckCards.reduce((sum, c) => sum + c.quantity, 0);
@@ -588,6 +623,7 @@ export class DecksService {
         cards: deckCards.map((row) => ({
           cardIdentifier: row.cardIdentifier,
           quantity: row.quantity,
+          inventoryQuantity: row.inventoryQuantity,
           slot: row.slot,
         })),
       },
@@ -636,10 +672,11 @@ export class DecksService {
       trackedAt: deck.trackedAt.toISOString(),
       updatedAt: deck.updatedAt.toISOString(),
       totalCards,
+      cards: toCompositionRows(deckCards),
       latestSnapshot: snapshotDto,
       shoppingLine,
       legality,
-      replacements: buildReplacementViews(activeReplacements, ownedOriginals, deckCards, (id) => this.cardNameOf(id)),
+      replacements: buildReplacementViews(activeReplacements, ownedOriginals, deckCards, (id) => this.cardNameOf(id), (id) => this.cardPitchOf(id)),
     };
   }
 
@@ -647,7 +684,7 @@ export class DecksService {
    * Creates an empty scratch deck for the user.
    *
    * The deck starts with `status='idea'` and `fabraryUlid=NULL`.
-   * The name is composed as `'{heroDisplayName} — {format}'`.
+   * The name is composed as `'{heroDisplayName} - {format}'`.
    * No deck_card rows are inserted — the deck has 0 cards.
    *
    * Returns the standard detail payload shape including `legality`, which will
@@ -661,7 +698,7 @@ export class DecksService {
     // Look up the hero display name from the catalog.
     const heroCard = this.catalogService.getCard(dto.heroIdentifier);
     const heroDisplayName = heroCard.name;
-    const name = `${heroDisplayName} — ${dto.format}`;
+    const name = automaticDeckName(heroDisplayName, dto.format);
 
     // Persist the deck row inside a transaction (no deck_card rows on creation).
     const saved = await this.dataSource.transaction(async (manager) => {
@@ -705,6 +742,7 @@ export class DecksService {
       trackedAt: saved.trackedAt.toISOString(),
       updatedAt: saved.updatedAt.toISOString(),
       totalCards: 0,
+      cards: [],
       latestSnapshot: null,
       shoppingLine: null,
       legality,
@@ -759,11 +797,15 @@ export class DecksService {
 
       // --- format (metadata only; readiness does not depend on it) ---
       if (dto.format !== undefined) {
-        const before = await manager.findOne(TrackedDeckEntity, { where: { id: deckId, userId }, select: ['id', 'format'] });
+        const before = await manager.findOne(TrackedDeckEntity, {
+          where: { id: deckId, userId },
+          select: ['id', 'format', 'hero', 'name'],
+        });
+        const followedName = dto.name === undefined && before !== null ? nameAfterFormatChange(before, dto.format) : undefined;
         await manager
           .createQueryBuilder()
           .update(TrackedDeckEntity)
-          .set({ format: dto.format })
+          .set({ format: dto.format, ...(followedName === undefined ? {} : { name: followedName }) })
           .where('id = :id AND "userId" = :userId', { id: deckId, userId })
           .execute();
         if (before !== null && before.format !== dto.format) {
@@ -937,6 +979,7 @@ export class DecksService {
               trackedDeckId: deckId,
               cardIdentifier: card.cardIdentifier,
               quantity: card.quantity,
+              inventoryQuantity: card.inventoryQuantity ?? 0,
               slot: card.slot,
             })),
           );
@@ -944,12 +987,14 @@ export class DecksService {
 
         // Step 4: Update hero and format on the tracked_deck row.
         // updatedAt is bumped automatically by @UpdateDateColumn on the entity.
+        const followedName = nameAfterFormatChange(deck, dto.format);
         await manager.update(
           TrackedDeckEntity,
           { id: deckId },
           {
             heroIdentifier,
             format: dto.format,
+            ...(followedName === undefined ? {} : { name: followedName }),
           },
         );
 
@@ -968,6 +1013,7 @@ export class DecksService {
         // just-inserted deck_card rows.
         const freshCards = await manager.find(DeckCardEntity, {
           where: { trackedDeckId: deckId },
+          order: { id: 'ASC' },
         });
 
         const inventory = await this.collectionReadService.loadOwned(userId);
@@ -988,6 +1034,7 @@ export class DecksService {
           cards: freshCards.map((row) => ({
             cardIdentifier: row.cardIdentifier,
             quantity: row.quantity,
+            inventoryQuantity: row.inventoryQuantity,
             slot: row.slot,
           })),
         };
@@ -1016,7 +1063,7 @@ export class DecksService {
           tagRows: tagRowsInTx ?? [],
           readinessInsideTransaction: transactionReadiness,
           resolvedHeroIdentifier: heroIdentifier,
-          replacements: buildReplacementViews(stillActive, inventory, freshCards, (id) => this.cardNameOf(id)),
+          replacements: buildReplacementViews(stillActive, inventory, freshCards, (id) => this.cardNameOf(id), (id) => this.cardPitchOf(id)),
         };
       });
 
@@ -1031,12 +1078,14 @@ export class DecksService {
       const inventory = await this.collectionReadService.loadOwned(userId);
       const freshCards = await this.deckCardRepo.find({
         where: { trackedDeckId: deckId },
+        order: { id: 'ASC' },
       });
 
       const deckInput = {
         cards: freshCards.map((row) => ({
           cardIdentifier: row.cardIdentifier,
           quantity: row.quantity,
+          inventoryQuantity: row.inventoryQuantity,
           slot: row.slot,
         })),
       };
@@ -1085,6 +1134,7 @@ export class DecksService {
     // -------------------------------------------------------------------------
     const freshCardsForLegality = await this.deckCardRepo.find({
       where: { trackedDeckId: deckId },
+      order: { id: 'ASC' },
     });
 
     const deckInputForLegality = {
@@ -1092,6 +1142,7 @@ export class DecksService {
       cards: freshCardsForLegality.map((row) => ({
         cardIdentifier: row.cardIdentifier,
         quantity: row.quantity,
+        inventoryQuantity: row.inventoryQuantity,
         slot: row.slot,
       })),
     };
@@ -1128,6 +1179,7 @@ export class DecksService {
       trackedAt: updatedDeck.trackedAt.toISOString(),
       updatedAt: updatedDeck.updatedAt.toISOString(),
       totalCards,
+      cards: toCompositionRows(freshCardsForLegality),
       latestSnapshot: null,
       shoppingLine: null,
       legality,
@@ -1135,9 +1187,101 @@ export class DecksService {
     };
   }
 
-  async untrack(userId: string, deckId: number): Promise<void> {
+  /**
+   * A copy to test changes on: same hero, format, cards and inventory, at stage `idea`, named
+   * "<name> (cópia)". Replacements, tags and share links stay with the original.
+   */
+  async duplicate(userId: string, deckId: number): Promise<{ readonly deckId: number }> {
     await this.authzService.assertOwnsTrackedDeck(userId, deckId);
-    await this.trackedDeckRepo.delete({ id: deckId, userId });
+    const source = await this.trackedDeckRepo.findOne({ where: { id: deckId, userId } });
+    if (!source) throw new NotFoundException('Tracked deck not found');
+    const sourceRows = await this.deckCardRepo.find({ where: { trackedDeckId: deckId }, order: { id: 'ASC' } });
+
+    const copyId = await this.dataSource.transaction(async (manager) => {
+      const created = await manager.save(
+        manager.create(TrackedDeckEntity, {
+          userId,
+          fabraryUlid: null,
+          name: `${source.name} (cópia)`,
+          hero: source.hero,
+          heroIdentifier: source.heroIdentifier,
+          format: source.format,
+          status: 'idea',
+        }),
+      );
+      if (sourceRows.length > 0) {
+        await manager.insert(
+          DeckCardEntity,
+          sourceRows.map((row) => ({
+            trackedDeckId: created.id,
+            cardIdentifier: row.cardIdentifier,
+            quantity: row.quantity,
+            inventoryQuantity: row.inventoryQuantity,
+            slot: row.slot,
+          })),
+        );
+      }
+      return created.id;
+    });
+
+    try {
+      await this.substitutionService.computeAndStoreReadiness(copyId, userId);
+    } catch (error) {
+      this.logger.warn({ msg: 'Failed to store readiness of a duplicated deck', deckId: copyId, error: (error as Error).message });
+    }
+    return { deckId: copyId };
+  }
+
+  /** Soft delete (door 4): the deck leaves every read at once and is kept 30 days. A deleted or unknown deck answers 404. */
+  async softDelete(userId: string, deckId: number): Promise<{ readonly deletedAt: string }> {
+    const rows = (await this.dataSource.query(
+      `UPDATE tracked_deck SET "deletedAt" = now() WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NULL RETURNING "deletedAt"`,
+      [deckId, userId],
+    )) as unknown;
+    const updated = (Array.isArray(rows) && Array.isArray(rows[0]) ? rows[0] : rows) as Array<{ deletedAt: Date }>;
+    const first = updated[0];
+    if (first === undefined) throw new NotFoundException('Tracked deck not found');
+    return { deletedAt: new Date(first.deletedAt).toISOString() };
+  }
+
+  async listDeleted(userId: string): Promise<{ readonly decks: readonly IDeletedDeckItem[] }> {
+    const rows = await this.dataSource.query<Array<{ id: number; name: string; status: string; format: string; deletedAt: Date; totalCards: number }>>(
+      `SELECT d.id, d.name, d.status, d.format, d."deletedAt",
+              COALESCE((SELECT sum(c.quantity) FROM deck_card c WHERE c."trackedDeckId" = d.id), 0)::int AS "totalCards"
+         FROM tracked_deck d WHERE d."userId" = $1 AND d."deletedAt" IS NOT NULL ORDER BY d."deletedAt" DESC, d.id DESC`,
+      [userId],
+    );
+    return {
+      decks: rows.map((row) => {
+        const deletedAt = new Date(row.deletedAt);
+        return {
+          id: row.id,
+          name: row.name,
+          status: row.status,
+          format: row.format,
+          totalCards: row.totalCards,
+          deletedAt: deletedAt.toISOString(),
+          purgeAt: new Date(deletedAt.getTime() + DELETED_DECK_KEPT_MS).toISOString(),
+        };
+      }),
+    };
+  }
+
+  /** Brings back a deleted deck; its rows never left, so cards, inventory, replacements, tags and share links return with it. */
+  async restore(userId: string, deckId: number): Promise<ITrackedDeckDetailResponse> {
+    const rows = (await this.dataSource.query(
+      `UPDATE tracked_deck SET "deletedAt" = NULL WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NOT NULL RETURNING id`,
+      [deckId, userId],
+    )) as unknown;
+    const restored = (Array.isArray(rows) && Array.isArray(rows[0]) ? rows[0] : rows) as unknown[];
+    if (restored.length === 0) throw new NotFoundException('Tracked deck not found');
+    return this.getDetail(userId, deckId);
+  }
+
+  /** Deletes the deck for good with the cascades of the old hard delete; works on a live deck too (a deck dropped before it got a card). */
+  async permanentDelete(userId: string, deckId: number): Promise<void> {
+    const deleted = await this.trackedDeckRepo.delete({ id: deckId, userId });
+    if (!deleted.affected) throw new NotFoundException('Tracked deck not found');
     // share_link has no foreign key to the deck, so its rows (and their images) would otherwise outlive it.
     await this.dataSource.query(DELETE_SHARE_LINKS_FOR_DECK_SQL, [deckId]);
   }

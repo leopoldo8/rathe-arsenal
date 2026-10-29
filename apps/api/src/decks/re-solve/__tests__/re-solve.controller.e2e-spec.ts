@@ -5,6 +5,7 @@ import {
 import request from 'supertest';
 import { ReSolveController } from '../re-solve.controller';
 import { SWAPS_MIGRATION_PAYLOAD } from '../../../common/legacy-routes-gone';
+import { configureHttpApp } from '../../../http/configure-http-app';
 
 /**
  * Tests for the deprecated re-solve endpoints.
@@ -21,6 +22,8 @@ describe('ReSolveController — 410 Gone deprecation stubs (e2e)', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
+
+    configureHttpApp(app);
     await app.listen(0, '127.0.0.1');
   });
 
@@ -36,7 +39,7 @@ describe('ReSolveController — 410 Gone deprecation stubs (e2e)', () => {
   describe('POST /decks/:deckId/reject-substitute', () => {
     it('returns 410 Gone with structured deprecation payload', async () => {
       await request(app.getHttpServer())
-        .post('/decks/1/reject-substitute')
+        .post('/api/decks/1/reject-substitute')
         .send({ cardIdentifier: 'some-card' })
         .expect(410)
         .expect((res) => {
@@ -51,7 +54,7 @@ describe('ReSolveController — 410 Gone deprecation stubs (e2e)', () => {
   describe('POST /decks/:deckId/reset-rejections', () => {
     it('returns 410 Gone with structured deprecation payload', async () => {
       await request(app.getHttpServer())
-        .post('/decks/1/reset-rejections')
+        .post('/api/decks/1/reset-rejections')
         .expect(410)
         .expect((res) => {
           expect(res.body).toMatchObject(EXPECTED_PAYLOAD);
@@ -62,7 +65,7 @@ describe('ReSolveController — 410 Gone deprecation stubs (e2e)', () => {
   describe('POST /decks/:deckId/re-solve', () => {
     it('returns 410 Gone with structured deprecation payload', async () => {
       await request(app.getHttpServer())
-        .post('/decks/1/re-solve')
+        .post('/api/decks/1/re-solve')
         .send({ excludedCardIdentifiers: [] })
         .expect(410)
         .expect((res) => {

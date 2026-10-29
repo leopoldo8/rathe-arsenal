@@ -3,12 +3,14 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { CollectionReadService } from '../collection/collection-read.service';
+import { SpareCopiesService } from '../collection/spare/spare-copies.service';
 import { TLocale } from '../common/i18n/resolve-locale';
 import { ChatConversationEntity } from '../database/entities/chat-conversation.entity';
 import { ChatMessageEntity } from '../database/entities/chat-message.entity';
 import { ChatProposalEntity, IDeckProposalPayload, ISwapProposalPayload } from '../database/entities/chat-proposal.entity';
 import { ChatBudgetService } from './chat-budget.service';
 import { chatError } from './chat-errors';
+import { ChatPricesService } from './chat-prices.service';
 import { startOfNextUtcMonth } from './chat-pricing';
 
 export const TITLE_MAX_LENGTH = 80;
@@ -31,11 +33,23 @@ export interface IDeckProposalDisplay {
   readonly cards: readonly (ICardLabel & { readonly quantity: number; readonly slot: string; readonly ownedQuantity: number })[];
 }
 
-type TSwapCardLabel = ICardLabel & { readonly imageUrl: ICatalogCard['imageUrl'] };
+/** The catalog facts the card's comparison is written from. */
+export interface ISwapCardFacts {
+  readonly types: readonly string[];
+  readonly subtypes: readonly string[];
+  readonly cost: number | null;
+  readonly power: number | null;
+  readonly defense: number | null;
+  readonly pitch: number | null;
+}
+
+type TSwapCardLabel = ICardLabel & { readonly imageUrl: ICatalogCard['imageUrl']; readonly facts: ISwapCardFacts | null };
 
 export interface ISwapProposalDisplay {
-  readonly original: TSwapCardLabel & { readonly copiesInDeck: number };
-  readonly replacement: TSwapCardLabel & { readonly freeCopies: number };
+  /** `copiesLeft`: the deck copies that stay once the swap is done, whether or not it already is. */
+  readonly original: TSwapCardLabel & { readonly copiesInDeck: number; readonly copiesLeft: number };
+  /** `storePriceCents`: one copy at Cúpula DT, null when the store has none in stock or no price. */
+  readonly replacement: TSwapCardLabel & { readonly freeCopies: number; readonly storePriceCents: number | null };
 }
 
 export interface IProposalView {
@@ -78,9 +92,18 @@ function cardLabel(cardIdentifier: string): ICardLabel {
 function swapCardLabel(cardIdentifier: string): TSwapCardLabel {
   const label = cardLabel(cardIdentifier);
   try {
-    return { ...label, imageUrl: catalog.getCard(cardIdentifier).imageUrl };
+    const card = catalog.getCard(cardIdentifier);
+    const facts: ISwapCardFacts = {
+      types: card.types.map(String),
+      subtypes: card.subtypes.map(String),
+      cost: card.cost ?? null,
+      power: card.power ?? null,
+      defense: card.defense ?? null,
+      pitch: card.pitch ?? null,
+    };
+    return { ...label, imageUrl: card.imageUrl, facts };
   } catch {
-    return { ...label, imageUrl: null };
+    return { ...label, imageUrl: null, facts: null };
   }
 }
 
@@ -96,6 +119,8 @@ export class ChatService {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly budget: ChatBudgetService,
     private readonly collection: CollectionReadService,
+    private readonly spare: SpareCopiesService,
+    private readonly prices: ChatPricesService,
   ) {}
 
   async list(userId: string): Promise<IConversationSummary[]> {
@@ -108,7 +133,7 @@ export class ChatService {
 
   async create(userId: string, trackedDeckId: number | undefined): Promise<{ id: string }> {
     if (trackedDeckId !== undefined) {
-      const [deck] = (await this.dataSource.query(`SELECT id FROM tracked_deck WHERE id = $1 AND "userId" = $2`, [trackedDeckId, userId])) as unknown[];
+      const [deck] = (await this.dataSource.query(`SELECT id FROM tracked_deck WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NULL`, [trackedDeckId, userId])) as unknown[];
       if (!deck) throw new NotFoundException('Tracked deck not found');
     }
     const saved = await this.dataSource
@@ -245,6 +270,11 @@ export class ChatService {
         : [(proposal.payload as ISwapProposalPayload).replacementCardIdentifier],
     );
     const owned = await this.collection.loadOwned(userId, cardIds);
+    const swapReplacements = proposals.filter((p) => p.kind === 'swap').map((p) => (p.payload as ISwapProposalPayload).replacementCardIdentifier);
+    const [spareByCard, storePrices] =
+      swapReplacements.length === 0
+        ? [null, new Map<string, number>()]
+        : await Promise.all([this.spare.spareByCard(userId), this.prices.storeUnitPrices(swapReplacements)]);
     const swapDecks = [...new Set(proposals.filter((p) => p.kind === 'swap' && p.trackedDeckId !== null).map((p) => p.trackedDeckId!))];
     const inDeck = new Map<string, number>();
     if (swapDecks.length > 0) {
@@ -276,12 +306,15 @@ export class ChatService {
       } else {
         const payload = proposal.payload as ISwapProposalPayload;
         const replacement = payload.replacementCardIdentifier;
-        const free = (owned.get(replacement) ?? 0) - (inDeck.get(`${proposal.trackedDeckId}|${replacement}`) ?? 0);
+        const free = Math.max(spareByCard?.spare.get(replacement) ?? 0, 0);
         ownedCount = free > 0 ? 1 : 0;
         missingCount = free > 0 ? 0 : 1;
+        const copiesInDeck = inDeck.get(`${proposal.trackedDeckId}|${payload.originalCardIdentifier}`) ?? 0;
+        // A pending deck-side swap has not taken its copies off the deck yet; every other swap leaves the deck copies as they are.
+        const leaving = proposal.status === 'pending' && payload.side === 'deck' ? (payload.quantity ?? 0) : 0;
         display = {
-          original: { ...swapCardLabel(payload.originalCardIdentifier), copiesInDeck: inDeck.get(`${proposal.trackedDeckId}|${payload.originalCardIdentifier}`) ?? 0 },
-          replacement: { ...swapCardLabel(replacement), freeCopies: Math.max(free, 0) },
+          original: { ...swapCardLabel(payload.originalCardIdentifier), copiesInDeck, copiesLeft: Math.max(copiesInDeck - leaving, 0) },
+          replacement: { ...swapCardLabel(replacement), freeCopies: free, storePriceCents: storePrices.get(replacement) ?? null },
         };
       }
       return {

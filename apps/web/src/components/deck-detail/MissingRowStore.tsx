@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { TCardFetchStatus } from '../../api/shopping-line';
 import { formatBrl } from '../../utils/format-brl';
 import { VariantBreakdownTable } from '../ShoppingLineVariantBreakdown';
 import { formatVariantPrice } from '../ShoppingLineVariantBreakdown.helpers';
@@ -10,15 +9,11 @@ import styles from './MissingPanel.module.css';
 interface IMissingRowStoreMetaProps {
   readonly store: TRowStore;
   readonly storeName: string;
-  readonly cardName: string;
-  readonly fetchStatus: TCardFetchStatus | undefined;
 }
 
 export function MissingRowStoreMeta({
   store,
   storeName,
-  cardName,
-  fetchStatus,
 }: IMissingRowStoreMetaProps): React.ReactElement | null {
   const { t } = useTranslation();
   if (store.kind === 'none') return null;
@@ -56,16 +51,6 @@ export function MissingRowStoreMeta({
           })}
         </span>
       )}{' '}
-      {fetchStatus === 'failed' && (
-        <span
-          role="status"
-          aria-label={t('decks.failedToFetchVariants', { name: cardName })}
-          data-testid="line-item-fetch-failed"
-          className={styles.failedBadge}
-        >
-          {t('deckDetail.storeExactPriceFailed')}
-        </span>
-      )}
     </>
   );
 }

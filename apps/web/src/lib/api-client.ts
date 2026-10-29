@@ -1,5 +1,5 @@
-import { useAuth } from '../auth/useAuth';
 import i18n from '../i18n';
+import { notifyUnauthorized } from './session-events';
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -8,11 +8,21 @@ export class ApiError extends Error {
   }
 }
 
+/** True for the guard's plain 401; an auth route's 401 carries a `code` and is not a session that ended. */
+function isEndedSession(status: number, body: string): boolean {
+  if (status !== 401) return false;
+  try {
+    const parsed: unknown = JSON.parse(body);
+    return typeof parsed !== 'object' || parsed === null || typeof (parsed as { code?: unknown }).code !== 'string';
+  } catch {
+    return true;
+  }
+}
+
+/** The session rides in the httpOnly `ra_session` cookie, so no request carries an Authorization header (door 17). */
 export function useApiClient(): <T>(path: string, init?: RequestInit) => Promise<T> {
-  const { token } = useAuth();
   return async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers);
-    if (token) headers.set('Authorization', `Bearer ${token}`);
     if (!headers.has('Accept-Language')) headers.set('Accept-Language', i18n.language);
     // Default Content-Type to application/json only for serialised bodies.
     // FormData must be left untouched so the browser can attach the multipart
@@ -28,6 +38,7 @@ export function useApiClient(): <T>(path: string, init?: RequestInit) => Promise
     const response = await fetch(`/api${path}`, { ...init, headers });
     if (!response.ok) {
       const text = await response.text();
+      if (isEndedSession(response.status, text)) notifyUnauthorized();
       throw new ApiError(response.status, text || response.statusText);
     }
     const contentType = response.headers.get('content-type');

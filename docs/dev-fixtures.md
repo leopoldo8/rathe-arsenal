@@ -16,7 +16,7 @@ Idempotent. Needs the dev server (`pnpm dev`). Signs in as `fixture@test.local` 
 - the scratch deck `Rhinar Swap Test`, rewritten to a fixed composition so it yields exactly three pending swaps (Brothers in Arms to Erase Face, Bear Hug to Assault and Battery, Argh... Smash! to Bloodrush Bellow), with the owned cards those swaps need;
 - every swap reverted or restored to pending, and any deck that is neither Fabrary-imported nor the swap deck deleted.
 
-Playwright runs it from `globalSetup` (`apps/web/tests/support/global-setup.ts`), which signs in once (sign-in is throttled to 5/minute) and writes the shared storageState under `apps/web/tests/.auth/` (gitignored). Swap-mutating specs call `resetFixture()` (no sign-in) before each test. Run both suites with `cd apps/web && npx playwright test`.
+Playwright runs it from `globalSetup` (`apps/web/tests/support/global-setup.ts`), which signs in once (sign-in is throttled to 5/minute) and writes the shared storageState under `apps/web/tests/.auth/` (gitignored). The session is the `ra_session` cookie: the storageState holds it as an httpOnly cookie for the base URL, and `scripts/fixture/fixture-seed.ts` sends it as a `Cookie` header (there is no bearer token any more). Swap-mutating specs call `resetFixture()` (no sign-in) before each test. Run both suites with `cd apps/web && npx playwright test`.
 
 ## Test Decks (Fabrary URLs)
 
@@ -32,29 +32,32 @@ Playwright runs it from `globalSetup` (`apps/web/tests/support/global-setup.ts`)
 EMAIL="audit-$(date +%s)@test.local"
 PASS="test-password-1234"
 
-# sign-up returns _devVerificationLink
+# fixture-seed.ts and this sign-up helper read _devVerificationLink; the local API returns it only when it runs with EXPOSE_DEV_SECRETS=true
+# (add it to the local .env; the API refuses to start with it set and NODE_ENV=production)
 curl -s -X POST http://localhost:5173/api/auth/sign-up \
   -H 'Content-Type: application/json' \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\"}" | jq -r '._devVerificationLink'
 # visit that link, then:
 
-JWT=$(curl -s -X POST http://localhost:5173/api/auth/sign-in \
+# The session is the ra_session cookie: keep it in a cookie jar and send it back.
+JAR=$(mktemp)
+curl -s -c "$JAR" -X POST http://localhost:5173/api/auth/sign-in \
   -H 'Content-Type: application/json' \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\"}" | jq -r '.jwt')
+  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\"}" > /dev/null
 
-curl -s -X POST http://localhost:5173/api/decks/import \
-  -H "Authorization: Bearer $JWT" \
+curl -s -b "$JAR" -X POST http://localhost:5173/api/decks/import \
+  -H 'Origin: http://localhost:5173' \
   -H 'Content-Type: application/json' \
-  -d '{"urls":[
-    "https://fabrary.net/decks/01J027FSFWMBYYDR457YVXM5QT",
-    "https://fabrary.net/decks/01HYW5BJE6PD6K25Z3SK758DE8"
-  ]}'
+  -d '{"text":"https://fabrary.net/decks/01J027FSFWMBYYDR457YVXM5QT","ownsCards":true}'
+
+# One deck per request; repeat with the second deck:
+#   https://fabrary.net/decks/01HYW5BJE6PD6K25Z3SK758DE8
 ```
 
 ## Screenshot session notes
 
 `dev-browser --browser rathe-audit` persists across captures. After
-setting JWT in localStorage once, all routes reuse it. Viewport 375×812
+signing in once (the browser keeps the `ra_session` cookie), all routes reuse it. Viewport 375×812
 for mobile, 1440×900 for desktop. Use `fullPage: false` when verifying
 `position: fixed` elements (BottomTabBar, Toast region) — `fullPage: true`
 duplicates fixed elements at every scroll frame.
@@ -65,8 +68,7 @@ Create a scratch deck (no Fabrary import) for testing the Start-from-scratch flo
 
 
 # Create a scratch deck via the API (Dorinthea + Classic Constructed)
-curl -s -X POST http://localhost:5173/api/decks \
-  -H "Authorization: Bearer $JWT" \
+curl -s -b "$JAR" -X POST http://localhost:5173/api/decks \
   -H "Content-Type: application/json" \
   -d '{'"heroIdentifier"': '"WTR000"', '"format"': '"Classic Constructed"', '"name"': '"Test Scratch Deck"'}'
 
@@ -75,13 +77,11 @@ curl -s -X POST http://localhost:5173/api/decks \
 
 
 # Mark a deck Active
-curl -s -X PATCH http://localhost:5173/api/decks/{DECK_ID} \
-  -H "Authorization: Bearer $JWT" \
+curl -s -b "$JAR" -X PATCH http://localhost:5173/api/decks/{DECK_ID} \
   -H "Content-Type: application/json" \
   -d '{'"status"': '"active"'}'
 
 # Add a tag to a deck (create the tag with POST /api/tags, then attach its id)
-curl -s -X PATCH http://localhost:5173/api/decks/{DECK_ID} \
-  -H "Authorization: Bearer $JWT" \
+curl -s -b "$JAR" -X PATCH http://localhost:5173/api/decks/{DECK_ID} \
   -H "Content-Type: application/json" \
   -d '{"addTagIds": [TAG_ID]}'

@@ -9,6 +9,7 @@ export function toSharedCardFromBreakdown(entry: IBreakdownEntry): ISharedCard {
     type: entry.type,
     slot: entry.slot,
     quantity: entry.quantity,
+    inventoryQuantity: entry.inventoryQuantity ?? 0,
     imageUrl: entry.imageUrl
       ? {
           small: entry.imageUrl.small,
@@ -26,6 +27,8 @@ export function sumQuantities(items: readonly { readonly quantity: number }[]): 
 export interface IDeckCardRow {
   readonly cardIdentifier: string;
   readonly quantity: number;
+  /** Absent on a row built by hand (the hero of a scratch deck); the stored column is never null. */
+  readonly inventoryQuantity?: number;
   readonly slot: string;
 }
 
@@ -41,6 +44,7 @@ export function toSharedCardFromRow(row: IDeckCardRow, lookup: TCatalogLookup): 
     type: card?.types[0] ?? 'unknown',
     slot: row.slot,
     quantity: row.quantity,
+    inventoryQuantity: row.inventoryQuantity ?? 0,
     imageUrl: card?.imageUrl
       ? {
           small: card.imageUrl.small,

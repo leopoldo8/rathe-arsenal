@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { GlossaryTerm } from '../glossary/GlossaryTerm';
 import { formatBrl } from '../../utils/format-brl';
 import { formatDaysAgo } from '../../lib/format-relative-time';
 import type { ILibraryStats } from '../../api/library';
@@ -66,7 +67,6 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
                 key={key}
                 className={styles.pill}
                 role="img"
-                title={t(titleKey)}
                 aria-label={`${t(titleKey)}: ${pitchBreakdown[key]}`}
               >
                 <span className={`${styles.dot} ${dotClass}`} aria-hidden="true" />
@@ -74,6 +74,7 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
               </span>
             ) : null,
           )}
+          <GlossaryTerm term="pitchColors" bare />
         </div>
       </div>
 
@@ -88,11 +89,13 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
           <span
             className={isStale ? styles.freshnessStale : styles.freshnessMuted}
             data-testid="price-freshness"
-            title={t('library.estimatedPricesTooltip')}
           >
             {freshnessLabel}
           </span>
         </div>
+        <p className={styles.estimateNote} data-testid="price-estimate-note">
+          {t('library.estimatedPricesTooltip')}
+        </p>
       </div>
     </section>
   );

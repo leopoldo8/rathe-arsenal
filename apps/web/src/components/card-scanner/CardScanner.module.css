@@ -482,6 +482,10 @@
   color: var(--ra-fg-secondary);
 }
 
+.faceOption[aria-pressed='true'] {
+  border-color: var(--ra-accent);
+}
+
 .faceOption {
   display: flex;
   align-items: center;

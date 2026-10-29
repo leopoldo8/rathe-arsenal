@@ -21,13 +21,51 @@ export interface ISharedCard {
   /** 'hero' | 'weapon' | 'equipment' | 'mainboard' | ... */
   readonly slot: string;
   readonly quantity: number;
+  /** Copies carried outside the starting deck (door 3); absent on answers that predate it. */
+  readonly inventoryQuantity?: number;
   readonly imageUrl: ISharedCardImage | null;
+  /** Deck intent: the card this row stands in for when one of the sharer's active picks covers it. */
+  readonly replaces?: { readonly cardIdentifier: string; readonly name: string; readonly pitch: 1 | 2 | 3 | null } | null;
+  /**
+   * The store's stored answer for a card of a `missing` link, with the priced facts. Absent on answers that predate them,
+   * which read as "the store does not list it".
+   */
+  readonly state?: TStoreState;
+  readonly unitPriceCents?: number | null;
+  readonly lineCents?: number | null;
+  /** Copies the store can supply of the ones needed; null unless the card is priced. */
+  readonly availableCopies?: number | null;
+  readonly foilOnly?: boolean;
+  readonly promoOnly?: boolean;
+  readonly productUrl?: string | null;
+  /** What the signed-in visitor owns of the card; null for an anonymous visitor and for the owner. */
+  readonly owned?: number | null;
+  /** The signed-in visitor's spare copies of the card; null for anyone else and while the rule question is owed. */
+  readonly spare?: number | null;
 }
 
-export type TShareIntent = 'deck' | 'missing';
+export type TStoreState = 'priced' | 'store_lacks' | 'not_on_site' | 'looking_up' | 'no_price';
+
+export interface IStoreSummary {
+  readonly copies: number;
+  readonly cents: number;
+}
+
+export type TShareIntent = 'deck' | 'missing' | 'quote';
+
+export interface ISharedFormatVerdict {
+  readonly category: 'legal' | 'incomplete' | 'illegal' | 'unchecked';
+  readonly details: readonly { readonly code: string; readonly params: Readonly<Record<string, string | number | boolean | null | readonly string[]>> }[];
+}
+
+export interface ISharedDeckLegality extends ISharedFormatVerdict {
+  /** Null when the hero is not in the catalog. */
+  readonly heroYoung: boolean | null;
+  readonly otherFormats: readonly (ISharedFormatVerdict & { readonly format: string })[];
+}
 
 export interface ISharedDeckResponse {
-  readonly intent: TShareIntent;
+  readonly intent: Exclude<TShareIntent, 'quote'>;
   readonly token: string;
   readonly url: string;
   readonly name: string;
@@ -46,16 +84,45 @@ export interface ISharedDeckResponse {
   /** Intent 'missing': the owner's not-owned cards, grouped by (cardIdentifier, slot). Intent 'deck': empty. */
   readonly missing: readonly ISharedCard[];
   readonly missingCount: number;
+  /** Intent 'missing': what the store can supply of the missing cards, from its stored answers. Other intents: null. */
+  readonly storeSummary?: IStoreSummary | null;
+  /** True when the signed-in visitor must answer the spare-rule question before any spare count is shown. */
+  readonly spareNeedsRule?: boolean;
   /** Digits with country code; set only when the owner saved a number and left the link's switch on. */
   readonly contactWhatsapp: string | null;
   /** The deck's id, only for the owner (to link back to the deck); null for everyone else. */
   readonly deckId: number | null;
+  /** Intent 'deck': the verdict in the deck's own format and in the others. Intent 'missing': null. */
+  readonly legality: ISharedDeckLegality | null;
 }
+
+export interface ISharedQuoteItem {
+  readonly cardIdentifier: string;
+  readonly name: string;
+  readonly pitch: 1 | 2 | 3 | null;
+  readonly imageUrl: string | null;
+  readonly quantity: number;
+}
+
+/** What a `quote` address answers: who asks and the cards needed, and nothing about any store. */
+export interface ISharedQuoteResponse {
+  readonly intent: 'quote';
+  readonly name: string;
+  readonly hero: string;
+  readonly sharerName: string;
+  /** Digits with country code; null when the link shows no number. */
+  readonly contactWhatsapp: string | null;
+  readonly needed: readonly ISharedQuoteItem[];
+}
+
+export type TSharedPage = ISharedDeckResponse | ISharedQuoteResponse;
 
 export interface ISharedDeckCoverage {
   readonly ownedCopies: number;
   readonly totalCopies: number;
   readonly percent: number;
+  /** True when the visitor owns no copy at all: the panel says how to put cards in instead of showing 0%. */
+  readonly collectionEmpty: boolean;
 }
 
 export interface ISharedMatches {
@@ -74,6 +141,7 @@ export interface ILinkState {
 export interface IDeckShareState {
   readonly deck: ILinkState | null;
   readonly missing: ILinkState | null;
+  readonly quote?: ILinkState | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -82,6 +150,7 @@ export interface IDeckShareState {
 
 export const SHARE_LINK_UNAVAILABLE = 'SHARE_LINK_UNAVAILABLE';
 export const DISPLAY_NAME_REQUIRED = 'DISPLAY_NAME_REQUIRED';
+export const EMAIL_NOT_CONFIRMED = 'EMAIL_NOT_CONFIRMED';
 
 export function isShareErrorCode(error: unknown, code: string): boolean {
   return error instanceof AuthFetchError && error.code === code;
@@ -93,9 +162,9 @@ export function isShareLinkUnavailable(error: unknown): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Plain request functions. `authToken` is the visitor's Bearer token; the
-// public shared-deck call works without one and uses it, when present, so the
-// API can tell the owner apart from a visitor.
+// Plain request functions. The visitor's session rides in the `ra_session`
+// cookie: the public shared-deck call works without one and uses it, when
+// present, so the API can tell the owner apart from a visitor.
 // ---------------------------------------------------------------------------
 
 export function sharedDeckImageDownloadPath(token: string): string {
@@ -106,77 +175,87 @@ export function sharedDeckImagePath(token: string): string {
   return `/api/shared/decks/${encodeURIComponent(token)}/image`;
 }
 
-export function getSharedDeck(token: string, authToken: string | null = null): Promise<ISharedDeckResponse> {
-  return authFetch<ISharedDeckResponse>(`/shared/decks/${encodeURIComponent(token)}`, {}, authToken);
+export function getSharedDeck(token: string): Promise<ISharedDeckResponse> {
+  return authFetch<ISharedDeckResponse>(`/shared/decks/${encodeURIComponent(token)}`);
 }
 
-export function getCoverage(token: string, authToken: string | null): Promise<ISharedDeckCoverage> {
-  return authFetch<ISharedDeckCoverage>(`/shared/decks/${encodeURIComponent(token)}/coverage`, {}, authToken);
+/** The page behind any deck address: the deck, the missing cards or the quote. */
+export function getSharedPage(token: string): Promise<TSharedPage> {
+  return authFetch<TSharedPage>(`/shared/decks/${encodeURIComponent(token)}`);
 }
 
-export function copySharedDeck(token: string, authToken: string | null): Promise<{ deckId: number }> {
-  return authFetch<{ deckId: number }>(
-    `/shared/decks/${encodeURIComponent(token)}/copy`,
-    { method: 'POST', body: JSON.stringify({}) },
-    authToken,
-  );
+export function getCoverage(token: string): Promise<ISharedDeckCoverage> {
+  return authFetch<ISharedDeckCoverage>(`/shared/decks/${encodeURIComponent(token)}/coverage`);
 }
 
-export function getMatches(token: string, authToken: string | null): Promise<ISharedMatches> {
-  return authFetch<ISharedMatches>(`/shared/decks/${encodeURIComponent(token)}/matches`, {}, authToken);
+/** The list a visitor saves from a deck with substitutions: the sharer's list before them, or the deck as built. */
+export type TCopyVariant = 'original' | 'as_built';
+
+export function copySharedDeck(token: string, variant?: TCopyVariant): Promise<{ deckId: number }> {
+  return authFetch<{ deckId: number }>(`/shared/decks/${encodeURIComponent(token)}/copy`, {
+    method: 'POST',
+    body: JSON.stringify(variant === undefined ? {} : { variant }),
+  });
 }
 
-export function getDeckShare(deckId: number | string, authToken: string | null): Promise<IDeckShareState> {
-  return authFetch<IDeckShareState>(`/decks/${deckId}/share`, {}, authToken);
+export function getMatches(token: string): Promise<ISharedMatches> {
+  return authFetch<ISharedMatches>(`/shared/decks/${encodeURIComponent(token)}/matches`);
 }
 
-export function enableDeckShare(
-  deckId: number | string,
-  intent: TShareIntent,
-  authToken: string | null,
-): Promise<ILinkState> {
-  return authFetch<ILinkState>(
-    `/decks/${deckId}/share`,
-    { method: 'POST', body: JSON.stringify({ intent }) },
-    authToken,
-  );
+export function getDeckShare(deckId: number | string): Promise<IDeckShareState> {
+  return authFetch<IDeckShareState>(`/decks/${deckId}/share`);
 }
 
-export function disableDeckShare(deckId: number | string, intent: TShareIntent, authToken: string | null): Promise<void> {
-  return authFetch<void>(`/decks/${deckId}/share/${intent}`, { method: 'DELETE' }, authToken);
+export function enableDeckShare(deckId: number | string, intent: TShareIntent): Promise<ILinkState> {
+  return authFetch<ILinkState>(`/decks/${deckId}/share`, { method: 'POST', body: JSON.stringify({ intent }) });
+}
+
+export function disableDeckShare(deckId: number | string, intent: TShareIntent): Promise<void> {
+  return authFetch<void>(`/decks/${deckId}/share/${intent}`, { method: 'DELETE' });
 }
 
 export function setDeckShareContact(
   deckId: number | string,
   intent: TShareIntent,
   showContact: boolean,
-  authToken: string | null,
 ): Promise<ILinkState> {
-  return authFetch<ILinkState>(
-    `/decks/${deckId}/share/${intent}`,
-    { method: 'PATCH', body: JSON.stringify({ showContact }) },
-    authToken,
-  );
+  return authFetch<ILinkState>(`/decks/${deckId}/share/${intent}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ showContact }),
+  });
 }
 
 /** Saves (or, with null, removes) the sharer's WhatsApp number. 400 on an invalid number. */
-export function patchContact(
-  whatsappNumber: string | null,
-  authToken: string | null,
-): Promise<{ whatsappNumber: string | null }> {
-  return authFetch<{ whatsappNumber: string | null }>(
-    '/users/me/contact',
-    { method: 'PATCH', body: JSON.stringify({ whatsappNumber }) },
-    authToken,
-  );
+export function patchContact(whatsappNumber: string | null): Promise<{ whatsappNumber: string | null }> {
+  return authFetch<{ whatsappNumber: string | null }>('/users/me/contact', {
+    method: 'PATCH',
+    body: JSON.stringify({ whatsappNumber }),
+  });
 }
 
-export function patchDisplayName(displayName: string, authToken: string | null): Promise<{ displayName: string }> {
-  return authFetch<{ displayName: string }>(
-    '/users/me/display-name',
-    { method: 'PATCH', body: JSON.stringify({ displayName }) },
-    authToken,
-  );
+/** Saves the closing line of the group ask on the account. 400 above 140 characters. */
+export function patchShareClosingLine(text: string): Promise<{ text: string }> {
+  return authFetch<{ text: string }>('/users/me/share-closing-line', {
+    method: 'PATCH',
+    body: JSON.stringify({ text }),
+  });
+}
+
+export type TVisitorEventKind = 'offer' | 'quote_sent';
+
+/** Tells the sharer's counts that the visitor offered cards or sent a quote. The kind only, never any content. */
+export function postShareEvent(token: string, kind: TVisitorEventKind): Promise<void> {
+  return authFetch<void>(`/shared/decks/${encodeURIComponent(token)}/events`, {
+    method: 'POST',
+    body: JSON.stringify({ kind }),
+  });
+}
+
+export function patchDisplayName(displayName: string): Promise<{ displayName: string }> {
+  return authFetch<{ displayName: string }>('/users/me/display-name', {
+    method: 'PATCH',
+    body: JSON.stringify({ displayName }),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -202,10 +281,10 @@ export const deckShareQueryKey = (deckId: number | string) => ['deck-share', Str
  * request already carries the right Bearer token.
  */
 export function useSharedDeckQuery(token: string) {
-  const { token: authToken, user, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   return useQuery({
     queryKey: sharedDeckQueryKey(token, user?.id ?? null),
-    queryFn: () => getSharedDeck(token, authToken),
+    queryFn: () => getSharedPage(token),
     enabled: !isLoading,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -219,31 +298,29 @@ export function useSharedDeckQuery(token: string) {
  * server records no "open" for the owner.
  */
 export function useOwnSharedDeckQuery(token: string, enabled: boolean) {
-  const { token: authToken } = useAuth();
   return useQuery({
     queryKey: ['shared-deck-own', token] as const,
-    queryFn: () => getSharedDeck(token, authToken),
+    queryFn: () => getSharedDeck(token),
     enabled,
   });
 }
 
 /** The logged-in visitor's exact coverage of the shared deck. Not for the owner or anonymous visitors. */
 export function useSharedCoverageQuery(token: string, enabled: boolean) {
-  const { token: authToken, user } = useAuth();
+  const { user } = useAuth();
   return useQuery({
     queryKey: sharedCoverageQueryKey(token, user?.id ?? null),
-    queryFn: () => getCoverage(token, authToken),
-    enabled: enabled && authToken !== null,
+    queryFn: () => getCoverage(token),
+    enabled: enabled && user !== null,
     refetchOnWindowFocus: false,
     retry: false,
   });
 }
 
 export function useCopySharedDeckMutation(token: string) {
-  const { token: authToken } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => copySharedDeck(token, authToken),
+    mutationFn: (variant?: TCopyVariant) => copySharedDeck(token, variant),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['decks'] });
     },
@@ -252,21 +329,20 @@ export function useCopySharedDeckMutation(token: string) {
 
 /** The visitor's copies of each missing card. Only the missing-cards link answers it. */
 export function useSharedMatchesQuery(token: string, enabled: boolean) {
-  const { token: authToken, user } = useAuth();
+  const { user } = useAuth();
   return useQuery({
     queryKey: ['shared-deck-matches', token, user?.id ?? 'anonymous'] as const,
-    queryFn: () => getMatches(token, authToken),
-    enabled: enabled && authToken !== null,
+    queryFn: () => getMatches(token),
+    enabled: enabled && user !== null,
     refetchOnWindowFocus: false,
     retry: false,
   });
 }
 
 export function useDeckShareQuery(deckId: number | string) {
-  const { token: authToken } = useAuth();
   return useQuery({
     queryKey: deckShareQueryKey(deckId),
-    queryFn: () => getDeckShare(deckId, authToken),
+    queryFn: () => getDeckShare(deckId),
     staleTime: Infinity,
   });
 }
@@ -279,10 +355,9 @@ function withLink(state: IDeckShareState | undefined, intent: TShareIntent, link
 }
 
 export function useEnableDeckShareMutation(deckId: number | string) {
-  const { token: authToken } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (intent: TShareIntent) => enableDeckShare(deckId, intent, authToken),
+    mutationFn: (intent: TShareIntent) => enableDeckShare(deckId, intent),
     onSuccess: (link) => {
       queryClient.setQueryData<IDeckShareState>(deckShareQueryKey(deckId), (state) =>
         withLink(state, link.intent, link),
@@ -292,11 +367,10 @@ export function useEnableDeckShareMutation(deckId: number | string) {
 }
 
 export function useSetDeckShareContactMutation(deckId: number | string) {
-  const { token: authToken } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ intent, showContact }: { readonly intent: TShareIntent; readonly showContact: boolean }) =>
-      setDeckShareContact(deckId, intent, showContact, authToken),
+      setDeckShareContact(deckId, intent, showContact),
     onSuccess: (link) => {
       queryClient.setQueryData<IDeckShareState>(deckShareQueryKey(deckId), (state) =>
         withLink(state, link.intent, link),
@@ -306,10 +380,9 @@ export function useSetDeckShareContactMutation(deckId: number | string) {
 }
 
 export function useDisableDeckShareMutation(deckId: number | string) {
-  const { token: authToken } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (intent: TShareIntent) => disableDeckShare(deckId, intent, authToken).then(() => intent),
+    mutationFn: (intent: TShareIntent) => disableDeckShare(deckId, intent).then(() => intent),
     onSuccess: (intent) => {
       queryClient.setQueryData<IDeckShareState>(deckShareQueryKey(deckId), (state) => withLink(state, intent, null));
     },

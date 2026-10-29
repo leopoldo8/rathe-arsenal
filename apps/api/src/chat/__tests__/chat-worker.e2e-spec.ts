@@ -313,7 +313,7 @@ describe('chat worker (E2E)', () => {
     expect(responses).toEqual([
       { ok: true },
       expect.objectContaining({ ok: false, error: 'CARD_UNKNOWN' }),
-      { ok: true, comparison: expect.objectContaining({ copies: 2, sameRole: true }) },
+      { ok: true, quantity: 2, side: 'deck', comparison: expect.objectContaining({ copies: 2, sameRole: true }) },
     ]);
   });
 

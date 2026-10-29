@@ -5,8 +5,30 @@ import { CardListLineEntity } from '../database/entities/card-list-line.entity';
 import { CardListEntity } from '../database/entities/card-list.entity';
 import { CardPriceEntity } from '../database/entities/card-price.entity';
 import { IPriceSuggestion } from '../lists/dtos/card-list.dto';
-import { ICardPrinting, printingsOfCard } from '../lists/printing-key';
+import { EDITION_NAMES, FOILING_NAMES, ICardPrinting, printingsOfCard } from '../lists/printing-key';
 import { pickPrice, TPriceIndex, priceIndexKey, priceKeysOf, suggestPrice } from './price-suggestion';
+
+export interface IVersionToPrice {
+  readonly cardIdentifier: string;
+  readonly printingCode: string;
+  readonly edition: string;
+  readonly finish: string;
+}
+
+/** The printings a version can be: each part it names narrows the list; `none` is the printing with no foiling. */
+export function printingsOfVersion(version: IVersionToPrice, printings: readonly ICardPrinting[]): readonly ICardPrinting[] {
+  const matching = printings.filter(
+    (printing) =>
+      (version.printingCode === '' || printing.identifier === version.printingCode) &&
+      (version.edition === '' || printing.edition === EDITION_NAMES[version.edition]) &&
+      (version.finish === '' || (version.finish === 'none' ? printing.foiling === null : printing.foiling === FOILING_NAMES[version.finish])),
+  );
+  return matching.length > 0 ? matching : printings;
+}
+
+export function versionPriceKey(version: IVersionToPrice): string {
+  return [version.cardIdentifier, version.printingCode, version.edition, version.finish].join('|');
+}
 
 export interface IMarketPrice {
   readonly usdCents: number;
@@ -22,7 +44,7 @@ export class PriceSuggestionService {
   /** Computed on read from the shared snapshot and the list's multiplier; nothing is stored. Sell lists only. */
   async forLines(
     list: Pick<CardListEntity, 'kind' | 'priceMultiplier'>,
-    lines: readonly Pick<CardListLineEntity, 'id' | 'cardIdentifier' | 'printing'>[],
+    lines: readonly Pick<CardListLineEntity, 'id' | 'cardIdentifier' | 'printingCode' | 'edition' | 'finish'>[],
   ): Promise<Map<number, IPriceSuggestion>> {
     const result = new Map<number, IPriceSuggestion>();
     const multiplier = list.priceMultiplier;
@@ -33,7 +55,8 @@ export class PriceSuggestionService {
     );
     const index = await this.loadIndex([...printingsByCard.values()].flat());
     for (const line of lines) {
-      const suggestion = suggestPrice(printingsByCard.get(line.cardIdentifier) ?? [], line.printing, index, multiplier);
+      const pool = printingsOfVersion(line, printingsByCard.get(line.cardIdentifier) ?? []);
+      const suggestion = suggestPrice(pool, null, index, multiplier);
       if (suggestion) result.set(line.id, suggestion);
     }
     return result;
@@ -71,6 +94,21 @@ export class PriceSuggestionService {
           fetchedAt: picked.snapshot.fetchedAt.toISOString(),
         });
       }
+    }
+    return result;
+  }
+
+  /** One suggestion per card version, TCGplayer in dollars times `multiplier`; a version no printing prices has none. */
+  async forVersions(versions: readonly IVersionToPrice[], multiplier: number): Promise<Map<string, IPriceSuggestion>> {
+    const printingsByCard = new Map(
+      versions.map((version) => [version.cardIdentifier, printingsOfCard(version.cardIdentifier) ?? []] as const),
+    );
+    const index = await this.loadIndex([...printingsByCard.values()].flat());
+    const result = new Map<string, IPriceSuggestion>();
+    for (const version of versions) {
+      const pool = printingsOfVersion(version, printingsByCard.get(version.cardIdentifier) ?? []);
+      const suggestion = suggestPrice(pool, null, index, multiplier);
+      if (suggestion) result.set(versionPriceKey(version), suggestion);
     }
     return result;
   }

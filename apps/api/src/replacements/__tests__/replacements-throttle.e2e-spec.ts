@@ -25,11 +25,11 @@ describe('replacement routes under the global throttler (E2E)', () => {
         pickedFrom: 'very_close',
       };
       const routes: ReadonlyArray<readonly [string, () => ReturnType<IFixture['get']>]> = [
-        ['alternatives', () => fixture.get(`/api/decks/${owner.deckId}/alternatives`, owner.jwt).query({ cardIdentifier: 'x', slot: 'mainboard', q: 'a' })],
-        ['pick', () => fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.jwt).send({ ...pickBody, slot: 'weapon' })],
-        ['revert', () => fixture.post(`/api/replacements/${RANDOM_UUID}/revert`, owner.jwt)],
-        ['keep', () => fixture.post(`/api/replacements/${RANDOM_UUID}/keep`, owner.jwt)],
-        ['deck detail', () => fixture.get(`/api/decks/${owner.deckId}`, owner.jwt)],
+        ['alternatives', () => fixture.get(`/api/decks/${owner.deckId}/alternatives`, owner.sessionToken).query({ cardIdentifier: 'x', slot: 'mainboard', q: 'a' })],
+        ['pick', () => fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.sessionToken).send({ ...pickBody, slot: 'weapon' })],
+        ['revert', () => fixture.post(`/api/replacements/${RANDOM_UUID}/revert`, owner.sessionToken)],
+        ['keep', () => fixture.post(`/api/replacements/${RANDOM_UUID}/keep`, owner.sessionToken)],
+        ['deck detail', () => fixture.get(`/api/decks/${owner.deckId}`, owner.sessionToken)],
       ];
 
       for (const [label, send] of routes) {

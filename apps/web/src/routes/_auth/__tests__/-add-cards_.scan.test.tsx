@@ -597,8 +597,8 @@ describe('/add-cards/scan', () => {
     expect(init.method).toBe('POST');
     expect(JSON.parse(String(init.body)).items).toEqual(
       expect.arrayContaining([
-        { cardIdentifier: 'nimblism-red', quantity: 2 },
-        { cardIdentifier: 'crane-dance-yellow', quantity: 1 },
+        { cardIdentifier: 'nimblism-red', quantity: 2, printingCode: 'WTR218' },
+        { cardIdentifier: 'crane-dance-yellow', quantity: 1, printingCode: '1HP108' },
       ]),
     );
     expect(JSON.parse(String(init.body)).items).toHaveLength(2);

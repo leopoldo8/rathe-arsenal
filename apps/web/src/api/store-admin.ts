@@ -18,6 +18,23 @@ export interface IUrlSyncStatus {
   readonly lastError: IUrlSyncFailure | null;
 }
 
+export interface IFirecrawlCredits {
+  readonly creditsUsed: number;
+  readonly budget: number;
+  readonly lookupsStopped: boolean;
+}
+
+export const CREDITS_QUERY_KEY = ['firecrawl-credits', STORE_SLUG] as const;
+
+/** Admin-only, like the sync status: mount the consumer only for an admin. */
+export function useCreditsQuery() {
+  const apiFetch = useApiClient();
+  return useQuery({
+    queryKey: CREDITS_QUERY_KEY,
+    queryFn: () => apiFetch<IFirecrawlCredits>(`/admin/stores/${STORE_SLUG}/credits`),
+  });
+}
+
 export const URL_SYNC_STATUS_QUERY_KEY = ['url-sync-status', STORE_SLUG] as const;
 
 /**

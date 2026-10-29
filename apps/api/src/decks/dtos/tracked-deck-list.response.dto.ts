@@ -76,6 +76,8 @@ export interface ITrackedDeckListItem {
     readonly missing: number;
     readonly total: number;
   } | null;
+  /** Copies in the starting deck's main section: no inventory, hero, weapon or equipment. The home card's "60 cartas". */
+  readonly deckSize: number;
   /** Clear upgrades the deck's recommendations panel would list; 0 for a retired deck. */
   readonly clearUpgradeCount: number;
 }

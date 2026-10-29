@@ -8,7 +8,9 @@ import { SharedDeckFooter } from '../shared-deck/SharedDeckFooter';
 import { SharedDeckUnavailable } from '../shared-deck/SharedDeckUnavailable';
 import { SharedTopBar } from '../shared-deck/SharedTopBar';
 import { SharedListAside } from './SharedListAside';
+import { SharedListBuyer } from './SharedListBuyer';
 import { SharedListGallery } from './SharedListGallery';
+import { SharedListTrade } from './SharedListTrade';
 import { matchesByLine } from './sharedListModel';
 import styles from './SharedListPage.module.css';
 
@@ -40,7 +42,9 @@ export function SharedListPage({ token }: ISharedListPageProps): React.ReactElem
     );
   }
 
-  const hasContact = list?.contactWhatsapp != null;
+  // The answer of the current API says whether the visitor owes the rule question; an answer without it keeps the gallery.
+  const visitorView = isVisitor && list.spareNeedsRule !== undefined ? list : null;
+  const hasContact = list?.contactWhatsapp != null && visitorView === null;
   const hasBar = hasContact || (list !== undefined && user === null);
 
   return (
@@ -60,7 +64,8 @@ export function SharedListPage({ token }: ISharedListPageProps): React.ReactElem
             {t('sharing.page.loading')}
           </p>
         )}
-        {list !== undefined && (
+        {visitorView !== null && (visitorView.kind === 'sell' ? <SharedListBuyer list={visitorView} matches={matches.data} /> : <SharedListTrade list={visitorView} />)}
+        {list !== undefined && visitorView === null && (
           <div className={styles.content}>
             <SharedListAside list={list} matches={matchesByLine(matches.data)} />
             <section className={styles.gallery} aria-label={list.name} data-testid="shared-list-gallery">
@@ -73,8 +78,10 @@ export function SharedListPage({ token }: ISharedListPageProps): React.ReactElem
           </div>
         )}
       </main>
-      <SharedDeckFooter />
-      {list !== undefined && list.contactWhatsapp !== null && (
+      <SharedDeckFooter
+        {...(list === undefined ? {} : { glossaryBackLabel: t('glossary.page.backToSharedList', { name: list.sharerName }) })}
+      />
+      {list !== undefined && list.contactWhatsapp !== null && visitorView === null && (
         <SharedContactButton
           variant="bar"
           whatsapp={list.contactWhatsapp}

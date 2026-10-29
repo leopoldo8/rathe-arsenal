@@ -1338,52 +1338,47 @@ describe('Phase 6 — Add cards (handoff §9)', () => {
 // ---------------------------------------------------------------------------
 
 const NEW_DECK_PAGE_CSS = readCss('routes/_auth/decks.new.module.css');
-const NEW_DECK_PAGE_CSS_WITH_MEDIA = readCssWithMedia('routes/_auth/decks.new.module.css');
 const IMPORT_CARD_CSS = readCss('components/decks-new/ImportFabraryCard.module.css');
-const SCRATCH_CARD_CSS = readCss('components/decks-new/StartScratchCard.module.css');
+const NEW_DECK_OPTIONS_CSS = readCss('components/decks-new/NewDeckOptions.module.css');
+const NEW_DECK_HERO_CSS = readCss('components/decks-new/NewDeckHeroSearch.module.css');
+const NEW_DECK_FORMAT_CSS = readCss('components/decks-new/NewDeckFormatStep.module.css');
 
 describe('Phase 7 — New deck (EDIT-01, handoff §4)', () => {
-  it('lays two 1fr columns 18px apart from 768px and stacks them below', () => {
-    const wide = ruleBody(atRuleBody(NEW_DECK_PAGE_CSS_WITH_MEDIA, '@media (min-width: 768px)'), '.cards');
-    expect(wide).toContain('grid-template-columns: 1fr 1fr');
-    expect(wide).toContain('gap: 18px');
-    const narrow = ruleBody(NEW_DECK_PAGE_CSS, '.cards');
-    expect(narrow).toContain('flex-direction: column');
-    expect(narrow).toContain('gap: 18px');
+  it('stacks the three ways to start 16px apart', () => {
+    const options = ruleBody(NEW_DECK_PAGE_CSS, '.options');
+    expect(options).toContain('flex-direction: column');
+    expect(options).toContain('gap: var(--ra-space-4)');
   });
 
   it('sets the page title at the shared page-title size', () => {
     expect(ruleBody(NEW_DECK_PAGE_CSS, '.title')).toContain('font-size: var(--ra-text-h1)');
   });
 
-  it.each([
-    ['Fabrary', IMPORT_CARD_CSS],
-    ['scratch', SCRATCH_CARD_CSS],
-  ] as const)('%s card is a 16px surface panel with 26px padding', (_name, css) => {
-    const body = ruleBody(css, '.card');
+  it('Fabrary card is a 16px surface panel with 26px padding', () => {
+    const body = ruleBody(IMPORT_CARD_CSS, '.card');
     expect(body).toContain('padding: 26px');
     expect(body).toContain('border-radius: var(--ra-radius-xl)');
     expect(body).toContain('background: var(--ra-bg-surface)');
   });
 
-  it.each([
-    ['Fabrary', IMPORT_CARD_CSS],
-    ['scratch', SCRATCH_CARD_CSS],
-  ] as const)('%s card has no icon tile in its header', (_name, css) => {
-    expect(css).not.toContain('.iconSquare');
+  it('draws each way to start as a 16px surface row with a round icon', () => {
+    const row = ruleBody(NEW_DECK_OPTIONS_CSS, '.option');
+    expect(row).toContain('border-radius: var(--ra-radius-xl)');
+    expect(row).toContain('background: var(--ra-bg-surface)');
+    expect(ruleBody(NEW_DECK_OPTIONS_CSS, '.icon')).toContain('border-radius: var(--ra-radius-full)');
   });
 
-  it('keeps the primary CTA gold and makes the scratch CTA an outline button', () => {
-    expect(ruleBody(IMPORT_CARD_CSS, '.submitBtn')).toContain('background: var(--ra-accent)');
-    const scratch = ruleBody(SCRATCH_CARD_CSS, '.submitBtn');
-    expect(scratch).toContain('background: transparent');
-    expect(scratch).toContain('border: 1px solid var(--ra-border-strong)');
+  it('keeps the primary CTA gold', () => {
+    expect(ruleBody(readCss('components/fabrary-import/FabraryFound.module.css'), '.primary')).toContain('background: var(--ra-accent)');
+    expect(ruleBody(NEW_DECK_FORMAT_CSS, '.start:enabled')).toContain('background: var(--ra-accent)');
   });
 
   it.each([
     ['page', NEW_DECK_PAGE_CSS],
     ['Fabrary card', IMPORT_CARD_CSS],
-    ['scratch card', SCRATCH_CARD_CSS],
+    ['options', NEW_DECK_OPTIONS_CSS],
+    ['hero search', NEW_DECK_HERO_CSS],
+    ['format step', NEW_DECK_FORMAT_CSS],
   ] as const)('%s uses no uppercase or fantasy-serif label styling', (_name, css) => {
     expect(css).not.toContain('text-transform: uppercase');
     expect(css).not.toContain('--ra-font-serif');
@@ -1675,7 +1670,6 @@ describe('Phase 10 — app-wide polish sweep', () => {
     ['routes/_auth/library.module.css', '.eyebrow'],
     ['routes/_auth/library-csv-sources.module.css', '.subtitle'],
     ['routes/_auth/add-cards.csv.module.css', '.dropButton'],
-    ['routes/_auth/add-cards.fabrary.module.css', '.submitBtn'],
     ['components/deck-detail/DeckDetailHeader.module.css', '.cancelBtn'],
     ['components/deck-detail/DeckDetailHeader.module.css', '.saveBtn'],
     ['components/deck-detail/DeckDetailSidebar.module.css', '.blockTitle'],
@@ -1722,7 +1716,6 @@ describe('Deck detail polish B — legality badge, buttons, banner art', () => {
   const MARK_OWNED = readCss('components/deck-detail/MarkOwnedButton.module.css');
   const MISSING = readCss('components/deck-detail/MissingPanel.module.css');
   const BANNER = readCss('components/deck-detail/DeckHeroBanner.module.css');
-  const FETCH_CONTROLS = readCss('components/ShoppingLineFetchControls.module.css');
 
   it('the legality badge uses the UI face, not mono', () => {
     const body = ruleBody(LEGALITY, '.badge');
@@ -1771,13 +1764,6 @@ describe('Deck detail polish B — legality badge, buttons, banner art', () => {
     expect(ruleBody(MARK_OWNED, '.btn')).toContain('min-block-size: 44px');
   });
 
-  it('the exact-price button is the brass action, not the info blue', () => {
-    const body = ruleBody(FETCH_CONTROLS, '.ctaBtn');
-    expect(body).toContain('background: var(--ra-accent)');
-    expect(body).toContain('color: var(--ra-accent-ink-on)');
-    expect(body).not.toContain('--ra-info');
-  });
-
   it('the banner keeps its dark backdrop in both themes, since the art no longer covers the left side', () => {
     expect(ruleBody(BANNER, '.banner')).toContain('background: #0a0b0e');
   });
@@ -1817,7 +1803,6 @@ describe('Deck detail polish B — legality badge, buttons, banner art', () => {
 describe('Owner design feedback round 2 — calm missing panel, aggregate in the header', () => {
   const MISSING = readCss('components/deck-detail/MissingPanel.module.css');
   const SUMMARY = readCss('components/deck-detail/MissingStoreSummary.module.css');
-  const FETCH_CONTROLS = readCss('components/ShoppingLineFetchControls.module.css');
   const AGGREGATE = readCss('components/home/AggregateCallout.module.css');
 
   it('the store context is a plain line, not a nested bordered box', () => {
@@ -1831,14 +1816,6 @@ describe('Owner design feedback round 2 — calm missing panel, aggregate in the
     const body = ruleBody(SUMMARY, ".freshness[data-freshness='very-stale']");
     expect(body).toContain('color: var(--ra-ready-mid)');
     expect(SUMMARY).not.toContain('--ra-ready-low');
-  });
-
-  it('the exact-price action is a quiet text button in the brass body ink', () => {
-    const body = ruleBody(FETCH_CONTROLS, '.ctaQuiet');
-    expect(body).toContain('background: transparent');
-    expect(body).toContain('border: none');
-    expect(body).toContain('color: var(--ra-accent-body)');
-    expect(body).toContain('min-block-size: 44px');
   });
 
   it('rows share one column grid so quantity, Buy and Mark owned line up', () => {

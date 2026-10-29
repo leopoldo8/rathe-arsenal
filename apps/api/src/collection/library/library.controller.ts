@@ -3,6 +3,8 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
 import { LibraryService } from './library.service';
 import { ILibraryResponse } from './dtos/library-response.dto';
+import { AcceptLanguage } from '../../common/i18n/accept-language.decorator';
+import { TLocale } from '../../common/i18n/resolve-locale';
 
 /**
  * GET /api/collection/library
@@ -22,7 +24,8 @@ export class LibraryController {
   @Get()
   async getLibrary(
     @CurrentUser() user: ICurrentUser,
+    @AcceptLanguage() locale: TLocale = 'pt-BR',
   ): Promise<ILibraryResponse> {
-    return this.libraryService.load(user.userId);
+    return this.libraryService.load(user.userId, locale);
   }
 }

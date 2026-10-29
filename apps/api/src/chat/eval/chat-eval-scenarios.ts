@@ -12,12 +12,22 @@ export type TEvalDeckKey = (typeof EVAL_DECKS)[number]['key'];
 export interface IEvalSwap {
   readonly original: string;
   readonly replacement: string;
+  /** The copies the proposal moves; absent for a proposal stored before swaps carried it. */
+  readonly quantity?: number;
+}
+
+/** What one tool answered during the turn. */
+export interface IEvalToolResult {
+  readonly name: string;
+  readonly result: Record<string, unknown>;
 }
 
 export interface IEvalOutcome {
   readonly text: string;
   readonly toolCalls: readonly string[];
   readonly swaps: readonly IEvalSwap[];
+  /** Absent in a trace recorded before the eval read the tool answers. */
+  readonly toolResults?: readonly IEvalToolResult[];
 }
 
 /** The reason the answer fails the scenario, or null when it passes. */
@@ -77,6 +87,48 @@ function calledWith(tool: string, argument: RegExp | null, failure: string): TEv
   return ({ toolCalls }) => (toolCalls.some((call) => call.startsWith(`${tool}(`) && (argument === null || argument.test(call))) ? null : failure);
 }
 
+/** The audit's F29: counting the pitches of one name together instead of each card (name and pitch) against its limit. */
+const countsPitchesTogether = /somando os pitches|\b10 pack hunt|deixe 3 no total|ficar no limite pelo nome/i;
+
+const copyRuleBySeparateCards: TEvalCheck = ({ text }) => {
+  if (countsPitchesTogether.test(text)) return 'adds the pitches of one name together';
+  return /vermelh|\bred\b/i.test(text) ? null : 'does not single out the red copies';
+};
+
+/** The audit's F34: the Tutor refused a one-copy fix and proposed nothing. */
+const oneCopyProposed: TEvalCheck = ({ swaps, toolCalls }) => {
+  if (!toolCalls.some((call) => call.startsWith('propose_swap(')) || swaps.length === 0) return 'proposed no swap for a one-copy fix';
+  const moved = swaps.filter((swap) => swap.quantity !== undefined && swap.quantity !== 1);
+  return moved.length === 0 ? null : `moved more than one copy: ${moved.map((swap) => `${swap.original} x${swap.quantity}`).join(', ')}`;
+};
+
+/** The audit's F30: every `get_prices` call answered `INVALID_ARGUMENTS`, so the answer had no price to stand on. */
+const priceLookedUp: TEvalCheck = ({ toolResults = [] }) => {
+  const prices = toolResults.filter((entry) => entry.name === 'get_prices');
+  if (prices.length === 0) return 'did not look the prices up';
+  return prices.some((entry) => entry.result['error'] === undefined) ? null : 'every get_prices call was refused';
+};
+
+const TOURNAMENT_TOOLS = /^(search_tournament_decks|get_tournament_deck|get_tournament_meta|get_community_decks)\(/;
+
+/** Neither hero question can be answered from the model's memory: each needs data from a tool. */
+const answeredFromTournamentData: TEvalCheck = ({ toolCalls }) =>
+  toolCalls.some((call) => TOURNAMENT_TOOLS.test(call)) ? null : 'answered with no tournament lookup';
+
+const nextHeroFromCollectionAndMeta: TEvalCheck = ({ toolCalls }) => {
+  if (!toolCalls.some((call) => call.startsWith('get_collection('))) return 'did not look at what the user owns';
+  return toolCalls.some((call) => TOURNAMENT_TOOLS.test(call)) ? null : 'did not look at the tournament data';
+};
+
+/** The audit's F33: `search_rules` answered `found: false` and the question stayed unanswered. */
+const rulesFound: TEvalCheck = ({ toolResults = [] }) => {
+  const searches = toolResults.filter((entry) => entry.name === 'search_rules');
+  if (searches.length === 0) return 'did not search the rules';
+  const found = (result: Record<string, unknown>): boolean =>
+    result['found'] === true || (Array.isArray(result['results']) && result['results'].some((one: { found?: boolean }) => one.found === true));
+  return searches.some((entry) => found(entry.result)) ? null : 'no rules search found a rule';
+};
+
 function allOf(...checks: readonly TEvalCheck[]): TEvalCheck {
   return (outcome) => checks.map((check) => check(outcome)).find((failure) => failure !== null) ?? null;
 }
@@ -91,15 +143,37 @@ function tileQuestions(deck: (typeof EVAL_DECKS)[number]): IEvalScenario[] {
       check: ownershipLookedUp,
     },
     { id: `tile-swap-${deck.key}`, deck: deck.key, question: 'Que carta deste deck vale trocar?', locale: 'pt-BR' },
-    { id: `tile-missing-${deck.key}`, deck: deck.key, question: 'O que mais falta para ficar pronto?', locale: 'pt-BR' },
+    { id: `tile-missing-${deck.key}`, deck: deck.key, question: 'O que ainda impede este deck de ficar pronto?', locale: 'pt-BR' },
   ];
 }
 
 export const EVAL_SCENARIOS: readonly IEvalScenario[] = [
   ...EVAL_DECKS.flatMap(tileQuestions),
-  { id: 'ready-hero', deck: null, question: 'Como outras pessoas montam o Kano nos torneios?', locale: 'pt-BR' },
-  { id: 'ready-next-hero', deck: null, question: 'Qual herói devo montar a seguir com as cartas que tenho?', locale: 'pt-BR' },
-  { id: 'ready-triggers', deck: null, question: 'Explique a ordem dos gatilhos ao atacar', locale: 'pt-BR' },
+  { id: 'ready-hero', deck: null, question: 'Como outras pessoas montam o Kano nos torneios?', locale: 'pt-BR', check: answeredFromTournamentData },
+  { id: 'ready-next-hero', deck: null, question: 'Qual herói devo montar a seguir com as cartas que tenho?', locale: 'pt-BR', check: nextHeroFromCollectionAndMeta },
+  { id: 'ready-triggers', deck: null, question: 'Explique a ordem dos gatilhos ao atacar', locale: 'pt-BR', check: rulesFound },
+  {
+    id: 'copy-rule-pack-hunt',
+    deck: null,
+    question:
+      'Meu Rhinar CC tem 4 Pack Hunt (Vermelho), 3 Pack Hunt (Amarelo) e 3 Pack Hunt (Azul). O limite do Classic Constructed é 3 por carta. Quantas Pack Hunt eu preciso tirar?',
+    locale: 'pt-BR',
+    check: copyRuleBySeparateCards,
+  },
+  {
+    id: 'one-copy-swap',
+    deck: 'azalea',
+    question: 'Quero trocar só 1 Lace with Bloodrot por uma carta parecida. Pode propor?',
+    locale: 'pt-BR',
+    check: oneCopyProposed,
+  },
+  {
+    id: 'deck-price',
+    deck: 'azalea',
+    question: 'Quanto eu gasto na Cúpula DT para fechar este deck?',
+    locale: 'pt-BR',
+    check: priceLookedUp,
+  },
   { id: 'no-data-hero', deck: null, question: 'Como os jogadores montam a Viserai, Usurper nos torneios?', locale: 'pt-BR' },
   { id: 'build-deck', deck: null, question: 'Monte um deck de Katsu para Classic Constructed aproveitando as cartas que eu tenho.', locale: 'pt-BR' },
   { id: 'meta-en', deck: null, question: 'Which heroes have the most top 8 finishes in Classic Constructed this year?', locale: 'en-US' },

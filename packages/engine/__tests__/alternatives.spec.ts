@@ -281,7 +281,7 @@ describe('findAlternatives legality', () => {
     { rule: 'banned in the format', overrides: { bannedFormats: [Format.ClassicConstructed] }, format: 'Classic Constructed', hero: KATSU_ADULT },
     { rule: 'not legal in the format', overrides: { legalFormats: [Format.Blitz] }, format: 'Classic Constructed', hero: KATSU_ADULT },
     { rule: 'not legal for the hero', overrides: { legalHeroes: ['Dorinthea'] }, format: 'Classic Constructed', hero: KATSU_ADULT },
-    { rule: 'outside the Silver Age rarities', overrides: { legalFormats: [Format.SilverAge], rarity: Rarity.Majestic }, format: 'Silver Age', hero: KATSU_YOUNG },
+    { rule: 'not legal in Silver Age', overrides: { legalFormats: [Format.Blitz] }, format: 'Silver Age', hero: KATSU_YOUNG },
   ];
 
   const MISSING_CARDS = [
@@ -306,8 +306,9 @@ describe('findAlternatives legality', () => {
   it.each([
     ['Classic Constructed, 1 held + 2 needed', 'Classic Constructed', KATSU_ADULT, 1, 2, [], true],
     ['Classic Constructed, 2 held + 2 needed', 'Classic Constructed', KATSU_ADULT, 2, 2, [], false],
-    ['Blitz, 0 held + 2 needed', 'Blitz', KATSU_YOUNG, 0, 2, [], true],
-    ['Blitz, 1 held + 2 needed', 'Blitz', KATSU_YOUNG, 1, 2, [], false],
+    ['Blitz, 0 held + 1 needed', 'Blitz', KATSU_YOUNG, 0, 1, [], true],
+    ['Blitz, 1 held + 1 needed', 'Blitz', KATSU_YOUNG, 1, 1, [], false],
+    ['Blitz, 0 held + 2 needed', 'Blitz', KATSU_YOUNG, 0, 2, [], false],
     ['Legendary, 0 held + 1 needed', 'Classic Constructed', KATSU_ADULT, 0, 1, [Keyword.Legendary], true],
     ['Legendary, 1 held + 1 needed', 'Classic Constructed', KATSU_ADULT, 1, 1, [Keyword.Legendary], false],
   ] as const)('enforces the copy limit across slots: %s', (_label, format, hero, held, needed, keywords, listed) => {

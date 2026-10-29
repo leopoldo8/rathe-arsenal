@@ -3,29 +3,13 @@ import { useTranslation } from 'react-i18next';
 import type { IShoppingLinePopulated } from '../../api/shopping-line';
 import { formatBrl } from '../../utils/format-brl';
 import { formatRelativeTime, isStale, isVeryStale } from '../../utils/format-relative-time';
-import type { TVariantFetchMutationStatus } from '../ShoppingLine';
-import {
-  PartialFailureNotice,
-  VariantFetchCta,
-  VariantFetchProgress,
-} from '../ShoppingLineFetchControls';
 import styles from './MissingStoreSummary.module.css';
 
 interface IMissingStoreSummaryProps {
   readonly data: IShoppingLinePopulated;
-  readonly isFetching: boolean;
-  readonly onFetchVariants: () => void;
-  readonly fetchMutationStatus: TVariantFetchMutationStatus;
-  readonly isCooldownActive: boolean;
 }
 
-export function MissingStoreSummary({
-  data,
-  isFetching,
-  onFetchVariants,
-  fetchMutationStatus,
-  isCooldownActive,
-}: IMissingStoreSummaryProps): React.ReactElement {
+export function MissingStoreSummary({ data }: IMissingStoreSummaryProps): React.ReactElement {
   const { t } = useTranslation();
   const {
     storeName,
@@ -34,16 +18,10 @@ export function MissingStoreSummary({
     unavailableCardCount,
     lastFetchedAt,
     isEstimated,
-    variantFetchProgress,
   } = data;
   const totalMissing = availableCardCount + unavailableCardCount;
   const when = formatRelativeTime(lastFetchedAt, t);
   const veryStale = isVeryStale(lastFetchedAt);
-  const isPending = fetchMutationStatus === 'pending';
-  const showCta = Boolean(isEstimated) && !isFetching && totalMissing > 0;
-  const showRetryFailed = Boolean(
-    variantFetchProgress && !variantFetchProgress.inProgress && variantFetchProgress.failed > 0,
-  );
   const freshnessText =
     availableCardCount > 0 ? t('decks.shoppingUpdated', { when }) : t('decks.shoppingLastChecked', { when });
 
@@ -55,9 +33,7 @@ export function MissingStoreSummary({
             <>
               <span className={styles.total} data-testid="missing-store-total">
                 {isEstimated && (
-                  <span aria-label={t('decks.estimatedPriceAria')} title={t('decks.estimatedPriceTooltip')}>
-                    ~
-                  </span>
+                  <span aria-label={t('decks.estimatedPriceAria')}>~</span>
                 )}
                 {formatBrl(totalCostCents)}
               </span>{' '}
@@ -75,7 +51,6 @@ export function MissingStoreSummary({
             className={styles.freshness}
             data-freshness={veryStale ? 'very-stale' : isStale(lastFetchedAt) ? 'stale' : 'ok'}
             data-testid={veryStale ? 'missing-store-stale' : undefined}
-            title={lastFetchedAt}
           >
             <span className={styles.phrase}>{freshnessText}</span>
             {veryStale && (
@@ -86,28 +61,11 @@ export function MissingStoreSummary({
             )}
           </span>
         </p>
-        {showCta &&
-          (isCooldownActive ? (
-            <span className={styles.cooldown}>{t('decks.pricesUpToDate')}</span>
-          ) : (
-            <VariantFetchCta
-              onGetExactPrices={onFetchVariants}
-              isPending={isPending}
-              isError={fetchMutationStatus === 'error'}
-              appearance="quiet"
-            />
-          ))}
       </div>
-
-      {isFetching && variantFetchProgress !== undefined && (
-        <VariantFetchProgress progress={variantFetchProgress} />
-      )}
-      {showRetryFailed && variantFetchProgress !== undefined && (
-        <PartialFailureNotice
-          progress={variantFetchProgress}
-          onRetry={onFetchVariants}
-          isPending={isPending}
-        />
+      {isEstimated && availableCardCount > 0 && (
+        <p className={styles.estimateNote} data-testid="missing-store-estimate-note">
+          {t('decks.estimatedPriceTooltip')}
+        </p>
       )}
     </div>
   );

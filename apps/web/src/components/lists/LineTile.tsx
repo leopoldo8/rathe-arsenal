@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApplySuggestionsMutation, type IListLine, type TListKind } from '../../api/lists';
 import { CardArt } from '../card-art/CardArt';
-import { withPitch } from '../deck-detail/recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 import { formatBrl } from './listsModel';
+import { SoldSheetHost } from './SoldSheetHost';
 import styles from './ListEditor.module.css';
 
 interface ILineTileProps {
@@ -16,7 +17,8 @@ interface ILineTileProps {
 
 export function LineTile({ listId, line, kind, selected, onSelect }: ILineTileProps): React.ReactElement {
   const { t } = useTranslation();
-  const displayName = withPitch(line.name, line.pitch, (key) => t(key));
+  const displayName = cardName(line.name, line.pitch, (key) => t(key));
+  const [selling, setSelling] = useState(false);
 
   return (
     <li className={styles.tile} data-sold={line.sold || undefined} data-selected={selected || undefined} data-testid="list-line">
@@ -28,7 +30,7 @@ export function LineTile({ listId, line, kind, selected, onSelect }: ILineTilePr
         onClick={() => onSelect(line.id)}
       >
         <span className={styles.art}>
-          <CardArt name={line.name} pitch={line.pitch} cost={null} type={line.type} missing={false} size="lg" imageUrl={line.imageUrl} />
+          <CardArt name={displayName} pitch={line.pitch} cost={null} type={line.type} missing={false} size="lg" imageUrl={line.imageUrl} />
           <span className={styles.qty}>{t('lists.editor.quantityBadge', { count: line.quantity })}</span>
           {line.sold && (
             <span className={styles.soldVeil} data-testid="sold-stamp">
@@ -38,12 +40,12 @@ export function LineTile({ listId, line, kind, selected, onSelect }: ILineTilePr
         </span>
         <span className={styles.tileName}>
           {line.pitch !== null && <span className={styles.dot} data-pitch={line.pitch} aria-hidden="true" />}
-          <span className={styles.tileNameText}>{line.name}</span>
+          <span className={styles.tileNameText}>{displayName}</span>
         </span>
       </button>
       {kind === 'sell' && (
         <div className={styles.tileMeta}>
-          {line.printingLabel !== null && <span className={styles.chipWide} title={line.printingLabel}>{line.printingLabel}</span>}
+          {line.printingLabel !== null && <span className={styles.chipWide}>{line.printingLabel}</span>}
           <span className={styles.metaRow}>
             {line.condition !== null ? (
               <span className={styles.chipMono}>{line.condition}</span>
@@ -53,8 +55,24 @@ export function LineTile({ listId, line, kind, selected, onSelect }: ILineTilePr
             <LinePrice listId={listId} line={line} name={displayName} />
           </span>
           {!line.sold && <TcgplayerNote listId={listId} line={line} name={displayName} />}
+          {!line.sold && line.owned !== undefined && line.owned !== null && line.quantity > line.owned && (
+            <span className={styles.ownedNote} data-testid="line-owned-note">
+              {t('lists.editor.ownedFewer', { count: line.owned })}
+            </span>
+          )}
+          {!line.sold && (
+            <button
+              type="button"
+              className={styles.soldButton}
+              aria-label={t('lists.sold.buttonFor', { name: displayName })}
+              onClick={() => setSelling(true)}
+            >
+              {t('lists.sold.button')}
+            </button>
+          )}
         </div>
       )}
+      {selling && <SoldSheetHost listId={listId} line={line} onClose={() => setSelling(false)} />}
     </li>
   );
 }

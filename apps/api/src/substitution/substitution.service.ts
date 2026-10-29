@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import {
+  buildProtectedKey,
   catalog,
   computeEffectiveReadiness,
   computeFidelity,
@@ -16,6 +17,22 @@ import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness
 import { AuthzService } from '../auth/authz.service';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { ReplacementsQueryService } from '../replacements/replacements-query.service';
+import { CardReplacementEntity } from '../database/entities/card-replacement.entity';
+
+type TReplacementClaim = Pick<CardReplacementEntity, 'id' | 'slot' | 'replacementCardIdentifier' | 'quantity'>;
+
+export interface IReadinessDeckRow {
+  readonly cardIdentifier: string;
+  readonly slot: string;
+  readonly quantity: number;
+  readonly inventoryQuantity: number;
+}
+
+function withClaim(protectedCopies: ReadonlyMap<string, number>, claim: TReplacementClaim | undefined): ReadonlyMap<string, number> {
+  if (claim === undefined) return protectedCopies;
+  const key = buildProtectedKey(claim.replacementCardIdentifier, claim.slot);
+  return new Map(protectedCopies).set(key, (protectedCopies.get(key) ?? 0) + claim.quantity);
+}
 
 /**
  * Derived read-time fields that are NOT persisted on the snapshot row
@@ -79,6 +96,18 @@ export class SubstitutionService {
   }
 
   /**
+   * The deck's missing copies as the engine counts them, for the deck as it is or, with `rows`, as it would be after a move
+   * that also leaves `claim` behind as an active replacement. Nothing is stored.
+   */
+  async computeMissingCopies(
+    trackedDeckId: number,
+    userId: string,
+    what?: { readonly rows: readonly IReadinessDeckRow[]; readonly claim: TReplacementClaim },
+  ): Promise<number> {
+    return (await this.runReadiness(trackedDeckId, userId, undefined, what)).missingCopies.total;
+  }
+
+  /**
    * Reads the deck, its cards and its active replacements through `manager`
    * when one is passed: a pick, revert or keep rewrites `deck_card` inside its
    * transaction, and a read through the injected repositories would still see
@@ -88,6 +117,7 @@ export class SubstitutionService {
     trackedDeckId: number,
     userId: string,
     manager?: EntityManager,
+    instead?: { readonly rows: readonly IReadinessDeckRow[]; readonly claim: TReplacementClaim },
   ): Promise<IEffectiveReadinessResult> {
     await this.authzService.assertOwnsTrackedDeck(userId, trackedDeckId);
 
@@ -104,9 +134,10 @@ export class SubstitutionService {
 
     const deckCardRows = await deckCards.find({
       where: { trackedDeckId },
+      order: { id: 'ASC' },
     });
 
-    const protectedCopies = await this.replacementsQueryService.loadProtectedCopies(trackedDeckId, manager);
+    const protectedCopies = withClaim(await this.replacementsQueryService.loadProtectedCopies(trackedDeckId, manager), instead?.claim);
 
     // Load the effective collection: quantities summed across active sources.
     // CollectionReadService handles source filtering so the inventory map
@@ -114,9 +145,10 @@ export class SubstitutionService {
     const inventory = await this.collectionReadService.loadOwned(userId);
 
     const deckInput = {
-      cards: deckCardRows.map((row) => ({
+      cards: (instead?.rows ?? deckCardRows).map((row) => ({
         cardIdentifier: row.cardIdentifier,
         quantity: row.quantity,
+        inventoryQuantity: row.inventoryQuantity,
         slot: row.slot,
       })),
     };

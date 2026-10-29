@@ -1,27 +1,23 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 import { FabraryService } from '../../fabrary/fabrary.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
-import { SourcesService } from '../../collection/sources/sources.service';
+import { CollectionReadService } from '../../collection/collection-read.service';
+import { importFinishedEntry } from '../../collection/imports/import-finished-log';
+import { ImportWriterService, IImportCopy } from '../../collection/imports/import-writer.service';
+import { NO_VERSION } from '../../collection/versions/copy-version';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
-import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { IDeckImportDto } from '../../fabrary/dtos/deck-import.dto';
-import { parseFabraryUrl } from '../../fabrary/parse-url';
+import { EFabraryErrorCode, FabraryImportError } from '../../fabrary/errors';
+import { findFabraryDeckId } from '../../fabrary/parse-url';
 import { ImportDecksRequestDto } from './dtos/import-decks.request.dto';
-import {
-  IImportDecksResponse,
-  IImportError,
-  IImportedDeck,
-  ISkippedUrl,
-} from './dtos/import-decks.response.dto';
+import { IFabraryDeckPreview, IImportDecksResponse, IImportedSource } from './dtos/import-decks.response.dto';
+import { buildDeckLines } from './deck-lines';
 import { aggregateInventory } from './aggregate-inventory';
 import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
 
-interface IParsedUrl {
-  readonly url: string;
-  readonly ulid: string;
-}
+const FABRARY_DECK_URL = 'https://fabrary.net/decks/';
 
 @Injectable()
 export class DecksImportService {
@@ -31,176 +27,149 @@ export class DecksImportService {
     private readonly dataSource: DataSource,
     private readonly fabraryService: FabraryService,
     private readonly substitutionService: SubstitutionService,
-    private readonly sourcesService: SourcesService,
+    private readonly importWriter: ImportWriterService,
+    private readonly collectionRead: CollectionReadService,
     private readonly recommendationQueue: RecommendationQueueService,
   ) {}
 
-  async run(
-    dto: ImportDecksRequestDto,
-    user: { userId: string },
-  ): Promise<IImportDecksResponse> {
-    const errors: IImportError[] = [];
-    const skipped: ISkippedUrl[] = [];
-
-    // Step 1: Deduplicate URLs
-    const { unique, duplicates } = this.deduplicateUrls(dto.urls);
-    for (const url of duplicates) {
-      skipped.push({ url, reason: 'DUPLICATE_IN_REQUEST' });
-    }
-
-    // Step 2: Parse URLs and fetch decks
-    const parsed: IParsedUrl[] = [];
-    for (const url of unique) {
-      try {
-        const ulid = parseFabraryUrl(url);
-        parsed.push({ url, ulid });
-      } catch (error) {
-        errors.push({
-          url,
-          code: (error as { code?: string }).code ?? 'PARSE_ERROR',
-          message: (error as Error).message,
-        });
-      }
-    }
-
-    const fetchedDecks: Array<{ url: string; deck: IDeckImportDto }> = [];
-    for (const { url, ulid } of parsed) {
-      try {
-        const deck = await this.fabraryService.fetchDeck(ulid);
-        fetchedDecks.push({ url, deck });
-      } catch (error) {
-        errors.push({
-          url,
-          code: (error as { code?: string }).code ?? 'FETCH_ERROR',
-          message: (error as Error).message,
-        });
-      }
-    }
-
-    // Step 3: Check for already-tracked decks
-    const decksToImport: Array<{ url: string; deck: IDeckImportDto }> = [];
-    for (const entry of fetchedDecks) {
-      const existing = await this.dataSource
-        .getRepository(TrackedDeckEntity)
-        .findOne({
-          where: { userId: user.userId, fabraryUlid: entry.deck.ulid },
-        });
-
-      if (existing) {
-        skipped.push({ url: entry.url, reason: 'ALREADY_TRACKED' });
-      } else {
-        decksToImport.push(entry);
-      }
-    }
-
-    if (decksToImport.length === 0) {
-      return { imported: [], skipped, errors };
-    }
-
-    // Step 4: Aggregate inventory (max-wins) — only when seedInventory is true
-    const shouldSeedInventory = dto.seedInventory !== false;
-    const deckDtos = decksToImport.map((e) => e.deck);
-    const inventoryMap = shouldSeedInventory ? aggregateInventory(deckDtos) : new Map<string, number>();
-
-    // Step 5: Persist inside a transaction
-    const savedDecks = await this.dataSource.transaction(
-      async (manager: EntityManager) => {
-        // Upsert collection cards (skipped when seedInventory is false)
-        if (shouldSeedInventory) {
-          await this.upsertCollectionCards(manager, user.userId, inventoryMap);
-        }
-
-        // Insert tracked decks and deck cards
-        const results: Array<{ trackedDeck: TrackedDeckEntity; deck: IDeckImportDto }> = [];
-        for (const { deck } of decksToImport) {
-          const trackedDeck = manager.create(TrackedDeckEntity, {
-            userId: user.userId,
-            fabraryUlid: deck.ulid,
-            name: deck.name,
-            hero: deck.hero.name,
-            heroIdentifier: deck.hero.cardIdentifier,
-            format: deck.format,
-          });
-          const saved = await manager.save(TrackedDeckEntity, trackedDeck);
-
-          const allCardEntries = [
-            ...deck.mainboard,
-            ...deck.equipment,
-            ...deck.weapons,
-            {
-              cardIdentifier: deck.hero.cardIdentifier,
-              quantity: 1,
-              slot: 'hero' as const,
-            },
-          ];
-
-          const deckCards = allCardEntries.map((entry) =>
-            manager.create(DeckCardEntity, {
-              trackedDeckId: saved.id,
-              cardIdentifier: entry.cardIdentifier,
-              quantity: entry.quantity,
-              slot: entry.slot,
-            }),
-          );
-          await manager.save(DeckCardEntity, deckCards);
-          await this.recommendationQueue.enqueueAuto(manager, saved.id);
-
-          results.push({ trackedDeck: saved, deck });
-        }
-
-        return results;
-      },
-    );
-
-    // Step 6: Compute readiness (after commit, failures are non-fatal)
-    const imported: IImportedDeck[] = [];
-    for (const { trackedDeck, deck } of savedDecks) {
-      let readinessSnapshot: IImportedDeck['readinessSnapshot'] = null;
-      try {
-        const snapshot = await this.substitutionService.computeAndStoreReadiness(
-          trackedDeck.id,
-          user.userId,
-        );
-        readinessSnapshot = {
-          rawPercent: snapshot.rawPercent,
-          effectivePercent: snapshot.effectivePercent,
-        };
-      } catch (error) {
-        this.logger.warn({
-          msg: 'Failed to compute readiness after import',
-          trackedDeckId: trackedDeck.id,
-          error: (error as Error).message,
-        });
-      }
-
-      imported.push({
-        trackedDeckId: trackedDeck.id,
-        name: deck.name,
-        hero: deck.hero.name,
-        format: deck.format,
-        readinessSnapshot,
+  /**
+   * Imports the deck behind the first Fabrary link in the text. The cards enter the collection only
+   * when `ownsCards` is true, as one import of kind `fabrary`.
+   */
+  async run(dto: ImportDecksRequestDto, user: { userId: string }): Promise<IImportDecksResponse> {
+    if (typeof dto.ownsCards !== 'boolean') {
+      throw new BadRequestException({
+        code: 'OWNERSHIP_ANSWER_REQUIRED',
+        message: 'Say whether the cards are yours before importing the deck',
       });
     }
+    const deck = await this.fetchDeckIn(dto.text);
 
-    // Step 7: Recompute readiness for existing decks when inventory changed
-    if (shouldSeedInventory) {
-      await this.recomputeExistingDecks(user.userId, savedDecks.map((d) => d.trackedDeck.id));
-    }
+    const existing = await this.dataSource
+      .getRepository(TrackedDeckEntity)
+      .findOne({ where: { userId: user.userId, fabraryUlid: deck.ulid } });
+    if (existing) return { deckId: existing.id };
 
-    return { imported, skipped, errors };
+    const saved = await this.dataSource.transaction(async (manager: EntityManager) => {
+      const source = dto.ownsCards ? await this.createSource(manager, user.userId, deck) : undefined;
+      const trackedDeck = await this.createDeck(manager, user.userId, deck);
+      return { trackedDeck, source };
+    });
+
+    await this.computeReadiness(saved.trackedDeck.id, user.userId);
+    if (saved.source !== undefined) await this.recomputeExistingDecks(user.userId, saved.trackedDeck.id);
+    this.logger.log(
+      importFinishedEntry({
+        userId: user.userId,
+        kind: 'fabrary',
+        ready: aggregateInventory([deck]).size,
+        ownership: dto.ownsCards,
+      }),
+    );
+
+    return saved.source === undefined
+      ? { deckId: saved.trackedDeck.id }
+      : { deckId: saved.trackedDeck.id, source: saved.source };
   }
 
-  private async recomputeExistingDecks(
-    userId: string,
-    excludeDeckIds: readonly number[],
-  ): Promise<void> {
-    const allDecks = await this.dataSource
-      .getRepository(TrackedDeckEntity)
-      .find({ where: { userId } });
+  /**
+   * What the player is told before answering whose cards they are: the deck's name and size and how
+   * many of its copies (deck and inventory) the collection already holds. Writes nothing.
+   */
+  async preview(text: string, user: { userId: string }): Promise<IFabraryDeckPreview> {
+    const deck = await this.fetchDeckIn(text);
+    const needed = aggregateInventory([deck]);
+    const owned = await this.collectionRead.loadOwned(user.userId, [...needed.keys()]);
+    let totalCards = 0;
+    let ownedCards = 0;
+    for (const [cardIdentifier, quantity] of needed) {
+      totalCards += quantity;
+      ownedCards += Math.min(quantity, owned.get(cardIdentifier) ?? 0);
+    }
+    return { name: deck.name, hero: deck.hero.name, format: deck.format, totalCards, ownedCards };
+  }
 
-    const existingDecks = allDecks.filter((d) => !excludeDeckIds.includes(d.id));
+  private async fetchDeckIn(text: string): Promise<IDeckImportDto> {
+    const ulid = findFabraryDeckId(text);
+    if (ulid === null) {
+      throw new BadRequestException({ code: 'INVALID_URL', message: 'The text has no Fabrary deck link' });
+    }
+    return this.fetchDeck(ulid);
+  }
 
-    for (const deck of existingDecks) {
+  private async fetchDeck(ulid: string): Promise<IDeckImportDto> {
+    try {
+      return await this.fabraryService.fetchDeck(ulid);
+    } catch (error) {
+      // Fabrary answers a deck that does not exist, or is private, with an error payload; every
+      // other failure (network, credentials) means Fabrary could not be asked.
+      if (error instanceof FabraryImportError && error.code === EFabraryErrorCode.INVALID_PAYLOAD) {
+        throw new NotFoundException({ code: 'FABRARY_DECK_NOT_FOUND', message: 'The deck does not exist or is private' });
+      }
+      this.logger.warn({ msg: 'Fabrary could not be reached', ulid, error: (error as Error).message });
+      throw new BadGatewayException({ code: 'FABRARY_UNREACHABLE', message: 'Fabrary could not be reached' });
+    }
+  }
+
+  private async createSource(manager: EntityManager, userId: string, deck: IDeckImportDto): Promise<IImportedSource> {
+    const copies: IImportCopy[] = [...aggregateInventory([deck])].map(([cardIdentifier, quantity]) => ({
+      cardIdentifier,
+      quantity,
+      ...NO_VERSION,
+    }));
+    const source = await this.importWriter.createImport(manager, {
+      userId,
+      kind: 'fabrary',
+      label: `Fabrary: ${deck.name}`,
+      sourceUrl: `${FABRARY_DECK_URL}${deck.ulid}`,
+      copies,
+      pending: [],
+    });
+    return {
+      id: source.id,
+      kind: source.kind,
+      label: source.label ?? '',
+      cardCount: copies.length,
+      copies: copies.reduce((sum, copy) => sum + copy.quantity, 0),
+    };
+  }
+
+  private async createDeck(manager: EntityManager, userId: string, deck: IDeckImportDto): Promise<TrackedDeckEntity> {
+    const saved = await manager.save(
+      TrackedDeckEntity,
+      manager.create(TrackedDeckEntity, {
+        userId,
+        fabraryUlid: deck.ulid,
+        name: deck.name,
+        hero: deck.hero.name,
+        heroIdentifier: deck.hero.cardIdentifier,
+        format: deck.format,
+      }),
+    );
+    const deckCards = buildDeckLines(deck).map((line) =>
+      manager.create(DeckCardEntity, { trackedDeckId: saved.id, ...line }),
+    );
+    await manager.save(DeckCardEntity, deckCards);
+    await this.recommendationQueue.enqueueAuto(manager, saved.id);
+    return saved;
+  }
+
+  // After the commit, so a failure here never undoes the import.
+  private async computeReadiness(deckId: number, userId: string): Promise<void> {
+    try {
+      await this.substitutionService.computeAndStoreReadiness(deckId, userId);
+    } catch (error) {
+      this.logger.warn({
+        msg: 'Failed to compute readiness after import',
+        trackedDeckId: deckId,
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  private async recomputeExistingDecks(userId: string, importedDeckId: number): Promise<void> {
+    const allDecks = await this.dataSource.getRepository(TrackedDeckEntity).find({ where: { userId } });
+    for (const deck of allDecks.filter((candidate) => candidate.id !== importedDeckId)) {
       try {
         await this.substitutionService.computeAndStoreReadiness(deck.id, userId);
       } catch (error) {
@@ -209,69 +178,6 @@ export class DecksImportService {
           trackedDeckId: deck.id,
           error: (error as Error).message,
         });
-      }
-    }
-  }
-
-  private deduplicateUrls(urls: readonly string[]): {
-    unique: string[];
-    duplicates: string[];
-  } {
-    const seen = new Set<string>();
-    const unique: string[] = [];
-    const duplicates: string[] = [];
-
-    for (const url of urls) {
-      if (seen.has(url)) {
-        duplicates.push(url);
-      } else {
-        seen.add(url);
-        unique.push(url);
-      }
-    }
-
-    return { unique, duplicates };
-  }
-
-  private async upsertCollectionCards(
-    manager: EntityManager,
-    userId: string,
-    inventory: Map<string, number>,
-  ): Promise<void> {
-    if (inventory.size === 0) {
-      return;
-    }
-
-    // Ensure the manual source exists within the outer transaction so the
-    // find-or-create participates in the same DB context.
-    const manualSource = await this.sourcesService.ensureManualSource(
-      userId,
-      manager,
-    );
-
-    for (const [cardIdentifier, quantity] of inventory) {
-      // Scope the lookup to the manual source so rows from CSV uploads are
-      // never overwritten by max-wins deck-import inventory seeding.
-      const existing = await manager.findOne(CollectionCardEntity, {
-        where: { userId, cardIdentifier, sourceId: manualSource.id },
-      });
-
-      if (existing) {
-        if (quantity > existing.quantity) {
-          await manager.update(
-            CollectionCardEntity,
-            { id: existing.id },
-            { quantity },
-          );
-        }
-      } else {
-        const card = manager.create(CollectionCardEntity, {
-          userId,
-          cardIdentifier,
-          sourceId: manualSource.id,
-          quantity,
-        });
-        await manager.save(CollectionCardEntity, card);
       }
     }
   }

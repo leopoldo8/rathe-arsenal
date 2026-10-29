@@ -109,9 +109,28 @@ export class RulesImportService {
         LIMIT $2`,
       [text, Math.min(limit, RULES_SEARCH_LIMIT)],
     )) as IRuleHit[];
+    const entries = rows.length > 0 ? rows : await this.searchAnyWord(text, limit);
     return {
-      found: rows.length > 0,
-      entries: rows.map((row) => ({ ...row, text: row.text.slice(0, RULE_TEXT_MAX) })),
+      found: entries.length > 0,
+      entries: entries.map((row) => ({ ...row, text: row.text.slice(0, RULE_TEXT_MAX) })),
     };
+  }
+
+  /**
+   * A natural question rarely has every word in one rule, so when the all-words match finds nothing, any word will do and the
+   * entries that hold the most of them (and the rarest) come first.
+   */
+  private async searchAnyWord(text: string, limit: number): Promise<IRuleHit[]> {
+    const words = [...new Set(text.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])];
+    if (words.length === 0) return [];
+    const query = words.join(' | ');
+    const document = `"ruleNumber" || ' ' || "sectionTitle" || ' ' || "text"`;
+    return (await this.dataSource.query(
+      `SELECT "ruleNumber", "sectionTitle", "text", url FROM rules_entry
+        WHERE to_tsvector('english', ${document}) @@ to_tsquery('english', $1)
+        ORDER BY ts_rank(to_tsvector('english', ${document}), to_tsquery('english', $1)) DESC, "ruleNumber"
+        LIMIT $2`,
+      [query, Math.min(limit, RULES_SEARCH_LIMIT)],
+    )) as IRuleHit[];
   }
 }

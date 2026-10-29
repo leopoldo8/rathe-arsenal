@@ -16,9 +16,11 @@ import { localizeApiError } from '../../card-scanner/localize-api-error';
 import { CardLightbox } from '../../card-art/CardLightbox';
 import { useToast } from '../../ui/Toast/useToast';
 import { useAuth } from '../../../auth/useAuth';
+import type { IDeckLegality } from '../../../api/decks';
 import { DeckTutorTile } from './DeckTutorTile';
 import { CandidatePile } from './CandidatePile';
-import { imageSources, withPitch, type IRecommendationDeckCard } from './card-naming';
+import { imageSources, type IRecommendationDeckCard } from './card-naming';
+import { cardName } from '../../../lib/card-name';
 import { GenerationStatus } from './GenerationStatus';
 import { SwapCard, type TSwapCardEntrance } from './SwapCard';
 import { useDeal } from './useDeal';
@@ -30,6 +32,9 @@ interface IRecommendationsRailProps {
   readonly deckId: number;
   readonly deckCards: readonly IRecommendationDeckCard[];
   readonly heroName: string;
+  /** The deck's verdict and format, so the Tutor tile asks the question that fits the deck's state. */
+  readonly legality?: Pick<IDeckLegality, 'details'> | null | undefined;
+  readonly format?: string;
 }
 
 type TPhase =
@@ -46,7 +51,7 @@ function isCutGone(error: unknown): boolean {
   }
 }
 
-export function RecommendationsRail({ deckId, deckCards, heroName }: IRecommendationsRailProps): React.ReactElement {
+export function RecommendationsRail({ deckId, deckCards, heroName, legality, format }: IRecommendationsRailProps): React.ReactElement {
   const { t } = useTranslation();
   const { show } = useToast();
   const { user } = useAuth();
@@ -177,7 +182,6 @@ export function RecommendationsRail({ deckId, deckCards, heroName }: IRecommenda
           type="button"
           className={styles.generate}
           disabled={isGenerating || generate.isPending}
-          aria-label={t('recommendations.generateAria')}
           onClick={handleGenerate}
           data-testid="recommendations-generate"
         >
@@ -221,7 +225,7 @@ export function RecommendationsRail({ deckId, deckCards, heroName }: IRecommenda
 
       {(chatAccess || showPile || listed.length > 0) && (
         <ul ref={railRef} className={styles.rail} aria-label={t('recommendations.listAria')} data-testid="recommendations-rail">
-          {chatAccess && <DeckTutorTile deckId={deckId} heroName={heroName} />}
+          {chatAccess && <DeckTutorTile deckId={deckId} heroName={heroName} legality={legality} {...(format === undefined ? {} : { format })} />}
           {showPile && (
             <CandidatePile
               ref={pileRef}
@@ -258,7 +262,7 @@ export function RecommendationsRail({ deckId, deckCards, heroName }: IRecommenda
         <CardLightbox
           imageUrl={preview.imageUrl.large}
           sources={[preview.imageUrl.large, ...preview.imageUrl.sources.map((source) => source.large)]}
-          name={withPitch(preview.name, preview.pitch, t)}
+          name={cardName(preview.name, preview.pitch, t)}
           onClose={() => setPreview(null)}
         />
       )}

@@ -991,3 +991,26 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.soldButton {
+  align-self: flex-start;
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-4);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  background: transparent;
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  cursor: pointer;
+}
+
+.soldButton:hover {
+  border-color: var(--ra-accent);
+}
+
+.ownedNote {
+  color: var(--ra-fg-muted);
+  font-size: 11.5px;
+}

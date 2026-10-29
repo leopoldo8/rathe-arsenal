@@ -262,3 +262,51 @@ describe('UploadResolveModal — partial-overlap variant', () => {
     expect(onAction).toHaveBeenCalledWith('separate', undefined);
   });
 });
+
+describe('UploadResolveModal — the update window sent from one import (r6-update-import-a-phone)', () => {
+  const noChange: IPartialOverlapUploadResponse = {
+    ...partialOverlapResponse,
+    delta: {
+      added: Array.from({ length: 8 }, (_, index) => ({ cardIdentifier: `new-${index}`, quantity: 1 })),
+      removed: [],
+      increased: Array.from({ length: 3 }, (_, index) => ({ cardIdentifier: `up-${index}`, previousQuantity: 1, newQuantity: 2 })),
+      decreased: [{ cardIdentifier: 'down', previousQuantity: 2, newQuantity: 1 }],
+    },
+  };
+
+  it('the update window lists the delta rows then the three actions in the order of r6-update-import-a-phone', async () => {
+    const onAction = vi.fn();
+    const onClose = vi.fn();
+    render(<UploadResolveModal open targeted response={noChange} onClose={onClose} onAction={onAction} />);
+
+    const dialog = screen.getByRole('dialog');
+    const rows = Array.from(dialog.querySelectorAll('tr')).map((row) => [...row.querySelectorAll('td')].map((cell) => cell.textContent));
+    expect(rows).toEqual([['Cartas novas', '8'], ['Aumentaram', '3'], ['Diminuíram', '1'], ['Removidas', '0']]);
+    const buttons = Array.from(dialog.querySelectorAll('button')).map((button) => button.textContent);
+    expect(buttons).toEqual(['Atualizar a existente', 'Substituir pela nova', 'Cancelar']);
+    expect(screen.queryByRole('button', { name: /fonte separada/i })).toBeNull();
+    const follows = (first: Node, second: Node): boolean => Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(dialog.querySelector('table')!, dialog.querySelector('button')!)).toBe(true);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(onClose).toHaveBeenCalled();
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
+  it('draws the rows even when nothing changed', () => {
+    render(
+      <UploadResolveModal
+        open
+        targeted
+        response={{ ...partialOverlapResponse, delta: { added: [], removed: [], increased: [], decreased: [] } }}
+        onClose={vi.fn()}
+        onAction={vi.fn()}
+      />,
+    );
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('Cartas novas0');
+    expect(dialog).toHaveTextContent('Removidas0');
+    expect(screen.queryByText('Nenhuma alteração detectada.')).toBeNull();
+  });
+});

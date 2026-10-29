@@ -17,10 +17,13 @@ import { createScanLoop, type IScanLoop } from './scan-loop';
 import {
   addSearchedCard,
   applyRecognition,
+  commitItems,
   EMPTY_SESSION,
   hasUnpickedRow,
   pickFace,
   removeRow,
+  setRowEdition,
+  setRowFoil,
   setRowQuantity,
   totalQuantity,
   undoScan,
@@ -251,8 +254,7 @@ export function CardScanner(): React.ReactElement {
 
   function handleConfirm(): void {
     const committed = sessionRef.current;
-    const items = committed.rows.map((row) => ({ cardIdentifier: row.picked!.cardIdentifier, quantity: row.quantity }));
-    batchMutation.mutate(items, {
+    batchMutation.mutate(commitItems(committed), {
       onSuccess: (response: IAddCardsBatchResponse) => {
         const names = new Map(committed.rows.map((row) => [row.picked!.cardIdentifier, row.picked!.name]));
         setSummary({
@@ -359,6 +361,8 @@ export function CardScanner(): React.ReactElement {
         onQuantity={(rowKey, quantity) => updateSession(setRowQuantity(sessionRef.current, rowKey, quantity))}
         onRemove={(rowKey) => updateSession(removeRow(sessionRef.current, rowKey))}
         onPick={(rowKey, cardIdentifier) => updateSession(pickFace(sessionRef.current, rowKey, cardIdentifier))}
+        onEdition={(rowKey, edition) => updateSession(setRowEdition(sessionRef.current, rowKey, edition))}
+        onFoil={(rowKey, foil) => updateSession(setRowFoil(sessionRef.current, rowKey, foil))}
         onConfirm={handleConfirm}
       />
 

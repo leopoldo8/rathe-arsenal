@@ -1,10 +1,14 @@
 import type { ICollectorCodesResponse } from '../../api/collector-codes';
+import type { TEdition, TFinish } from '../../api/collection-versions';
 
 export interface IScannedCard {
   readonly cardIdentifier: string;
   readonly name: string;
   readonly pitch: number | null;
   readonly imageSmall: string | null;
+  /** The editions and finishes the scanned code exists in; absent when there is nothing to ask. */
+  readonly editions?: readonly TEdition[];
+  readonly finishes?: readonly TFinish[];
 }
 
 export interface IResolvedCode {
@@ -43,6 +47,8 @@ export function buildCollectorCodeIndex(response: ICollectorCodesResponse): ICol
         name: card.name,
         pitch: card.pitch,
         imageSmall: image === null ? null : `${response.imageSmallBase}${image}.webp`,
+        ...(printing.editions ? { editions: printing.editions } : {}),
+        ...(printing.finishes ? { finishes: printing.finishes } : {}),
       };
       byCode.set(printing.code, [...(byCode.get(printing.code) ?? []), scanned]);
     }

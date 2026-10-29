@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { cleanup, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ISharedListLine, ISharedListResponse } from '../../../api/shared-lists';
 import { SHARE_RETURN_STORAGE_KEY } from '../../../lib/share-return';
@@ -19,7 +19,10 @@ vi.mock('../../../lib/auth-fetch', async (importOriginal) => {
   return { ...actual, authFetch: (...args: Parameters<IFakeApi['authFetch']>) => apiRef.current!.authFetch(...args) };
 });
 
+const routerPush = vi.hoisted(() => vi.fn());
+
 vi.mock('@tanstack/react-router', () => ({
+  useRouter: () => ({ history: { push: routerPush } }),
   Link: ({
     children,
     to,
@@ -48,6 +51,9 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 import { SharedListPage } from '../SharedListPage';
+import { StartFlow } from '../../auth/StartFlow';
+import { ToastProvider } from '../../ui/Toast/ToastProvider';
+import { DUDA, DUDA_MATCHES, expectInOrder, MARCOS } from './visitorKit';
 
 const TOKEN = 'aB3dE5gH7jK9mN';
 const URL = `https://rathearsenal.app/l/${TOKEN}`;
@@ -102,7 +108,7 @@ const SELL: ISharedListResponse = {
   ],
 };
 
-function renderPage(auth = makeAuth({ user: null, token: null })) {
+function renderPage(auth = makeAuth({ user: null })) {
   renderWithProviders(<SharedListPage token={TOKEN} />, auth);
 }
 
@@ -138,10 +144,20 @@ describe('SharedListPage', () => {
       expect(footer.textContent?.match(/© Legend Story Studios/g)).toHaveLength(1);
     });
 
-    it('loads without a Bearer token and asks for no matches', async () => {
+    it('the list tiles name the pitch', async () => {
+      renderPage();
+
+      const tiles = await screen.findAllByTestId('shared-card');
+
+      expect(within(tiles[0]!).getByRole('img', { name: 'Pummel (Vermelho)' })).toBeInTheDocument();
+      expect(within(tiles[2]!).getByRole('img', { name: 'Sink Below (Azul)' })).toBeInTheDocument();
+      expect(within(tiles[2]!).getAllByText('Sink Below (Azul)').length).toBeGreaterThan(0);
+    });
+
+    it('loads with one request and asks for no matches', async () => {
       renderPage();
       await screen.findByRole('heading', { level: 1 });
-      expect(api.calls).toEqual([{ key: `GET /shared/lists/${TOKEN}`, body: undefined, authToken: null }]);
+      expect(api.calls).toEqual([{ key: `GET /shared/lists/${TOKEN}`, body: undefined }]);
     });
 
     it('is invited to sign up, and the page is remembered for the way back', async () => {
@@ -157,6 +173,35 @@ describe('SharedListPage', () => {
         shareToken: TOKEN,
         savedAt: expect.any(Number),
       });
+    });
+
+    it('a new account lands back on the list with its toast', async () => {
+      // A want list of Pedro's: "Criar conta" remembers the page, the start page makes the account and goes back.
+      api.handlers.set(`GET /shared/lists/${TOKEN}`, () => ({ ...BASE, name: 'Quero estas', sharerName: 'Pedro' }));
+      routerPush.mockClear();
+      renderPage();
+      await userEvent.click(within(await screen.findByTestId('shared-invite')).getByRole('link', { name: 'Criar conta' }));
+      cleanup();
+      api.handlers.set('POST /auth/start', () => ({ next: 'new' }));
+      const signUp = vi.fn().mockResolvedValue(undefined);
+      try {
+        renderWithProviders(
+          <ToastProvider>
+            <StartFlow />
+          </ToastProvider>,
+          makeAuth({ user: null, signUp }),
+        );
+
+        await userEvent.type(await screen.findByLabelText('Seu e-mail'), 'pedro.amigo@gmail.com');
+        await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+        await userEvent.click(await screen.findByRole('button', { name: 'Criar conta e entrar' }));
+
+        await vi.waitFor(() => expect(routerPush).toHaveBeenCalledWith(`/l/${TOKEN}`));
+        expect(signUp).toHaveBeenCalledWith(expect.objectContaining({ email: 'pedro.amigo@gmail.com', returnPath: `/l/${TOKEN}`, shareToken: TOKEN }));
+        expect(await screen.findByText('Conta criada. Você voltou para a lista do Pedro.')).toBeInTheDocument();
+      } finally {
+        cleanup();
+      }
     });
 
     it('remembers the list page from the top bar too', async () => {
@@ -206,6 +251,14 @@ describe('SharedListPage', () => {
       expect(within(cards[0]!).queryByTestId('shared-line-sold')).not.toBeInTheDocument();
     });
 
+    it('a public sell list has no LigaFAB link', async () => {
+      renderPage();
+
+      await screen.findByRole('heading', { level: 1, name: 'Oscilio completo' });
+      expect(screen.queryByText(/LigaFAB/)).not.toBeInTheDocument();
+      expect(document.querySelector('a[href*="ligafab"]')).toBeNull();
+    });
+
     it('copies the list as text without the sold card, with the total and the address', async () => {
       const user = userEvent.setup();
       const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
@@ -239,7 +292,7 @@ describe('SharedListPage', () => {
       expect(owned.map((node) => node.textContent)).toEqual(['Você tem 1', 'Você tem 2']);
       expect(await screen.findByTestId('shared-list-summary')).toHaveTextContent('Você tem 2 de 3 cartas desta lista.');
       expect(screen.queryByTestId('shared-invite')).not.toBeInTheDocument();
-      expect(api.calls.find((call) => call.key === `GET /shared/lists/${TOKEN}/matches`)?.authToken).toBe('jwt');
+      expect(api.calls.some((call) => call.key === `GET /shared/lists/${TOKEN}/matches`)).toBe(true);
     });
 
     it('marks the cards missing in their decks on a sell list, leaving sold cards unmarked', async () => {
@@ -347,5 +400,72 @@ describe('SharedListPage', () => {
 
     expect(await screen.findByText('Esta lista está vazia.')).toBeInTheDocument();
     expect(screen.getByTestId('shared-copy-list')).toBeDisabled();
+  });
+
+  describe('signed-in visitor on a sell list (buyer view)', () => {
+    beforeEach(() => {
+      api.handlers.set(`GET /shared/lists/${TOKEN}`, () => DUDA);
+      api.handlers.set(`GET /shared/lists/${TOKEN}/matches`, () => DUDA_MATCHES);
+    });
+
+    it('a buyer sees version, price, deck hint and a stepper at 0', async () => {
+      renderPage(makeAuth());
+
+      await screen.findByTestId('shared-list-buyer');
+      const heading = screen.getByRole('heading', { level: 1, name: 'Duda vende estas cartas' });
+      const summary = await screen.findByText('3 cartas desta lista servem nos seus decks');
+      const rows = screen.getAllByTestId('buyer-row');
+      expectInOrder(screen.getByText('Lista de venda'), heading, summary, ...rows);
+      expect(rows).toHaveLength(3);
+      expect(within(rows[0]!).getByText('Command and Conquer (Vermelho)')).toBeInTheDocument();
+      expect(within(rows[0]!).getByText('History Pack 1 · NM · R$ 45')).toBeInTheDocument();
+      expect(within(rows[0]!).getByText('Falta 1 no seu Rhinar CC')).toBeInTheDocument();
+      expect(within(rows[1]!).getByText('sem foil · R$ 6 cada')).toBeInTheDocument();
+      expect(within(rows[1]!).getByText('Faltam 2 no seu Kayo CC')).toBeInTheDocument();
+      for (const row of rows) expect(row.querySelector('output')).toHaveTextContent('0');
+      // Inside a row: name, then version and price, then the deck hint, then the stepper.
+      expectInOrder(
+        within(rows[0]!).getByText('Command and Conquer (Vermelho)'),
+        within(rows[0]!).getByText('History Pack 1 · NM · R$ 45'),
+        within(rows[0]!).getByText('Falta 1 no seu Rhinar CC'),
+        rows[0]!.querySelector('output') as HTMLElement,
+      );
+      expect(screen.queryByTestId('buyer-bar')).not.toBeInTheDocument();
+    });
+
+    it('names the deck that misses the card most, with that deck own count', async () => {
+      api.handlers.set(`GET /shared/lists/${TOKEN}/matches`, () => ({
+        lines: [
+          {
+            lineId: 2,
+            owned: 0,
+            missingInDecks: 3,
+            decks: [
+              { deckId: 1, deckName: 'Rhinar CC', missing: 1 },
+              { deckId: 2, deckName: 'Kayo CC', missing: 2 },
+            ],
+          },
+        ],
+      }));
+      renderPage(makeAuth());
+
+      expect(await screen.findByText('Faltam 2 no seu Kayo CC')).toBeInTheDocument();
+      expect(screen.queryByText(/Rhinar CC/)).not.toBeInTheDocument();
+    });
+
+    it.each(['sell', 'want'] as const)('the owner gets no selection and no offer on a %s list', async (kind) => {
+      const own = kind === 'sell' ? DUDA : MARCOS;
+      api.handlers.set(`GET /shared/lists/${TOKEN}`, () => ({ ...own, isOwner: true, listId: 7, lines: own.lines.map((line) => ({ ...line, owned: null, spare: null })) }));
+      renderPage(makeAuth());
+
+      expect(await screen.findByRole('link', { name: 'Gerenciar lista' })).toBeInTheDocument();
+      expect(screen.queryByTestId('shared-list-buyer')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('shared-list-trade')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Quero estas/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Ver mensagem' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Oferecer/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Mais uma cópia/ })).not.toBeInTheDocument();
+    });
   });
 });

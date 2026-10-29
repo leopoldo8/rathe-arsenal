@@ -10,36 +10,35 @@ test.describe('Scratch deck flow', () => {
     await page.goto(`${BASE_URL}/decks/new`, { waitUntil: 'networkidle' });
   });
 
-  test('/decks/new renders both path cards', async ({ page }) => {
-    await expect(page.getByTestId('import-fabrary-card')).toBeVisible();
-    await expect(page.getByTestId('start-scratch-card')).toBeVisible();
+  test('/decks/new offers three ways to start a deck, none open', async ({ page }) => {
+    await expect(page.getByRole('link', { name: /I bought a ready-made deck/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /I have a Fabrary link/i })).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByRole('button', { name: /Start from scratch/i })).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('/decks/new renders its heading and the back link to Home', async ({ page }) => {
+  test('/decks/new renders its heading and the back link to the decks', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /^New deck$/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Back to home/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Back to decks/i })).toBeVisible();
   });
 
-  test('the scratch card shows a Start Building button', async ({ page }) => {
-    await expect(page.getByTestId('start-building-btn')).toBeVisible();
+  test('searching a hero lists it with its formats', async ({ page }) => {
+    await page.getByRole('button', { name: /Start from scratch/i }).click();
+
+    await page.getByRole('searchbox').fill('Dorinthea');
+
+    const result = page.getByRole('button', { name: /Dorinthea Ironsong/ });
+    await expect(result).toBeVisible();
+    await expect(result.getByText('Classic Constructed')).toBeVisible();
   });
 
-  test('the hero input accepts Dorinthea', async ({ page }) => {
-    const heroInput = page.getByTestId('start-scratch-card').locator('input').first();
+  test('picking Dorinthea and a format opens the composition editor on the new deck', async ({ page }) => {
+    await page.getByRole('button', { name: /Start from scratch/i }).click();
+    await page.getByRole('searchbox').fill('Dorinthea');
+    await page.getByRole('button', { name: /Dorinthea Ironsong/ }).click();
+    await expect(page.getByRole('button', { name: 'Start building' })).toBeDisabled();
 
-    await heroInput.fill('Dorinthea');
-
-    await expect(heroInput).toHaveValue(/Dorinthea/);
-  });
-
-  test('selecting Dorinthea and Start Building opens the composition editor on the new deck', async ({ page }) => {
-    const scratchCard = page.getByTestId('start-scratch-card');
-    await scratchCard.getByTestId('format-dropdown-trigger').click();
-    await page.getByTestId('format-option-Classic Constructed').click();
-    await scratchCard.getByTestId('hero-dropdown-input').fill('Dorinthea');
-    await page.getByTestId('hero-option-dorinthea-ironsong').click();
-
-    await page.getByTestId('start-building-btn').click();
+    await page.getByText('Classic Constructed', { exact: true }).click();
+    await page.getByRole('button', { name: 'Start building' }).click();
 
     await expect(page).toHaveURL(/\/decks\/\d+\?edit=(%22)?1/);
     await expect(page.getByTestId('deck-canvas-edit')).toBeVisible();

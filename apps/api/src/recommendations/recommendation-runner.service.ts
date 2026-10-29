@@ -50,7 +50,7 @@ export class RecommendationRunnerService {
     if (!apiKey) return this.fail(run, 'NO_API_KEY');
 
     const [deckCards, excluded] = await Promise.all([
-      this.dataSource.getRepository(DeckCardEntity).find({ where: { trackedDeckId: deck.id } }),
+      this.dataSource.getRepository(DeckCardEntity).find({ where: { trackedDeckId: deck.id }, order: { id: 'ASC' } }),
       this.query.excludedCards([deck.id]),
     ]);
     const deckList: IDeckList = {

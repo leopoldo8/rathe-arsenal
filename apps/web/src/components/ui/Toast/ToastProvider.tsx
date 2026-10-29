@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import * as RadixToast from '@radix-ui/react-toast';
 import { useTranslation } from 'react-i18next';
 import {
@@ -135,7 +135,7 @@ export function ToastProvider({ children }: IToastProviderProps): React.ReactEle
           );
         })}
 
-        <RadixToast.Viewport className={styles.viewport} />
+        <RadixToast.Viewport className={styles.viewport} data-testid="toast-viewport" />
       </RadixToast.Provider>
     </ToastContext.Provider>
   );
@@ -151,14 +151,46 @@ interface IToastItemProps {
   readonly onDismiss: () => void;
 }
 
+const IDLE_KEYS: ReadonlySet<string> = new Set(['Tab', 'Shift', 'Control', 'Alt', 'Meta']);
+
+/** Calls `onAction` for the first tap or key press outside `rootRef`, armed one tick late so the gesture that raised the toast is not it. */
+function useNextAction(
+  enabled: boolean,
+  rootRef: React.RefObject<HTMLElement | null>,
+  onAction: () => void,
+): void {
+  const onActionRef = useRef(onAction);
+  onActionRef.current = onAction;
+  useEffect(() => {
+    if (!enabled) return;
+    function handle(event: Event): void {
+      if (event instanceof KeyboardEvent && IDLE_KEYS.has(event.key)) return;
+      if (event.target instanceof Node && rootRef.current?.contains(event.target)) return;
+      onActionRef.current();
+    }
+    const arm = setTimeout(() => {
+      document.addEventListener('pointerdown', handle, true);
+      document.addEventListener('keydown', handle, true);
+    }, 0);
+    return () => {
+      clearTimeout(arm);
+      document.removeEventListener('pointerdown', handle, true);
+      document.removeEventListener('keydown', handle, true);
+    };
+  }, [enabled, rootRef]);
+}
+
 function ToastItem({ toast, duration, onDismiss }: IToastItemProps): React.ReactElement {
   const { t } = useTranslation();
   const kindClass = styles[`toast--${toast.kind}`] ?? '';
+  const rootRef = useRef<HTMLLIElement | null>(null);
+  useNextAction(toast.dismissOnNextAction === true, rootRef, onDismiss);
 
   return (
     <RadixToast.Root
+      ref={rootRef}
       className={`${styles.toast} ${kindClass}`}
-      duration={duration}
+      duration={toast.persistent === true ? Infinity : duration}
       onOpenChange={(open) => {
         if (!open) onDismiss();
       }}

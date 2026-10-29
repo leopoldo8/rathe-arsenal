@@ -1,10 +1,11 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
+import { NormalizedEmail } from './normalized-email.decorator';
 
 export class SignInDto {
-  @IsEmail()
+  @NormalizedEmail()
   email!: string;
 
   @IsString()
-  @MinLength(1)
+  @IsNotEmpty()
   password!: string;
 }

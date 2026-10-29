@@ -1,4 +1,5 @@
-import { catalog, findCardLegalityViolation } from '@rathe-arsenal/engine';
+import { catalog, computeDeckLegality, findCardLegalityViolation, getCopyLimit } from '@rathe-arsenal/engine';
+import { SpareCopiesService } from '../../collection/spare/spare-copies.service';
 import { BATCH_CARD_LIMIT, BATCH_RULE_LIMIT, runChatTool } from '../chat-tools';
 import { ChatToolsService } from '../chat-tools.service';
 import { FabraryService } from '../../fabrary/fabrary.service';
@@ -30,11 +31,46 @@ describe('chat tools (E2E)', () => {
     return tools.forTurn({ userId: user.userId, locale: 'en-US' }).toolbox;
   }
 
+  interface IDeckLine {
+    readonly cardIdentifier: string;
+    readonly slot: 'hero' | 'weapon' | 'mainboard';
+    readonly quantity: number;
+    readonly inventoryQuantity?: number;
+  }
+
+  const RHINAR = 'rhinar-reckless-rampage';
+  const PACK_HUNT_RED = 'pack-hunt-red';
+  const PACK_HUNT_YELLOW = 'pack-hunt-yellow';
+  const PACK_HUNT_BLUE = 'pack-hunt-blue';
+
+  /** A deck of the user's own, inserted straight into the tables so a test can pick the status, hero and every quantity. */
+  async function insertDeck(user: IChatUser, status: string, lines: readonly IDeckLine[], name = 'Rhinar CC'): Promise<number> {
+    const [{ id }] = (await fixture.dataSource.query(
+      `INSERT INTO tracked_deck ("userId", name, hero, "heroIdentifier", format, status)
+       VALUES ($1, $2, 'Rhinar, Reckless Rampage', $3, 'Classic Constructed', $4) RETURNING id`,
+      [user.userId, name, RHINAR, status],
+    )) as [{ id: number }];
+    for (const line of lines) {
+      await fixture.dataSource.query(
+        `INSERT INTO deck_card ("trackedDeckId", "cardIdentifier", quantity, "inventoryQuantity", slot) VALUES ($1, $2, $3, $4, $5)`,
+        [id, line.cardIdentifier, line.quantity, line.inventoryQuantity ?? 0, line.slot],
+      );
+    }
+    return id;
+  }
+
+  const PACK_HUNT_DECK: readonly IDeckLine[] = [
+    { cardIdentifier: RHINAR, slot: 'hero', quantity: 1 },
+    { cardIdentifier: PACK_HUNT_RED, slot: 'mainboard', quantity: 3, inventoryQuantity: 1 },
+    { cardIdentifier: PACK_HUNT_YELLOW, slot: 'mainboard', quantity: 3 },
+    { cardIdentifier: PACK_HUNT_BLUE, slot: 'mainboard', quantity: 3 },
+  ];
+
   it("tools only see the message owner's data", async () => {
     const owner = await fixture.chatUser();
     const other = await fixture.chatUser();
-    await fixture.own(owner.jwt, [{ cardIdentifier: FLEX, quantity: 3 }]);
-    await fixture.own(other.jwt, [{ cardIdentifier: FLEX, quantity: 1 }]);
+    await fixture.own(owner.sessionToken, [{ cardIdentifier: FLEX, quantity: 3 }]);
+    await fixture.own(other.sessionToken, [{ cardIdentifier: FLEX, quantity: 1 }]);
     const toolbox = toolboxFor(owner);
 
     expect(await runChatTool(toolbox, 'get_deck', { deckId: other.deckId })).toEqual({ error: 'DECK_NOT_FOUND' });
@@ -53,7 +89,7 @@ describe('chat tools (E2E)', () => {
 
   it('each read tool answers from the database', async () => {
     const user = await fixture.chatUser();
-    await fixture.own(user.jwt, [{ cardIdentifier: EMISSARY, quantity: 1 }]);
+    await fixture.own(user.sessionToken, [{ cardIdentifier: EMISSARY, quantity: 1 }]);
     const toolbox = toolboxFor(user);
     const [{ id: runId }] = (await fixture.dataSource.query(
       `INSERT INTO recommendation_run ("trackedDeckId", "trigger", status, "runAfter", "deckFingerprint", "finishedAt") VALUES ($1, 'manual', 'done', now(), 'x', now()) RETURNING id`,
@@ -91,6 +127,11 @@ describe('chat tools (E2E)', () => {
     expect(catalog.getCard(RUNEBLADE_EMISSARY).classes).toEqual(['Runeblade']);
     expect(cards.find((card) => card.cardIdentifier === RUNEBLADE_EMISSARY)?.legal).toBe(false);
     const batched = batch['results'] as Array<{ query: string; cards: Array<{ cardIdentifier: string; legal: boolean }> }>;
+    // A phrase from the rules text of a card, found nowhere in its name, still finds the card.
+    const byRulesText = await runChatTool(toolbox, 'search_cards', { query: 'banish it, then shuffle', limit: 20 });
+    expect(catalog.getCard(KATSU).name.toLowerCase()).not.toContain('banish');
+    expect(catalog.getCard(KATSU).functionalText).toContain('banish it, then shuffle');
+    expect((byRulesText['cards'] as Array<{ cardIdentifier: string }>).map((card) => card.cardIdentifier)).toContain(KATSU);
     expect(batched.map((result) => result.query)).toEqual(['emissary', 'talishar']);
     expect(batched.every((result) => result.cards.length > 0 && result.cards.length <= BATCH_CARD_LIMIT)).toBe(true);
     expect(batched[1]!.cards.map((card) => card.cardIdentifier)).toContain(TALISHAR);
@@ -166,6 +207,8 @@ describe('chat tools (E2E)', () => {
 
     expect(answer).toEqual({
       ok: true,
+      quantity: 2,
+      side: 'deck',
       comparison: expect.objectContaining({
         copies: 2,
         sameRole: true,
@@ -184,7 +227,7 @@ describe('chat tools (E2E)', () => {
   it("get_swap_candidates ranks cards for one of the deck's cards with cost, role and free copies", async () => {
     const owner = await fixture.chatUser();
     const other = await fixture.chatUser();
-    await fixture.own(owner.jwt, [{ cardIdentifier: EMISSARY_OF_WIND, quantity: 1 }]);
+    await fixture.own(owner.sessionToken, [{ cardIdentifier: EMISSARY_OF_WIND, quantity: 1 }]);
     const toolbox = toolboxFor(owner);
 
     const found = await runChatTool(toolbox, 'get_swap_candidates', { deckId: owner.deckId, cardIdentifier: FLEX, slot: 'mainboard' });
@@ -262,6 +305,7 @@ describe('chat tools (E2E)', () => {
     const listed = await runChatTool(toolbox, 'get_prices', { cardIdentifiers: [FLEX, COAX] });
 
     expect(listed['store']).toEqual(expect.objectContaining({ name: 'Cúpula DT', currency: 'BRL' }));
+    expect(listed['tcgplayer']).toEqual(expect.objectContaining({ currency: 'USD' }));
     const [flex, coax] = listed['cards'] as Array<Record<string, unknown>>;
     expect(flex).toEqual(
       expect.objectContaining({
@@ -282,9 +326,195 @@ describe('chat tools (E2E)', () => {
     expect(deck['cards']).toEqual([
       expect.objectContaining({ cardIdentifier: FLEX, quantity: 2, store: expect.objectContaining({ available: 2, lineCents: 600 }), tcgplayer: expect.objectContaining({ lineCents: 50 }) }),
     ]);
-    expect(deck['store']).toEqual(expect.objectContaining({ totalCents: 600, cardsOutOfStock: 0 }));
+    expect(deck['store']).toEqual(expect.objectContaining({ totalCents: 600, cardsOutOfStock: 0, currency: 'BRL' }));
+    expect(deck['tcgplayer']).toEqual(expect.objectContaining({ currency: 'USD', totalCents: 50 }));
     expect(await runChatTool(toolbox, 'get_prices', { deckId: other.deckId })).toEqual({ error: 'DECK_NOT_FOUND' });
     expect(await runChatTool(toolbox, 'get_prices', {})).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
+  });
+
+  it("get_deck returns the engine's full legality and each card's copy limit", async () => {
+    const user = await fixture.chatUser();
+    const deckId = await insertDeck(user, 'building', PACK_HUNT_DECK);
+    const toolbox = toolboxFor(user);
+
+    const deck = await runChatTool(toolbox, 'get_deck', { deckId });
+
+    const expected = computeDeckLegality(
+      {
+        heroIdentifier: RHINAR,
+        cards: PACK_HUNT_DECK.map((line) => ({ cardIdentifier: line.cardIdentifier, quantity: line.quantity, slot: line.slot, inventoryQuantity: line.inventoryQuantity ?? 0 })),
+      },
+      catalog,
+      'Classic Constructed',
+    );
+    expect(deck['legality']).toEqual(JSON.parse(JSON.stringify(expected)));
+    const legality = deck['legality'] as { category: string; details: Array<{ code: string; params: Record<string, unknown> }> };
+    expect(legality.category).toBe('illegal');
+    const copyProblems = legality.details.filter((detail) => detail.code === 'too_many_copies');
+    expect(copyProblems).toHaveLength(1);
+    expect(copyProblems[0]!.params).toMatchObject({ cardIdentifier: PACK_HUNT_RED, count: 4, limit: 3 });
+    const cards = deck['cards'] as Array<{ cardIdentifier: string; copyLimit: number }>;
+    expect(cards.find((card) => card.cardIdentifier === PACK_HUNT_RED)?.copyLimit).toBe(3);
+    for (const card of cards) expect(card.copyLimit).toBe(getCopyLimit(catalog.getCard(card.cardIdentifier), 'Classic Constructed'));
+  });
+
+  it('get_prices with a deck and an empty list answers as for the deck alone', async () => {
+    const user = await fixture.chatUser();
+    const deckId = await insertDeck(user, 'building', PACK_HUNT_DECK);
+    const toolbox = toolboxFor(user);
+
+    const alone = await runChatTool(toolbox, 'get_prices', { deckId });
+    const withEmptyList = await runChatTool(toolbox, 'get_prices', { deckId, cardIdentifiers: [] });
+
+    expect(withEmptyList['error']).toBeUndefined();
+    expect(withEmptyList).toEqual(alone);
+    expect(await runChatTool(toolbox, 'get_prices', {})).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
+    expect(await runChatTool(toolbox, 'get_prices', { cardIdentifiers: [] })).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
+  });
+
+  it('propose_swap proposes a one-copy swap', async () => {
+    const user = await fixture.chatUser();
+    const deckId = await insertDeck(user, 'building', PACK_HUNT_DECK);
+    const toolbox = toolboxFor(user);
+    const woundingBlow = catalog.cards.find((card) => card.name === 'Wounding Blow' && card.pitch === 1)!.cardIdentifier;
+
+    const answer = await runChatTool(toolbox, 'propose_swap', {
+      deckId,
+      originalCardIdentifier: PACK_HUNT_RED,
+      slot: 'mainboard',
+      replacementCardIdentifier: woundingBlow,
+      quantity: 1,
+      side: 'inventory',
+      reason: 'a legal card for the Rhinar deck',
+    });
+
+    expect(answer['ok']).toBe(true);
+    expect(answer['quantity']).toBe(1);
+    expect(answer['side']).toBe('inventory');
+    expect((answer['comparison'] as { copies: number }).copies).toBe(1);
+  });
+
+  it('propose_swap refuses a bad quantity, side or copy count and stores no proposal', async () => {
+    const user = await fixture.chatUser();
+    const deckId = await insertDeck(user, 'building', PACK_HUNT_DECK);
+    const woundingBlow = catalog.cards.find((card) => card.name === 'Wounding Blow' && card.pitch === 1)!.cardIdentifier;
+    const swap = (overrides: Record<string, unknown>) => ({
+      deckId,
+      originalCardIdentifier: PACK_HUNT_RED,
+      slot: 'mainboard',
+      replacementCardIdentifier: woundingBlow,
+      reason: 'a legal card for the Rhinar deck',
+      ...overrides,
+    });
+    const refusals = [
+      swap({ quantity: 0, side: 'deck' }),
+      swap({ quantity: 2, side: 'inventory' }),
+      swap({ quantity: 1, side: 'bench' }),
+      swap({ quantity: 1, side: 'inventory', replacementCardIdentifier: PACK_HUNT_YELLOW }),
+    ];
+
+    for (const args of refusals) {
+      const turn = tools.forTurn({ userId: user.userId, locale: 'en-US' });
+      const answer = await runChatTool(turn.toolbox, 'propose_swap', args);
+
+      expect(answer['ok']).toBe(false);
+      expect(turn.proposals).toHaveLength(0);
+    }
+    for (const side of ['deck', 'inventory']) {
+      const turn = tools.forTurn({ userId: user.userId, locale: 'en-US' });
+      const answer = await runChatTool(turn.toolbox, 'propose_swap', swap({ quantity: 1, side }));
+
+      expect(answer['ok']).toBe(true);
+      expect(turn.proposals).toHaveLength(1);
+    }
+  });
+
+  it("search_rules finds rules for the starter questions' searches", async () => {
+    const toolbox = toolboxFor(await fixture.chatUser());
+    const insertRule = `INSERT INTO rules_entry ("ruleNumber", "sectionNumber", "sectionTitle", text, url, "sourceHash", "fetchedAt") VALUES ($1, '9.9', 'Tools', $2, 'u', 'h', now())
+       ON CONFLICT ("ruleNumber") DO UPDATE SET text = EXCLUDED.text`;
+    await fixture.dataSource.query(insertRule, ['tools-starter-triggers', 'The combat chain keeps the order of triggers: triggered effects wait and the turn player picks their order.']);
+    await fixture.dataSource.query(insertRule, ['tools-starter-copies', 'A constructed deck may hold at most the maximum copies of a card with the same name and pitch.']);
+    await fixture.dataSource.query(insertRule, ['tools-starter-equipment', 'A Classic Constructed deck needs one weapon and equipment in each slot, with the requirements of its hero.']);
+
+    const searches: Array<[string, string]> = [
+      ['order of triggers when attacking', 'tools-starter-triggers'],
+      ['constructed deck maximum copies same name pitch', 'tools-starter-copies'],
+      ['Classic Constructed deck equipment weapon requirements', 'tools-starter-equipment'],
+    ];
+    for (const [query, ruleNumber] of searches) {
+      const result = await runChatTool(toolbox, 'search_rules', { query });
+
+      expect(result['found']).toBe(true);
+      expect((result['entries'] as Array<{ ruleNumber: string }>).map((entry) => entry.ruleNumber)).toContain(ruleNumber);
+    }
+  });
+
+  it('get_prices computes readiness for a deck with none stored', async () => {
+    const user = await fixture.chatUser();
+    const deckId = await insertDeck(user, 'building', PACK_HUNT_DECK);
+    expect(await fixture.dataSource.query(`SELECT 1 FROM deck_readiness_snapshot WHERE "trackedDeckId" = $1`, [deckId])).toHaveLength(0);
+    const toolbox = toolboxFor(user);
+
+    const prices = await runChatTool(toolbox, 'get_prices', { deckId });
+
+    expect(prices['error']).toBeUndefined();
+    const cards = prices['cards'] as Array<{ cardIdentifier: string; quantity: number }>;
+    expect(cards.map((card) => [card.cardIdentifier, card.quantity])).toEqual(
+      expect.arrayContaining([
+        [PACK_HUNT_RED, 4],
+        [PACK_HUNT_YELLOW, 3],
+        [PACK_HUNT_BLUE, 3],
+      ]),
+    );
+  });
+
+  it('search_cards finds Romping Club for Brute weapon', async () => {
+    const user = await fixture.chatUser();
+    const toolbox = toolboxFor(user);
+
+    const found = await runChatTool(toolbox, 'search_cards', { query: 'Brute weapon' });
+
+    expect((found['cards'] as Array<{ cardIdentifier: string }>).map((card) => card.cardIdentifier)).toContain('romping-club');
+  });
+
+  it('get_swap_candidates on a 4-copy Pack Hunt (Vermelho) returns candidates', async () => {
+    const user = await fixture.chatUser();
+    const deckId = await insertDeck(user, 'building', PACK_HUNT_DECK);
+    const toolbox = toolboxFor(user);
+
+    const found = await runChatTool(toolbox, 'get_swap_candidates', { deckId, cardIdentifier: PACK_HUNT_RED, slot: 'mainboard' });
+    const one = await runChatTool(toolbox, 'get_swap_candidates', { deckId, cardIdentifier: PACK_HUNT_RED, slot: 'mainboard', quantity: 1 });
+
+    expect(found['needed']).toBe(1);
+    expect((found['groups'] as unknown[]).length).toBeGreaterThan(0);
+    expect(one['needed']).toBe(1);
+    expect((one['groups'] as unknown[]).length).toBeGreaterThan(0);
+  });
+
+  it("the Tutor's spare copies come from the spare function: Ideia and Aposentado decks hold none", async () => {
+    const user = await fixture.chatUser();
+    await fixture.own(user.sessionToken, [{ cardIdentifier: PACK_HUNT_RED, quantity: 3 }]);
+    const building = await insertDeck(user, 'building', [
+      { cardIdentifier: RHINAR, slot: 'hero', quantity: 1 },
+      { cardIdentifier: PACK_HUNT_RED, slot: 'mainboard', quantity: 2 },
+      { cardIdentifier: PACK_HUNT_YELLOW, slot: 'mainboard', quantity: 1 },
+    ]);
+    await insertDeck(user, 'idea', [{ cardIdentifier: PACK_HUNT_RED, slot: 'mainboard', quantity: 3 }], 'Ideia');
+    await insertDeck(user, 'retired', [{ cardIdentifier: PACK_HUNT_RED, slot: 'mainboard', quantity: 3 }], 'Aposentado');
+    const toolbox = toolboxFor(user);
+    const { spare } = await fixture.app.get(SpareCopiesService).spareByCard(user.userId);
+
+    const collection = await runChatTool(toolbox, 'get_collection', { query: 'pack hunt' });
+    const candidates = await runChatTool(toolbox, 'get_swap_candidates', { deckId: building, cardIdentifier: PACK_HUNT_YELLOW, slot: 'mainboard' });
+
+    const row = (collection['cards'] as Array<{ cardIdentifier: string; spare: number }>).find((entry) => entry.cardIdentifier === PACK_HUNT_RED);
+    const candidate = (candidates['groups'] as Array<{ cards: Array<{ cardIdentifier: string; freeCopies: number }> }>)
+      .flatMap((group) => group.cards)
+      .find((entry) => entry.cardIdentifier === PACK_HUNT_RED);
+    expect(spare.get(PACK_HUNT_RED)).toBe(1);
+    expect(row?.spare).toBe(1);
+    expect(candidate?.freeCopies).toBe(1);
   });
 
   it('get_tournament_meta counts decks, top 8s and wins per hero for a format', async () => {
@@ -309,7 +539,7 @@ describe('chat tools (E2E)', () => {
 
   it('get_collection lists owned copies, what each deck already uses and the spare copies', async () => {
     const user = await fixture.chatUser();
-    await fixture.own(user.jwt, [
+    await fixture.own(user.sessionToken, [
       { cardIdentifier: FLEX, quantity: 3 },
       { cardIdentifier: EMISSARY, quantity: 2 },
       { cardIdentifier: COAX, quantity: 1 },
@@ -332,7 +562,7 @@ describe('chat tools (E2E)', () => {
 
   it("get_tournament_deck compared with one of the user's decks marks each card's legality there, owned copies and copies in that deck", async () => {
     const user = await fixture.chatUser();
-    await fixture.own(user.jwt, [{ cardIdentifier: FLEX, quantity: 3 }]);
+    await fixture.own(user.sessionToken, [{ cardIdentifier: FLEX, quantity: 3 }]);
     const toolbox = toolboxFor(user);
     const [{ id }] = (await fixture.dataSource.query(
       `INSERT INTO tournament_deck ("fabraryUlid", name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt", "syncedAt", source)

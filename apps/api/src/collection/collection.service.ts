@@ -30,10 +30,22 @@ import {
   IAddCardsBatchResult,
 } from './dtos/add-cards-batch.dto';
 import { IMarkOwnedResponse } from './dtos/mark-owned.response.dto';
+import { ISetOwnedResponse } from './dtos/set-owned.dto';
+import { ICopyVersion, NO_VERSION, TVersionParts, withDefaults } from './versions/copy-version';
+import { assertVersionBelongsToCard } from './versions/collection-versions.service';
 
 const MAX_COLLECTION_QUANTITY = 20;
 
 interface IBatchItem {
+  readonly cardIdentifier: string;
+  readonly quantity: number;
+  readonly printingCode?: string | undefined;
+  readonly edition?: ICopyVersion['edition'] | undefined;
+  readonly finish?: ICopyVersion['finish'] | undefined;
+}
+
+/** One card at one version: the unit a batch sums and increments. */
+interface IBatchEntry extends ICopyVersion {
   readonly cardIdentifier: string;
   readonly quantity: number;
 }
@@ -71,6 +83,7 @@ export class CollectionService {
     // sections as readiness is recomputed.
     const deckCards = await this.deckCardRepo.find({
       where: { trackedDeckId: deckId },
+      order: { id: 'ASC' },
     });
 
     const deckCard = deckCards.find(
@@ -91,7 +104,7 @@ export class CollectionService {
     // Upsert CollectionCard: insert with qty 1 if new, else increment (capped).
     // Scoped to the manual source so CSV source rows are never overwritten.
     const existing = await this.collectionCardRepo.findOne({
-      where: { userId, cardIdentifier, sourceId: manualSource.id },
+      where: { userId, cardIdentifier, sourceId: manualSource.id, ...NO_VERSION },
     });
 
     let newQuantity: number;
@@ -112,33 +125,7 @@ export class CollectionService {
       await this.collectionCardRepo.save(entity);
     }
 
-    // Recompute readiness
-    const newSnapshotEntity =
-      await this.substitutionService.computeAndStoreReadiness(deckId, userId);
-
-    // Derive path + fidelityPercent for the response. deckCards is already
-    // loaded above, so totalCards is cheap to compute locally.
-    const totalCards = deckCards.reduce((sum, c) => sum + c.quantity, 0);
-    const derived = this.substitutionService.deriveSnapshotFields(
-      newSnapshotEntity,
-      totalCards,
-    );
-
-    const snapshot: ITrackedDeckDetailSnapshot = {
-      id: newSnapshotEntity.id,
-      rawPercent: newSnapshotEntity.rawPercent,
-      effectivePercent: newSnapshotEntity.effectivePercent,
-      path: derived.path,
-      fidelityPercent: derived.fidelityPercent,
-      breakdown:
-        newSnapshotEntity.breakdown as unknown as IBreakdown,
-      substitutions:
-        newSnapshotEntity.substitutions as unknown as Record<
-          string,
-          ISubstitutionEntry
-        >,
-      computedAt: newSnapshotEntity.computedAt.toISOString(),
-    };
+    const snapshot = await this.recomputeSnapshot(userId, deckId, deckCards);
 
     this.logger.log('Card marked as owned', {
       userId,
@@ -152,6 +139,80 @@ export class CollectionService {
       newQuantity,
       snapshot,
     };
+  }
+
+  /** Recomputes the deck's readiness and answers the snapshot the way the deck detail does. */
+  private async recomputeSnapshot(
+    userId: string,
+    deckId: number,
+    deckCards: readonly DeckCardEntity[],
+  ): Promise<ITrackedDeckDetailSnapshot> {
+    const newSnapshotEntity = await this.substitutionService.computeAndStoreReadiness(deckId, userId);
+    const totalCards = deckCards.reduce((sum, c) => sum + c.quantity, 0);
+    const derived = this.substitutionService.deriveSnapshotFields(newSnapshotEntity, totalCards);
+    return {
+      id: newSnapshotEntity.id,
+      rawPercent: newSnapshotEntity.rawPercent,
+      effectivePercent: newSnapshotEntity.effectivePercent,
+      path: derived.path,
+      fidelityPercent: derived.fidelityPercent,
+      breakdown: newSnapshotEntity.breakdown as unknown as IBreakdown,
+      substitutions: newSnapshotEntity.substitutions as unknown as Record<string, ISubstitutionEntry>,
+      computedAt: newSnapshotEntity.computedAt.toISOString(),
+    };
+  }
+
+  /**
+   * Sets how many copies of a card the player owns in all, through the manual source: the manual quantity becomes
+   * the total asked minus what the other active sources hold. One statement writes it and reads the value it replaced.
+   */
+  async setOwned(userId: string, deckId: number, cardIdentifier: string, ownedTotal: number): Promise<ISetOwnedResponse> {
+    await this.authzService.assertOwnsTrackedDeck(userId, deckId);
+    const deckCards = await this.deckCardRepo.find({ where: { trackedDeckId: deckId, cardIdentifier }, order: { id: 'ASC' } });
+    if (deckCards.length === 0) throw new NotFoundException(`Card "${cardIdentifier}" is not part of this deck`);
+    const deckQuantity = deckCards.reduce((sum, row) => sum + row.quantity + row.inventoryQuantity, 0);
+    if (ownedTotal > deckQuantity) {
+      throw new BadRequestException({ code: 'OWNED_TOTAL_TOO_HIGH', message: 'The total is above what the deck uses of this card' });
+    }
+
+    const manualSource = await this.sourcesService.ensureManualSource(userId);
+    const [held] = await this.dataSource.query(
+      `SELECT COALESCE(SUM(c.quantity) FILTER (WHERE c."sourceId" <> $3), 0)::int AS "otherQuantity"
+       FROM collection_card c JOIN csv_source s ON s.id = c."sourceId"
+       WHERE c."userId" = $1 AND c."cardIdentifier" = $2 AND s.active = true`,
+      [userId, cardIdentifier, manualSource.id],
+    );
+    const otherQuantity = held.otherQuantity as number;
+    if (ownedTotal < otherQuantity) {
+      throw new BadRequestException({ code: 'OWNED_TOTAL_BELOW_OTHER_SOURCES', message: 'Other imports already hold more than this total' });
+    }
+
+    const manualQuantity = ownedTotal - otherQuantity;
+    // One statement writes the manual quantity and returns the one it replaced (a data-changing CTE reads the
+    // table as the statement found it). A total that leaves nothing for the manual source removes its row.
+    const keyMatch = `"userId" = $1 AND "cardIdentifier" = $2 AND "sourceId" = $3
+      AND "printingCode" = '' AND edition = '' AND finish = '' AND condition = ''`;
+    const [written] = await this.dataSource.query(
+      manualQuantity === 0
+        ? `WITH previous AS (SELECT quantity FROM collection_card WHERE ${keyMatch}),
+                removed AS (DELETE FROM collection_card WHERE ${keyMatch} RETURNING 1)
+           SELECT COALESCE((SELECT quantity FROM previous), 0)::int AS "previousManualQuantity"`
+        : `WITH previous AS (SELECT quantity FROM collection_card WHERE ${keyMatch}),
+                written AS (
+                  INSERT INTO collection_card ("userId", "cardIdentifier", "sourceId", quantity)
+                  VALUES ($1, $2, $3, $4)
+                  ON CONFLICT ("userId", "cardIdentifier", "sourceId", "printingCode", edition, finish, condition)
+                  DO UPDATE SET quantity = EXCLUDED.quantity, "lastUpdated" = now()
+                  RETURNING 1
+                )
+           SELECT COALESCE((SELECT quantity FROM previous), 0)::int AS "previousManualQuantity" FROM written`,
+      manualQuantity === 0 ? [userId, cardIdentifier, manualSource.id] : [userId, cardIdentifier, manualSource.id, manualQuantity],
+    );
+    const previousManualQuantity = written.previousManualQuantity as number;
+
+    const snapshot = await this.recomputeSnapshot(userId, deckId, await this.deckCardRepo.find({ where: { trackedDeckId: deckId }, order: { id: 'ASC' } }));
+    this.logger.log('Owned total set', { userId, deckId, cardIdentifier, ownedTotal });
+    return { ownedTotal, previousManualQuantity, snapshot };
   }
 
   /**
@@ -190,7 +251,7 @@ export class CollectionService {
     // MAX_COLLECTION_QUANTITY to keep user input bounded.
     // Scoped to the manual source so CSV source rows are never overwritten.
     const existing = await this.collectionCardRepo.findOne({
-      where: { userId, cardIdentifier, sourceId: manualSource.id },
+      where: { userId, cardIdentifier, sourceId: manualSource.id, ...NO_VERSION },
     });
 
     let newQuantity: number;
@@ -244,25 +305,27 @@ export class CollectionService {
     userId: string,
     items: readonly IBatchItem[],
   ): Promise<IAddCardsBatchResponse> {
-    const summed = sumByCard(items);
-    this.assertCardsExist([...summed.keys()]);
+    const entries = sumByCardVersion(items);
+    const cardIdentifiers = [...new Set(entries.map((entry) => entry.cardIdentifier))];
+    this.assertCardsExist(cardIdentifiers);
+    for (const entry of entries) assertVersionBelongsToCard(entry.cardIdentifier, entry);
 
     // Created before the transaction: its unique-violation recovery re-reads
     // the row, which an aborted Postgres transaction cannot do.
     const manualSource = await this.sourcesService.ensureManualSource(userId);
     const results = await this.dataSource.transaction((manager) =>
-      this.incrementQuantities(manager, userId, manualSource.id, summed),
+      this.incrementQuantities(manager, userId, manualSource.id, entries),
     );
 
-    const affectedDeckIds = await this.findAffectedDeckIdsForCards(userId, [...summed.keys()]);
+    const affectedDeckIds = await this.findAffectedDeckIdsForCards(userId, cardIdentifiers);
     const recomputedDecks = await this.recomputeDecks(userId, affectedDeckIds, {
       msg: 'Failed to recompute readiness after addCardsBatch',
     });
 
     this.logger.log('Cards batch-added to collection', {
       userId,
-      itemCount: summed.size,
-      totalQuantity: [...summed.values()].reduce((sum, quantity) => sum + quantity, 0),
+      itemCount: entries.length,
+      totalQuantity: entries.reduce((sum, entry) => sum + entry.quantity, 0),
       cappedCount: results.filter((result) => result.capped).length,
       affectedDeckCount: affectedDeckIds.length,
     });
@@ -290,34 +353,51 @@ export class CollectionService {
     manager: EntityManager,
     userId: string,
     sourceId: string,
-    summed: ReadonlyMap<string, number>,
+    entries: readonly IBatchEntry[],
   ): Promise<IAddCardsBatchResult[]> {
-    const cardIdentifiers = [...summed.keys()];
-    const previousRows: { cardIdentifier: string; quantity: number }[] = await manager.query(
-      `SELECT "cardIdentifier", quantity FROM collection_card
+    const cardIdentifiers = [...new Set(entries.map((entry) => entry.cardIdentifier))];
+    const previousRows: ({ quantity: number } & ICopyVersion & { cardIdentifier: string })[] = await manager.query(
+      `SELECT "cardIdentifier", "printingCode", edition, finish, condition, quantity FROM collection_card
        WHERE "userId" = $1 AND "sourceId" = $2 AND "cardIdentifier" = ANY($3)
        FOR UPDATE`,
       [userId, sourceId, cardIdentifiers],
     );
-    const previous = new Map(previousRows.map((row) => [row.cardIdentifier, row.quantity]));
+    const previous = new Map(previousRows.map((row) => [entryKey(row), row.quantity]));
 
-    const updatedRows: { cardIdentifier: string; quantity: number }[] = await manager.query(
-      `INSERT INTO collection_card ("userId", "cardIdentifier", "sourceId", quantity)
-       SELECT $1, input."cardIdentifier", $2, input.quantity
-       FROM unnest($3::varchar[], $4::int[]) AS input("cardIdentifier", quantity)
-       ON CONFLICT ("userId", "cardIdentifier", "sourceId")
-       DO UPDATE SET quantity = LEAST(collection_card.quantity + EXCLUDED.quantity, $5),
+    const updatedRows: ({ quantity: number } & ICopyVersion & { cardIdentifier: string })[] = await manager.query(
+      `INSERT INTO collection_card ("userId", "cardIdentifier", "sourceId", "printingCode", edition, finish, condition, quantity)
+       SELECT $1, input."cardIdentifier", $2, input."printingCode", input.edition, input.finish, input.condition, input.quantity
+       FROM unnest($3::varchar[], $4::varchar[], $5::varchar[], $6::varchar[], $7::varchar[], $8::int[])
+         AS input("cardIdentifier", "printingCode", edition, finish, condition, quantity)
+       ON CONFLICT ("userId", "cardIdentifier", "sourceId", "printingCode", edition, finish, condition)
+       DO UPDATE SET quantity = LEAST(collection_card.quantity + EXCLUDED.quantity, $9),
                      "lastUpdated" = now()
-       RETURNING "cardIdentifier", quantity`,
-      [userId, sourceId, cardIdentifiers, [...summed.values()], MAX_COLLECTION_QUANTITY],
+       RETURNING "cardIdentifier", "printingCode", edition, finish, condition, quantity`,
+      [
+        userId,
+        sourceId,
+        entries.map((entry) => entry.cardIdentifier),
+        entries.map((entry) => entry.printingCode),
+        entries.map((entry) => entry.edition),
+        entries.map((entry) => entry.finish),
+        entries.map((entry) => entry.condition),
+        entries.map((entry) => entry.quantity),
+        MAX_COLLECTION_QUANTITY,
+      ],
     );
-    const updated = new Map(updatedRows.map((row) => [row.cardIdentifier, row.quantity]));
+    const updated = new Map(updatedRows.map((row) => [entryKey(row), row.quantity]));
 
-    return cardIdentifiers.map((cardIdentifier) => ({
-      cardIdentifier,
-      newQuantity: updated.get(cardIdentifier) ?? 0,
-      capped: (previous.get(cardIdentifier) ?? 0) + summed.get(cardIdentifier)! > MAX_COLLECTION_QUANTITY,
+    return entries.map((entry) => ({
+      cardIdentifier: entry.cardIdentifier,
+      newQuantity: updated.get(entryKey(entry)) ?? 0,
+      capped: (previous.get(entryKey(entry)) ?? 0) + entry.quantity > MAX_COLLECTION_QUANTITY,
     }));
+  }
+
+  /** Readiness of every deck that uses a card, after something outside the collection routes changed its copies. */
+  async recomputeReadinessForCard(userId: string, cardIdentifier: string, failureMessage: string): Promise<void> {
+    const affectedDeckIds = await this.findAffectedDeckIds(userId, cardIdentifier);
+    await this.recomputeDecks(userId, affectedDeckIds, { msg: failureMessage, cardIdentifier });
   }
 
   private async recomputeDecks(
@@ -371,15 +451,25 @@ export class CollectionService {
   async decrementCardFromSource(
     userId: string,
     cardIdentifier: string,
-    sourceId: string,
+    requestedSourceId: string | undefined,
     quantity: number = 1,
+    requestedVersion: TVersionParts = {},
   ): Promise<IDecrementCardResponse> {
     if (quantity < 1) {
       throw new BadRequestException('Decrement quantity must be at least 1');
     }
 
+    let sourceId = requestedSourceId ?? '';
     const result = await this.dataSource.transaction(
       async (manager: EntityManager) => {
+        // Without a named import the card must have one row to take from; with copies in more than
+        // one import or version the player has to say which (the web picker always does).
+        let version = withDefaults(requestedVersion);
+        if (requestedSourceId === undefined) {
+          const sole = await this.soleRowOf(manager, userId, cardIdentifier);
+          sourceId = sole.sourceId;
+          version = withDefaults(sole);
+        }
         // Verify the source belongs to the user. Querying by
         // `(id, userId)` makes the ownership check the same SQL round-trip
         // as the existence check.
@@ -391,11 +481,11 @@ export class CollectionService {
         }
 
         const row = await manager.findOne(CollectionCardEntity, {
-          where: { userId, cardIdentifier, sourceId },
+          where: { userId, cardIdentifier, sourceId, ...version },
         });
         if (!row) {
           throw new NotFoundException(
-            `No "${cardIdentifier}" row on this source`,
+            `No "${cardIdentifier}" row on this source at that version`,
           );
         }
 
@@ -479,6 +569,24 @@ export class CollectionService {
     };
   }
 
+  private async soleRowOf(
+    manager: EntityManager,
+    userId: string,
+    cardIdentifier: string,
+  ): Promise<CollectionCardEntity> {
+    const rows = await manager.find(CollectionCardEntity, { where: { userId, cardIdentifier } });
+    if (rows.length === 0) {
+      throw new NotFoundException(`No copy of "${cardIdentifier}" in the collection`);
+    }
+    if (rows.length > 1) {
+      throw new BadRequestException({
+        code: 'SOURCE_REQUIRED',
+        message: `"${cardIdentifier}" is held in more than one import or version: name the import and version`,
+      });
+    }
+    return rows[0]!;
+  }
+
   private async findAffectedDeckIds(
     userId: string,
     cardIdentifier: string,
@@ -490,7 +598,7 @@ export class CollectionService {
       .innerJoin(
         TrackedDeckEntity,
         'td',
-        'td.id = dc.trackedDeckId AND td.userId = :userId',
+        'td.id = dc.trackedDeckId AND td.userId = :userId AND td.deletedAt IS NULL',
         { userId },
       )
       .where('dc.cardIdentifier = :cardIdentifier', { cardIdentifier })
@@ -509,7 +617,7 @@ export class CollectionService {
       .innerJoin(
         TrackedDeckEntity,
         'td',
-        'td.id = dc.trackedDeckId AND td.userId = :userId',
+        'td.id = dc.trackedDeckId AND td.userId = :userId AND td.deletedAt IS NULL',
         { userId },
       )
       .where('dc.cardIdentifier IN (:...cardIdentifiers)', { cardIdentifiers })
@@ -520,10 +628,22 @@ export class CollectionService {
   }
 }
 
-function sumByCard(items: readonly IBatchItem[]): ReadonlyMap<string, number> {
-  const summed = new Map<string, number>();
+function entryKey(entry: ICopyVersion & { readonly cardIdentifier: string }): string {
+  return [entry.cardIdentifier, entry.printingCode, entry.edition, entry.finish, entry.condition].join('|');
+}
+
+/** One entry per card and version; items naming the same card at the same version are summed. */
+function sumByCardVersion(items: readonly IBatchItem[]): IBatchEntry[] {
+  const summed = new Map<string, IBatchEntry>();
   for (const item of items) {
-    summed.set(item.cardIdentifier, (summed.get(item.cardIdentifier) ?? 0) + item.quantity);
+    const entry: IBatchEntry = {
+      cardIdentifier: item.cardIdentifier,
+      ...withDefaults({ printingCode: item.printingCode, edition: item.edition, finish: item.finish }),
+      quantity: item.quantity,
+    };
+    const key = entryKey(entry);
+    const known = summed.get(key);
+    summed.set(key, known ? { ...known, quantity: known.quantity + entry.quantity } : entry);
   }
-  return summed;
+  return [...summed.values()];
 }

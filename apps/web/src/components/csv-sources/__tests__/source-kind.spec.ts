@@ -12,6 +12,7 @@ function build(overrides: Partial<ICsvSource>): ICsvSource {
     sourceUrl: null,
     contentHash: null,
     cardCount: 0,
+    copies: 0,
     active: true,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',

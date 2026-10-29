@@ -45,11 +45,21 @@ export interface IDeckProposalDisplay {
   readonly cards: readonly (IChatCardLabel & { readonly quantity: number; readonly slot: string; readonly ownedQuantity: number })[];
 }
 
-type TSwapCardLabel = IChatCardLabel & { readonly imageUrl: IAlternativeImageUrl | null };
+/** The catalog facts the card's comparison is written from. */
+export interface ISwapCardFacts {
+  readonly types: readonly string[];
+  readonly subtypes: readonly string[];
+  readonly cost: number | null;
+  readonly power: number | null;
+  readonly defense: number | null;
+  readonly pitch: number | null;
+}
+
+type TSwapCardLabel = IChatCardLabel & { readonly imageUrl: IAlternativeImageUrl | null; readonly facts: ISwapCardFacts | null };
 
 export interface ISwapProposalDisplay {
-  readonly original: TSwapCardLabel & { readonly copiesInDeck: number };
-  readonly replacement: TSwapCardLabel & { readonly freeCopies: number };
+  readonly original: TSwapCardLabel & { readonly copiesInDeck: number; readonly copiesLeft: number };
+  readonly replacement: TSwapCardLabel & { readonly freeCopies: number; readonly storePriceCents: number | null };
 }
 
 interface IProposalBase {
@@ -71,7 +81,15 @@ export interface IDeckProposal extends IProposalBase {
 
 export interface ISwapProposal extends IProposalBase {
   readonly kind: 'swap';
-  readonly payload: { readonly trackedDeckId: number; readonly slot: string };
+  /** `quantity`, `side` and the missing copies are fixed when the proposal is made; a proposal stored before that has none. */
+  readonly payload: {
+    readonly trackedDeckId: number;
+    readonly slot: string;
+    readonly quantity?: number;
+    readonly side?: 'deck' | 'inventory';
+    readonly missingBefore?: number;
+    readonly missingAfter?: number;
+  };
   readonly display: ISwapProposalDisplay;
 }
 

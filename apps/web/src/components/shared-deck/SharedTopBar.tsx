@@ -10,6 +10,8 @@ interface ISharedTopBarProps {
   readonly isSignedIn: boolean;
   /** Route family of the page: `d` (deck, the default) or `l` (list). */
   readonly page?: 'd' | 'l';
+  /** False on the pages that draw no "Criar conta" beside "Entrar". */
+  readonly offerSignUp?: boolean;
 }
 
 /**
@@ -17,7 +19,7 @@ interface ISharedTopBarProps {
  * (anonymous) or the way back to the app (signed in). The full app shell is
  * not used because these pages must read well without an account.
  */
-export function SharedTopBar({ shareToken, isSignedIn, page = 'd' }: ISharedTopBarProps): React.ReactElement {
+export function SharedTopBar({ shareToken, isSignedIn, page = 'd', offerSignUp = true }: ISharedTopBarProps): React.ReactElement {
   const { t } = useTranslation();
   const remember = (): void => {
     if (shareToken !== null) writeShareReturn(shareToken, page);
@@ -39,9 +41,11 @@ export function SharedTopBar({ shareToken, isSignedIn, page = 'd' }: ISharedTopB
             <Link to="/sign-in" className={styles.ghost} onClick={remember}>
               {t('sharing.page.topBarSignIn')}
             </Link>
-            <Link to="/sign-up" className={styles.primary} onClick={remember}>
-              {t('sharing.page.topBarSignUp')}
-            </Link>
+            {offerSignUp && (
+              <Link to="/sign-up" className={styles.primary} onClick={remember}>
+                {t('sharing.page.topBarSignUp')}
+              </Link>
+            )}
           </>
         )}
       </nav>

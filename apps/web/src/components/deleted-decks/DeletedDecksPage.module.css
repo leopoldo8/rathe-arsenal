@@ -1,0 +1,118 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+  max-inline-size: 640px;
+  margin-inline: auto;
+}
+
+.back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  text-decoration: none;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-size: 2rem;
+  font-weight: var(--ra-weight-medium);
+}
+
+.intro,
+.empty {
+  margin: 0;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+}
+
+.error {
+  margin: 0;
+  color: var(--ra-ready-low);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+  margin: var(--ra-space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+  padding: var(--ra-space-4);
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-lg);
+}
+
+.name {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-bold);
+}
+
+.meta {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ra-space-4);
+}
+
+.restore {
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-5);
+  background: var(--ra-accent);
+  border: 0;
+  border-radius: var(--ra-radius-md);
+  color: var(--ra-bg-base, #0b0c0f);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  cursor: pointer;
+}
+
+.restore:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.forGood {
+  min-block-size: 44px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--ra-ready-low);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.back:focus-visible,
+.restore:focus-visible,
+.forGood:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}

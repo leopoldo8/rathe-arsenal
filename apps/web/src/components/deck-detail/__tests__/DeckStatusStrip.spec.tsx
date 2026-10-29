@@ -8,6 +8,9 @@ import { setTestLocale } from '../../../test/i18n-test-utils';
 import type { IDeckSummary } from '../deckDetailModel';
 
 const mockApiFetch = vi.fn();
+vi.mock('@tanstack/react-router', async (importOriginal) =>
+  (await import('../../../test/router-link-mock')).withLinkMock(await importOriginal<typeof import('@tanstack/react-router')>()),
+);
 vi.mock('../../../lib/api-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/api-client')>();
   return { ...actual, useApiClient: () => mockApiFetch };
@@ -22,6 +25,7 @@ function summary(overrides: Partial<IDeckSummary>): IDeckSummary {
   return {
     kind: 'incomplete',
     missingCards: 4,
+    missingInventory: 0,
     suggestionCount: 0,
     openMissing: [],
     ...overrides,
@@ -109,13 +113,21 @@ describe('DeckStatusStrip', () => {
     expect(screen.getByTestId('deck-status-strip')).not.toHaveClass(styles.toneComplete!);
   });
 
-  it('renders the shopping anchor and one Fabrary link while cards are missing', () => {
+  it('the fabrary link uses fabrary.net', () => {
+    renderStrip({ fabraryUlid: '01HYW5BJE6PD6K25Z3SK758DE8' });
+
+    const links = screen.getAllByRole('link').map((link) => link.getAttribute('href'));
+    expect(links).toContain('https://fabrary.net/decks/01HYW5BJE6PD6K25Z3SK758DE8');
+    expect(links.some((href) => href?.includes('fabrary.com'))).toBe(false);
+  });
+
+  it('links to the missing list and shows one Fabrary link while cards are missing', () => {
     renderStrip({ fabraryUlid: 'abc123' });
 
-    expect(screen.getByTestId('strip-view-shopping')).toHaveAttribute('href', '#deck-missing-panel');
-    const fabrary = screen.getAllByRole('link').filter((a) => a.getAttribute('href')?.includes('fabrary.com'));
+    expect(screen.getByTestId('strip-view-shopping')).toHaveAttribute('href', '/decks/7/missing');
+    const fabrary = screen.getAllByRole('link').filter((a) => a.getAttribute('href')?.includes('fabrary.net'));
     expect(fabrary).toHaveLength(1);
-    expect(fabrary[0]).toHaveAttribute('href', 'https://fabrary.com/decks/abc123');
+    expect(fabrary[0]).toHaveAttribute('href', 'https://fabrary.net/decks/abc123');
   });
 
   it('uses the singular at one card, and renders English copy in en-US', async () => {

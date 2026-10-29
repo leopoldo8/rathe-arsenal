@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, IsNull, Repository } from 'typeorm';
 import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
@@ -20,6 +20,7 @@ import {
   IUploadCsvResponse,
   ICreatedResponse,
   IExactMatchResponse,
+  IPartialOverlapResponse,
   IUpdatedResponse,
   IReplacedResponse,
 } from './dtos/upload-csv.response.dto';
@@ -70,6 +71,12 @@ export class CsvUploadService {
     // Parse is always needed (all non-cancel actions require the buffer).
     const parsed = this.csvParserService.parse(buffer);
 
+    if (action === 'auto' && targetSourceId !== undefined) {
+      await this.assertOwnsCsvSource(userId, targetSourceId);
+      this.assertHasRows(parsed.resolved);
+      return this.previewUpdate(userId, targetSourceId, parsed.resolved, parsed.skipped);
+    }
+
     if (action === 'auto') {
       return this.handleAuto(userId, buffer, parsed.resolved, parsed.skipped, originalFilename);
     }
@@ -89,6 +96,7 @@ export class CsvUploadService {
         throw new BadRequestException('MISSING_TARGET_SOURCE');
       }
       await this.assertOwnsCsvSource(userId, targetSourceId);
+      this.assertHasRows(parsed.resolved);
       return this.replaceSource(userId, targetSourceId, buffer, parsed.resolved, parsed.skipped, originalFilename);
     }
 
@@ -97,6 +105,7 @@ export class CsvUploadService {
         throw new BadRequestException('MISSING_TARGET_SOURCE');
       }
       await this.assertOwnsCsvSource(userId, targetSourceId);
+      this.assertHasRows(parsed.resolved);
       return this.updateSource(userId, targetSourceId, buffer, parsed.resolved, parsed.skipped, originalFilename);
     }
 
@@ -171,6 +180,39 @@ export class CsvUploadService {
     return this.createNewSource(userId, buffer, resolved, skipped, originalFilename, 'auto');
   }
 
+  /**
+   * A file sent from one import's menu: the delta is against that import alone, whatever else the
+   * file overlaps, and nothing is written until the player picks update or replace.
+   */
+  private async previewUpdate(
+    userId: string,
+    targetSourceId: string,
+    resolved: readonly IResolvedCsvRow[],
+    skipped: readonly import('./csv.types').ISkippedCsvRow[],
+  ): Promise<IPartialOverlapResponse> {
+    const target = await this.csvSourceRepo.findOneByOrFail({ id: targetSourceId });
+    const existingCards = await this.collectionCardRepo.find({
+      where: { sourceId: targetSourceId },
+      select: ['cardIdentifier', 'quantity'],
+    });
+    const existingQuantities = new Map(existingCards.map((card) => [card.cardIdentifier, card.quantity]));
+    const incomingIdSet = new Set(resolved.map((row) => row.cardIdentifier));
+    const incomingQuantities = new Map(resolved.map((row) => [row.cardIdentifier, row.quantity]));
+    const shared = [...incomingIdSet].filter((cardIdentifier) => existingQuantities.has(cardIdentifier)).length;
+    const union = incomingIdSet.size + existingQuantities.size - shared;
+
+    this.logger.log({ event: 'csv.upload', userId, action: 'auto', kind: 'partial-overlap', existingSourceId: targetSourceId });
+    return {
+      kind: 'partial-overlap',
+      existingSourceId: targetSourceId,
+      existingLabel: target.label,
+      similarityScore: union === 0 ? 1 : shared / union,
+      delta: computeDelta(incomingIdSet, incomingQuantities, existingQuantities),
+      cardCount: existingQuantities.size,
+      skippedRows: skipped,
+    };
+  }
+
   private async createNewSource(
     userId: string,
     buffer: Buffer,
@@ -186,29 +228,7 @@ export class CsvUploadService {
     try {
       result = await this.insertNewSource(userId, hash, baseLabel, resolved, originalFilename);
     } catch (error) {
-      // The unique index on (userId, contentHash) fired: the same CSV is already a source,
-      // stored by an earlier or a concurrent upload.
-      if ((error as { code?: string }).code !== '23505') throw error;
-      const existing = await this.dataSource
-        .getRepository(CsvSourceEntity)
-        .findOne({ where: { userId, kind: 'csv', contentHash: hash } });
-      if (!existing) throw error;
-      this.logger.log({
-        event: 'csv.upload',
-        userId,
-        action,
-        kind: 'exact-match',
-        cardCount: resolved.length,
-        skippedCount: skipped.length,
-        existingSourceId: existing.id,
-      });
-      return {
-        kind: 'exact-match',
-        existingSourceId: existing.id,
-        existingLabel: existing.label,
-        cardCount: existing.cardCount ?? resolved.length,
-        skippedRows: skipped,
-      };
+      return this.exactMatchOrRethrow(error, userId, hash, resolved.length, skipped, action);
     }
 
     this.logger.log({
@@ -275,44 +295,49 @@ export class CsvUploadService {
     resolved: readonly IResolvedCsvRow[],
     skipped: readonly import('./csv.types').ISkippedCsvRow[],
     originalFilename?: string,
-  ): Promise<IReplacedResponse> {
+  ): Promise<IReplacedResponse | IExactMatchResponse> {
     const hash = computeContentHash(resolved);
     const label = originalFilename ?? 'Imported CSV';
 
-    const result = await this.dataSource.transaction(async (manager: EntityManager) => {
-      // Delete old cards (FK ON DELETE CASCADE covers it, but explicit delete is safer).
-      await manager.delete(CollectionCardEntity, { sourceId: targetSourceId });
+    let result: CsvSourceEntity;
+    try {
+      result = await this.dataSource.transaction(async (manager: EntityManager) => {
+        // Delete old cards (FK ON DELETE CASCADE covers it, but explicit delete is safer).
+        await manager.delete(CollectionCardEntity, { sourceId: targetSourceId });
 
-      // Delete the old source.
-      await manager.delete(CsvSourceEntity, { id: targetSourceId });
+        // Delete the old source.
+        await manager.delete(CsvSourceEntity, { id: targetSourceId });
 
-      // Create new source.
-      const source = manager.create(CsvSourceEntity, {
-        userId,
-        kind: 'csv',
-        label,
-        originalFilename: originalFilename ?? null,
-        sourceUrl: null,
-        contentHash: hash,
-        cardCount: resolved.length,
-        active: true,
+        // Create new source.
+        const source = manager.create(CsvSourceEntity, {
+          userId,
+          kind: 'csv',
+          label,
+          originalFilename: originalFilename ?? null,
+          sourceUrl: null,
+          contentHash: hash,
+          cardCount: resolved.length,
+          active: true,
+        });
+        const savedSource = await manager.save(CsvSourceEntity, source);
+
+        if (resolved.length > 0) {
+          const cardEntities = resolved.map((row) =>
+            manager.create(CollectionCardEntity, {
+              userId,
+              cardIdentifier: row.cardIdentifier,
+              sourceId: savedSource.id,
+              quantity: row.quantity,
+            }),
+          );
+          await manager.save(CollectionCardEntity, cardEntities);
+        }
+
+        return savedSource;
       });
-      const savedSource = await manager.save(CsvSourceEntity, source);
-
-      if (resolved.length > 0) {
-        const cardEntities = resolved.map((row) =>
-          manager.create(CollectionCardEntity, {
-            userId,
-            cardIdentifier: row.cardIdentifier,
-            sourceId: savedSource.id,
-            quantity: row.quantity,
-          }),
-        );
-        await manager.save(CollectionCardEntity, cardEntities);
-      }
-
-      return savedSource;
-    });
+    } catch (error) {
+      return this.exactMatchOrRethrow(error, userId, hash, resolved.length, skipped, 'replace');
+    }
 
     this.logger.log({
       event: 'csv.upload',
@@ -340,73 +365,78 @@ export class CsvUploadService {
     resolved: readonly IResolvedCsvRow[],
     skipped: readonly import('./csv.types').ISkippedCsvRow[],
     originalFilename?: string,
-  ): Promise<IUpdatedResponse> {
+  ): Promise<IUpdatedResponse | IExactMatchResponse> {
     const hash = computeContentHash(resolved);
     const incomingIdSet = new Set(resolved.map((r) => r.cardIdentifier));
     const incomingQuantities = new Map(resolved.map((r) => [r.cardIdentifier, r.quantity]));
 
-    const result = await this.dataSource.transaction(async (manager: EntityManager) => {
-      // Read current rows inside the transaction to avoid race conditions.
-      const existingCards = await manager.find(CollectionCardEntity, {
-        where: { sourceId: targetSourceId },
-        select: ['id', 'cardIdentifier', 'quantity'],
-      });
+    let result: { delta: ReturnType<typeof computeDelta> };
+    try {
+      result = await this.dataSource.transaction(async (manager: EntityManager) => {
+        // Read current rows inside the transaction to avoid race conditions.
+        const existingCards = await manager.find(CollectionCardEntity, {
+          where: { sourceId: targetSourceId },
+          select: ['id', 'cardIdentifier', 'quantity'],
+        });
 
-      const existingQuantities = new Map(
-        existingCards.map((c) => [c.cardIdentifier, c.quantity]),
-      );
-      const existingById = new Map(
-        existingCards.map((c) => [c.cardIdentifier, c]),
-      );
+        const existingQuantities = new Map(
+          existingCards.map((c) => [c.cardIdentifier, c.quantity]),
+        );
+        const existingById = new Map(
+          existingCards.map((c) => [c.cardIdentifier, c]),
+        );
 
-      // Compute delta for the response.
-      const delta = computeDelta(incomingIdSet, incomingQuantities, existingQuantities);
+        // Compute delta for the response.
+        const delta = computeDelta(incomingIdSet, incomingQuantities, existingQuantities);
 
-      // 1. Update or insert cards that appear in the incoming set.
-      for (const row of resolved) {
-        const existing = existingById.get(row.cardIdentifier);
-        if (existing !== undefined) {
-          // Replace quantity (not sum).
-          if (existing.quantity !== row.quantity) {
-            await manager.update(
-              CollectionCardEntity,
-              { id: existing.id },
-              { quantity: row.quantity },
-            );
+        // 1. Update or insert cards that appear in the incoming set.
+        for (const row of resolved) {
+          const existing = existingById.get(row.cardIdentifier);
+          if (existing !== undefined) {
+            // Replace quantity (not sum).
+            if (existing.quantity !== row.quantity) {
+              await manager.update(
+                CollectionCardEntity,
+                { id: existing.id },
+                { quantity: row.quantity },
+              );
+            }
+          } else {
+            const newCard = manager.create(CollectionCardEntity, {
+              userId,
+              cardIdentifier: row.cardIdentifier,
+              sourceId: targetSourceId,
+              quantity: row.quantity,
+            });
+            await manager.save(CollectionCardEntity, newCard);
           }
-        } else {
-          const newCard = manager.create(CollectionCardEntity, {
-            userId,
-            cardIdentifier: row.cardIdentifier,
-            sourceId: targetSourceId,
-            quantity: row.quantity,
-          });
-          await manager.save(CollectionCardEntity, newCard);
         }
-      }
 
-      // 2. Delete cards that disappeared from the new payload.
-      const cardIdsToDelete = existingCards
-        .filter((c) => !incomingIdSet.has(c.cardIdentifier))
-        .map((c) => c.id);
+        // 2. Delete cards that disappeared from the new payload.
+        const cardIdsToDelete = existingCards
+          .filter((c) => !incomingIdSet.has(c.cardIdentifier))
+          .map((c) => c.id);
 
-      if (cardIdsToDelete.length > 0) {
-        await manager.delete(CollectionCardEntity, { id: In(cardIdsToDelete) });
-      }
+        if (cardIdsToDelete.length > 0) {
+          await manager.delete(CollectionCardEntity, { id: In(cardIdsToDelete) });
+        }
 
-      // 3. Update source metadata.
-      await manager.update(
-        CsvSourceEntity,
-        { id: targetSourceId },
-        {
-          contentHash: hash,
-          cardCount: resolved.length,
-          originalFilename: originalFilename ?? null,
-        },
-      );
+        // 3. Update source metadata.
+        await manager.update(
+          CsvSourceEntity,
+          { id: targetSourceId },
+          {
+            contentHash: hash,
+            cardCount: resolved.length,
+            originalFilename: originalFilename ?? null,
+          },
+        );
 
-      return { delta };
-    });
+        return { delta };
+      });
+    } catch (error) {
+      return this.exactMatchOrRethrow(error, userId, hash, resolved.length, skipped, 'update');
+    }
 
     this.logger.log({
       event: 'csv.upload',
@@ -426,6 +456,46 @@ export class CsvUploadService {
       delta: result.delta,
       skippedRows: skipped,
     };
+  }
+
+  /**
+   * The unique index on (userId, contentHash) fired: the same CSV is already another import, stored
+   * by an earlier or a concurrent upload. The write was rolled back; answer with that import.
+   */
+  private async exactMatchOrRethrow(
+    error: unknown,
+    userId: string,
+    hash: string,
+    cardCount: number,
+    skipped: readonly import('./csv.types').ISkippedCsvRow[],
+    action: TCsvUploadAction,
+  ): Promise<IExactMatchResponse> {
+    if ((error as { code?: string }).code !== '23505') throw error;
+    const existing = await this.dataSource
+      .getRepository(CsvSourceEntity)
+      .findOne({ where: { userId, kind: 'csv', contentHash: hash } });
+    if (!existing) throw error;
+    this.logger.log({
+      event: 'csv.upload',
+      userId,
+      action,
+      kind: 'exact-match',
+      cardCount,
+      skippedCount: skipped.length,
+      existingSourceId: existing.id,
+    });
+    return {
+      kind: 'exact-match',
+      existingSourceId: existing.id,
+      existingLabel: existing.label,
+      cardCount: existing.cardCount ?? cardCount,
+      skippedRows: skipped,
+    };
+  }
+
+  /** A file that reads as no card would empty the import it was sent for. */
+  private assertHasRows(resolved: readonly IResolvedCsvRow[]): void {
+    if (resolved.length === 0) throw new BadRequestException('EMPTY_FILE');
   }
 
   // ---------------------------------------------------------------------------
@@ -491,7 +561,7 @@ export class CsvUploadService {
   private async recomputeReadinessForUser(userId: string): Promise<void> {
     let decks: TrackedDeckEntity[];
     try {
-      decks = await this.trackedDeckRepo.find({ where: { userId } });
+      decks = await this.trackedDeckRepo.find({ where: { userId, deletedAt: IsNull() } });
     } catch (error) {
       this.logger.warn({
         msg: 'Failed to load decks for readiness recompute after CSV upload',

@@ -112,6 +112,12 @@
 }
 
 .name {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
   font-size: var(--ra-text-caption);
   color: var(--ra-fg-secondary);
   line-height: 1.3;

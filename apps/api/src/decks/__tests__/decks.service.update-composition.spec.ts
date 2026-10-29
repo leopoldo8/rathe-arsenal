@@ -85,6 +85,7 @@ function buildTrackedDeck(overrides: Partial<TrackedDeckEntity> = {}): TrackedDe
     notes: null,
     trackedAt: new Date('2026-05-17T10:00:00Z'),
     updatedAt: new Date('2026-05-17T12:00:00Z'),
+    deletedAt: null,
     user: {} as TrackedDeckEntity['user'],
     ...overrides,
   };
@@ -96,6 +97,7 @@ function buildDeckCardEntity(overrides: Partial<DeckCardEntity> = {}): DeckCardE
     trackedDeckId: DECK_ID,
     cardIdentifier: 'snatch-red',
     quantity: 3,
+    inventoryQuantity: 0,
     slot: 'mainboard',
     trackedDeck: {} as DeckCardEntity['trackedDeck'],
     ...overrides,
@@ -560,6 +562,7 @@ describe('DecksService.updateComposition', () => {
           slot: 'mainboard',
           originalCardIdentifier: 'emissary-of-tides-red',
           originalName: 'Emissary of Tides',
+          originalPitch: null,
           replacementCardIdentifier: COAX,
           quantity: 2,
           originalOwned: false,

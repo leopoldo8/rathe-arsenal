@@ -7,25 +7,25 @@ import { AuthFetchError } from '../../../lib/auth-fetch';
 
 /** Shared helpers of the sharing specs: a routed fake API on top of a mocked `authFetch`. */
 
-export type TFakeHandler = (call: { method: string; body: unknown; authToken: string | null }) => unknown;
+export type TFakeHandler = (call: { method: string; body: unknown }) => unknown;
 
 export interface IFakeApi {
   readonly handlers: Map<string, TFakeHandler>;
-  readonly calls: { readonly key: string; readonly body: unknown; readonly authToken: string | null }[];
-  readonly authFetch: (path: string, init?: RequestInit, token?: string | null) => Promise<unknown>;
+  readonly calls: { readonly key: string; readonly body: unknown }[];
+  readonly authFetch: (path: string, init?: RequestInit) => Promise<unknown>;
 }
 
 export function createFakeApi(): IFakeApi {
   const handlers = new Map<string, TFakeHandler>();
   const calls: IFakeApi['calls'] = [] as unknown as IFakeApi['calls'];
-  const authFetch: IFakeApi['authFetch'] = async (path, init = {}, token = null) => {
+  const authFetch: IFakeApi['authFetch'] = async (path, init = {}) => {
     const method = init.method ?? 'GET';
     const key = `${method} ${path}`;
     const body = typeof init.body === 'string' ? JSON.parse(init.body) : undefined;
-    (calls as { key: string; body: unknown; authToken: string | null }[]).push({ key, body, authToken: token });
+    (calls as { key: string; body: unknown }[]).push({ key, body });
     const handler = handlers.get(key);
     if (handler === undefined) throw new Error(`Unhandled fake API call: ${key}`);
-    return handler({ method, body, authToken: token });
+    return handler({ method, body });
   };
   return { handlers, calls, authFetch: vi.fn(authFetch) };
 }
@@ -46,18 +46,19 @@ export function makeAuth(overrides: Partial<IAuthContext> = {}): IAuthContext {
   const noop = async (): Promise<void> => undefined;
   return {
     user: SIGNED_IN_USER,
-    token: 'jwt',
     isLoading: false,
     setSettings: vi.fn(),
-    signUp: async () => ({}),
+    signUp: async () => undefined,
     signIn: noop,
     signOut: vi.fn(),
-    verifyEmail: noop,
-    forgotPassword: noop,
-    resetPassword: noop,
+    verifyEmail: async () => ({ returnPath: null, email: '' }),
+    changeEmail: async () => undefined,
+    verifyCode: async () => ({ returnPath: null }),
+    redeemCode: async () => ({ returnPath: null }),
     deleteAccount: noop,
     setDisplayName: vi.fn(),
     setWhatsappNumber: vi.fn(),
+    setHasPassword: vi.fn(),
     ...overrides,
   };
 }

@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
 import { useAuth } from '../../auth/useAuth';
-import { VariantQueuePill } from '../variant-queue/VariantQueuePill';
 import LogoMark from '../../assets/logo-mark.svg?react';
 import { DEFAULT_HOME_SEARCH } from '../../routes/_auth/-home.helpers';
 import { resolveActiveNavKey, type TNavKey } from './nav-active';
@@ -45,7 +44,8 @@ export function TopBar(): React.ReactElement {
   return (
     <header className={styles.header}>
       {/* Brand */}
-      <Link to="/home" search={DEFAULT_HOME_SEARCH} className={styles.brand} aria-label={t('shell.brandAriaLabel')}>
+      <Link to="/home" search={DEFAULT_HOME_SEARCH} className={styles.brand}>
+        <span className="sr-only">{t('shell.brandAriaLabel')}</span>
         <LogoMark className={styles.logoMark} aria-hidden="true" />
         <span className={styles.wordmark} aria-hidden="true">
           <span className={styles.brandRathe}>Rathe</span>
@@ -80,7 +80,6 @@ export function TopBar(): React.ReactElement {
 
       {/* Right controls */}
       <div className={styles.controls}>
-        <VariantQueuePill />
         <ThemeToggle />
         <UserMenu />
       </div>

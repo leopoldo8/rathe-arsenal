@@ -4,6 +4,7 @@ import { TGeminiFetch } from '../gemini-client';
 import { computeDeckFingerprint } from '../recommendation-prompt';
 import { RecommendationQueueService } from '../recommendation-queue.service';
 import { drainRecommendationsOnce, RecommendationRunnerService } from '../recommendation-runner.service';
+import { sessionCookieHeader } from '../../auth/__tests__/session-test-helpers';
 
 export { KATSU, EMISSARY, FLEX, COAX, TALISHAR } from '../../replacements/__tests__/replacements-e2e.fixture';
 
@@ -45,9 +46,9 @@ export interface IRecommendationsFixture extends IFixture {
   seedDoneRun(deckId: number, entries: readonly ISeedEntry[], options?: { readonly stale?: boolean; readonly finishedAt?: string }): Promise<{ runId: string; ids: string[] }>;
   seedRun(deckId: number, status: string, options?: { readonly trigger?: string; readonly error?: string; readonly finishedAt?: string; readonly claimedMinutesAgo?: number }): Promise<string>;
   drain(fetch: TGeminiFetch, apiKey?: string | null, openRouterModel?: string): Promise<boolean>;
-  patch(path: string, jwt: string): request.Test;
-  del(path: string, jwt: string): request.Test;
-  importDecks(jwt: string, count: number): Promise<number[]>;
+  patch(path: string, sessionToken: string): request.Test;
+  del(path: string, sessionToken: string): request.Test;
+  importDecks(sessionToken: string, count: number): Promise<number[]>;
 }
 
 const ULID_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -157,15 +158,19 @@ export async function bootRecommendationsFixture(options: { readonly throttle?: 
     seedRun,
     drain: (fetch, apiKey = 'test-key', openRouterModel) =>
       drainRecommendationsOnce({ queue, runner, readApiKey: () => apiKey, readOpenRouterModel: () => openRouterModel, fetch }),
-    patch: (path, jwt) => request(server).patch(path).set('Authorization', `Bearer ${jwt}`),
-    del: (path, jwt) => request(server).delete(path).set('Authorization', `Bearer ${jwt}`),
-    importDecks: async (jwt, count) => {
-      const response = await request(server)
-        .post('/api/decks/import')
-        .set('Authorization', `Bearer ${jwt}`)
-        .send({ urls: Array.from({ length: count }, () => `https://fabrary.net/decks/${newUlid()}`), seedInventory: false })
-        .expect(201);
-      return response.body.imported.map((deck: { trackedDeckId: number }) => deck.trackedDeckId);
+    patch: (path, sessionToken) => request(server).patch(path).set('Cookie', sessionCookieHeader(sessionToken)),
+    del: (path, sessionToken) => request(server).delete(path).set('Cookie', sessionCookieHeader(sessionToken)),
+    importDecks: async (sessionToken, count) => {
+      const deckIds: number[] = [];
+      for (let index = 0; index < count; index += 1) {
+        const response = await request(server)
+          .post('/api/decks/import')
+          .set('Cookie', sessionCookieHeader(sessionToken))
+          .send({ text: `https://fabrary.net/decks/${newUlid()}`, ownsCards: false })
+          .expect(201);
+        deckIds.push(response.body.deckId as number);
+      }
+      return deckIds;
     },
   };
 }

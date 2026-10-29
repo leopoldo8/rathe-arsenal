@@ -1,12 +1,18 @@
+import { createElement } from 'react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
+import i18n from '../../../i18n';
 import {
   buildDeckList,
+  buildTextList,
   groupDeckList,
   resolveCostGroup,
   resolveTypeGroup,
 } from '../deckListModel';
+import { DeckTextList } from '../DeckTextList';
 import { buildCostBars, buildPitchSlices } from '../deckAnalysisModel';
 import { breakdown, entry } from './deckDetailTestData';
+import { FIXTURE_CARDS, FIXTURE_ILLEGAL_LEGALITY } from './copyListFixture';
 
 describe('buildDeckList', () => {
   it('merges a partly owned card into one item with its missing share', () => {
@@ -42,14 +48,15 @@ describe('buildDeckList', () => {
 
 describe('resolveTypeGroup', () => {
   it.each([
-    [{ type: 'Defense Reaction' }, 'defense'],
-    [{ type: 'Action' }, 'attack'],
-    [{ type: 'Attack Action' }, 'attack'],
-    [{ type: 'Instant' }, 'nonAttack'],
-    [{ type: 'Hero', slot: 'hero' }, 'loadout'],
-    [{ type: 'Weapon', slot: 'weapon' }, 'loadout'],
-    [{ type: 'Equipment', slot: 'equipment' }, 'loadout'],
-    [{ type: 'Action', slot: 'equipment' }, 'loadout'],
+    [{ type: 'Defense Reaction' }, 'defenseReaction'],
+    [{ type: 'Attack Reaction' }, 'attackReaction'],
+    [{ type: 'Action' }, 'action'],
+    [{ type: 'Attack Action' }, 'action'],
+    [{ type: 'Instant' }, 'instant'],
+    [{ type: 'Hero', slot: 'hero' }, 'hero'],
+    [{ type: 'Weapon', slot: 'weapon' }, 'weapon'],
+    [{ type: 'Equipment', slot: 'equipment' }, 'equipment'],
+    [{ type: 'Action', slot: 'equipment' }, 'equipment'],
   ])('%j is %s', (overrides, expected) => {
     expect(resolveTypeGroup(entry(overrides))).toBe(expected);
   });
@@ -82,9 +89,9 @@ describe('groupDeckList', () => {
   it('groups by type in the handoff order and totals each group', () => {
     const groups = groupDeckList(items, 'type');
     expect(groups.map((g) => [g.id, g.total])).toEqual([
-      ['attack', 3],
-      ['defense', 2],
-      ['loadout', 1],
+      ['action', 3],
+      ['defenseReaction', 2],
+      ['hero', 1],
     ]);
   });
 
@@ -138,5 +145,38 @@ describe('deck analysis aggregates', () => {
       ['3', 0],
       ['4plus', 3],
     ]);
+  });
+});
+
+describe('buildTextList', () => {
+  const t = i18n.t.bind(i18n);
+  const details = FIXTURE_ILLEGAL_LEGALITY.details;
+
+  it('the list view groups and annotates each line', () => {
+    const groups = buildTextList(FIXTURE_CARDS, details, t);
+
+    expect(groups.map((group) => group.id)).toEqual(['hero', 'weapon', 'equipment', 'deck', 'inventory']);
+    expect(groups.map((group) => group.total)).toEqual([1, 1, 4, 60, 15]);
+    const deck = groups.find((group) => group.id === 'deck')!;
+    expect(deck.lines[0]).toMatchObject({
+      text: '3x Pack Hunt (Vermelho) · custo 2 · Ação',
+      problem: '4 no total, o limite é 3, tire 1',
+      missing: null,
+    });
+    expect(deck.lines[1]).toMatchObject({ text: '3x Awakening Bellow (Azul) · custo 1 · Ação', problem: null, missing: 'faltam 3' });
+    expect(deck.lines[13]!.text).toBe('3x Razor Reflex (Azul) · custo 1 · Reação de ataque');
+    const inventory = groups.find((group) => group.id === 'inventory')!;
+    expect(inventory.lines[0]).toMatchObject({
+      text: '1x Pack Hunt (Vermelho) · custo 2 · Ação',
+      problem: '4 no total, o limite é 3, tire 1',
+    });
+    expect(inventory.lines[1]!.text).toBe('2x Bone Head Barrier (Amarelo) · custo 1 · Instantâneo');
+    expect(inventory.lines[2]).toMatchObject({ text: '2x Muscle Mutt (Amarelo) · custo 3 · Ação', missing: 'faltam 2' });
+    expect(groups.find((group) => group.id === 'hero')!.lines[0]!.text).toBe('1x Rhinar, Reckless Rampage · Herói');
+    expect(groups.find((group) => group.id === 'equipment')!.lines[3]!.text).toBe('1x Arcanite Skullcap · Equipamento');
+
+    render(createElement(DeckTextList, { groups }));
+    const headings = screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.firstChild?.textContent);
+    expect(headings).toEqual(['Herói', 'Arma', 'Equipamentos', 'Deck', 'Inventário']);
   });
 });

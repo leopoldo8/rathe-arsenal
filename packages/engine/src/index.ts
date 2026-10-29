@@ -29,6 +29,7 @@ export type {
   TExclusionKey,
   IRationaleDetail,
   TRationalePitch,
+  TRationalePitchRelation,
   IAlternativeCard,
   IAlternativeGroup,
   IAlternativeRationale,
@@ -68,6 +69,7 @@ export type {
   ISubstitutedEntry,
   IReadinessBreakdown,
   IEffectiveReadinessResult,
+  IMissingCopies,
   TPath,
 } from './readiness';
 export {
@@ -83,16 +85,20 @@ export type {
   TLegalityCategory,
   IFormatRules,
   IDeckLegalityResult,
+  ILegalityCard,
+  ILegalityCatalog,
   ILegalityDeck,
   ILegalityDeckCard,
   TLegalityReasonDetail,
 } from './legality';
 export type { ICardLegalityViolation } from './legality';
+export type { IRuleChange, IFormatVerdict } from './legality';
 export {
   FORMAT_RULES,
+  RULE_CHANGES,
   computeDeckLegality,
-  findCardScopeViolation,
-  findCardRarityViolation,
+  computeDeckLegalityInOtherFormats,
+  isSizeProblem,
   findCardLegalityViolation,
   getCopyLimit,
 } from './legality';

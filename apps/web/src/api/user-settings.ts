@@ -14,14 +14,13 @@ export interface IUserSettings {
  * (settings page re-fetch on focus, etc.) import from here rather than
  * re-implementing the fetch shape.
  */
-export function fetchUserSettings(token: string | null): Promise<IUserSettings> {
-  return authFetch<IUserSettings>('/users/me/settings', { method: 'GET' }, token);
+export function fetchUserSettings(): Promise<IUserSettings> {
+  return authFetch<IUserSettings>('/users/me/settings', { method: 'GET' });
 }
 
-export function patchUserSettings(theme: TTheme, token: string | null): Promise<IUserSettings> {
+export function patchUserSettings(theme: TTheme): Promise<IUserSettings> {
   return authFetch<IUserSettings>(
     '/users/me/settings',
     { method: 'PATCH', body: JSON.stringify({ theme }) },
-    token,
   );
 }

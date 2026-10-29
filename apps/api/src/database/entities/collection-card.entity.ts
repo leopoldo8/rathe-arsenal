@@ -1,4 +1,5 @@
 import {
+  Check,
   Column,
   Entity,
   Index,
@@ -9,6 +10,7 @@ import {
 } from 'typeorm';
 import { UserEntity } from './user.entity';
 import { CsvSourceEntity } from './csv-source.entity';
+import { ICopyVersion } from '../../collection/versions/copy-version';
 
 /**
  * Represents a card in a user's collection with its quantity.
@@ -19,9 +21,20 @@ import { CsvSourceEntity } from './csv-source.entity';
  * unique index has been replaced by `(userId, cardIdentifier, sourceId)`
  * so the same card can exist under multiple sources; Library totals are
  * computed at read time as `SUM(quantity)` across active sources.
+ *
+ * Door 1 (persona rethink): a copy may carry a version, four varchar columns
+ * where `''` means "Não sei". The key is the seven columns, never nullable,
+ * so `ON CONFLICT` fires for copies with no version too.
  */
+@Check('CHK_collection_card_edition_valid', `"edition" IN ('', 'first', 'unlimited', 'alpha')`)
+@Check('CHK_collection_card_finish_valid', `"finish" IN ('', 'none', 'rainbow', 'cold', 'gold')`)
+@Check('CHK_collection_card_condition_valid', `"condition" IN ('', 'NM', 'LP', 'MP', 'HP', 'DMG')`)
 @Entity({ name: 'collection_card' })
-@Index(['userId', 'cardIdentifier', 'sourceId'], { unique: true })
+@Index(
+  'IDX_collection_card_user_card_source_version_uq',
+  ['userId', 'cardIdentifier', 'sourceId', 'printingCode', 'edition', 'finish', 'condition'],
+  { unique: true },
+)
 export class CollectionCardEntity {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -39,6 +52,18 @@ export class CollectionCardEntity {
    */
   @Column({ type: 'uuid' })
   sourceId!: string;
+
+  @Column({ type: 'varchar', default: '' })
+  printingCode!: string;
+
+  @Column({ type: 'varchar', default: '' })
+  edition!: ICopyVersion['edition'];
+
+  @Column({ type: 'varchar', default: '' })
+  finish!: ICopyVersion['finish'];
+
+  @Column({ type: 'varchar', default: '' })
+  condition!: ICopyVersion['condition'];
 
   @Column({ type: 'int' })
   quantity!: number;

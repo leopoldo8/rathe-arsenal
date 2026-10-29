@@ -8,6 +8,7 @@ import {
   TrackedDeckEntity,
   DeckReadinessSnapshotEntity,
   StoreStockVariantEntity,
+  FirecrawlUsageEntity,
 } from '../database/entities';
 import { VariantFetchJobEntity } from '../database/entities/variant-fetch-job.entity';
 import { CardNameMatcherService } from './card-name-matcher.service';
@@ -15,11 +16,12 @@ import { SbraubleScraperService } from './sbrauble-scraper.service';
 import { SbraubleDetailParserService } from './sbrauble-detail-parser.service';
 import { StoreIngestionService } from './store-ingestion.service';
 import { ShoppingLineService } from './shopping-line.service';
-import { VariantFetchService } from './variant-fetch.service';
 import { VariantFetchQueueService } from './variant-fetch-queue.service';
 import { VariantJobProcessorService } from './variant-job-processor.service';
 import { ResolveJobCardsService } from './resolve-job-cards.service';
 import { FirecrawlClientService } from './firecrawl-client.service';
+import { CreditBudgetService } from './credit-budget.service';
+import { StoreAnswersService } from './store-answers.service';
 import { AdminStoresController } from './admin/admin-stores.controller';
 import { StoreAdminController } from './admin/store-admin.controller';
 import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
@@ -50,6 +52,7 @@ import { AdminGuard } from '../auth/guards/admin.guard';
       DeckReadinessSnapshotEntity,
       StoreStockVariantEntity,
       VariantFetchJobEntity,
+      FirecrawlUsageEntity,
     ]),
   ],
   controllers: [AdminStoresController, StoreAdminController],
@@ -60,11 +63,12 @@ import { AdminGuard } from '../auth/guards/admin.guard';
     SbraubleDetailParserService,
     StoreIngestionService,
     ShoppingLineService,
-    VariantFetchService,
     VariantFetchQueueService,
     VariantJobProcessorService,
     ResolveJobCardsService,
     FirecrawlClientService,
+    CreditBudgetService,
+    StoreAnswersService,
     AdminApiKeyGuard,
   ],
   exports: [
@@ -73,10 +77,11 @@ import { AdminGuard } from '../auth/guards/admin.guard';
     SbraubleDetailParserService,
     StoreIngestionService,
     ShoppingLineService,
-    VariantFetchService,
     VariantFetchQueueService,
     VariantJobProcessorService,
     ResolveJobCardsService,
+    CreditBudgetService,
+    StoreAnswersService,
   ],
 })
 export class StoresModule {}

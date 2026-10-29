@@ -5,6 +5,7 @@ import { ICatalogCard } from '@rathe-arsenal/engine';
 import { IBreakdown, IBreakdownEntry } from '../decks/dtos/tracked-deck-detail.response.dto';
 import { PriceSuggestionService } from '../prices/price-suggestion.service';
 import { ShoppingLineService } from '../stores/shopping-line.service';
+import { SubstitutionService } from '../substitution/substitution.service';
 import { InvalidToolArguments, readInteger, readList, TToolResult } from './chat-tools';
 import { findCard } from './deck-rows';
 import { priceReport } from './price-report';
@@ -33,11 +34,14 @@ export class ChatPricesService {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly shoppingLine: ShoppingLineService,
     private readonly marketPrices: PriceSuggestionService,
+    private readonly substitution: SubstitutionService,
   ) {}
 
   async prices(userId: string, args: Record<string, unknown>): Promise<TToolResult> {
     const deckId = readInteger(args, 'deckId', { min: 1, optional: true });
-    const listed = args['cardIdentifiers'] === undefined ? undefined : readList(args, 'cardIdentifiers', PRICE_CARDS_MAX);
+    const given = args['cardIdentifiers'] === undefined || args['cardIdentifiers'] === null ? undefined : readList(args, 'cardIdentifiers', PRICE_CARDS_MAX);
+    // A model sends `cardIdentifiers: []` next to a deck: an empty list names no card, so the deck alone is what it asks about.
+    const listed = given !== undefined && given.length === 0 ? undefined : given;
     if ((deckId === undefined) === (listed === undefined)) throw new InvalidToolArguments('give either cardIdentifiers or deckId');
     if (listed !== undefined) {
       const cards = listed.map((value) => (typeof value === 'string' ? findCard(value) : null));
@@ -45,15 +49,39 @@ export class ChatPricesService {
       const entries = cards.map((card) => breakdownEntry(card!, 1));
       return this.priceEntries(entries, { exact: [], substituted: [], missing: entries, notOwned: entries });
     }
-    const [deck] = (await this.dataSource.query(`SELECT id FROM tracked_deck WHERE id = $1 AND "userId" = $2`, [deckId, userId])) as unknown[];
+    const [deck] = (await this.dataSource.query(`SELECT id FROM tracked_deck WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NULL`, [deckId, userId])) as unknown[];
     if (!deck) return { error: 'DECK_NOT_FOUND' };
     const [snapshot] = (await this.dataSource.query(
       `SELECT breakdown FROM deck_readiness_snapshot WHERE "trackedDeckId" = $1 ORDER BY "computedAt" DESC, id DESC LIMIT 1`,
       [deckId],
     )) as Array<{ breakdown: IBreakdown }>;
-    if (!snapshot) return { error: 'READINESS_NOT_COMPUTED' };
-    if (snapshot.breakdown.missing.length === 0) return { nothingMissing: true, note: 'The user owns every card this deck needs; there is nothing to buy.' };
-    return this.priceEntries(snapshot.breakdown.missing, snapshot.breakdown);
+    // A deck nobody has opened has no stored snapshot yet: work it out as the deck page would when it is opened.
+    const breakdown = snapshot?.breakdown ?? (await this.freshBreakdown(deckId!, userId));
+    if (breakdown.missing.length === 0) return { nothingMissing: true, note: 'The user owns every card this deck needs; there is nothing to buy.' };
+    return this.priceEntries(breakdown.missing, breakdown);
+  }
+
+  /**
+   * The Cúpula DT price of one copy of each card, in cents, for the cards it has in stock with a price; a card the store
+   * lacks or has not priced has no entry. It reads the stored rows and never queues a lookup.
+   */
+  async storeUnitPrices(cardIdentifiers: readonly string[]): Promise<Map<string, number>> {
+    const entries = [...new Set(cardIdentifiers)].flatMap((cardIdentifier) => {
+      const card = findCard(cardIdentifier);
+      return card === null ? [] : [breakdownEntry(card, 1)];
+    });
+    const store = await this.shoppingLine.computeForBreakdown({ exact: [], substituted: [], missing: entries, notOwned: entries });
+    const prices = new Map<string, number>();
+    if (store?.kind !== 'populated') return prices;
+    for (const line of store.lines) {
+      if (line.unitPriceCents !== null && line.quantityAvailable > 0) prices.set(line.cardIdentifier, line.unitPriceCents);
+    }
+    return prices;
+  }
+
+  private async freshBreakdown(deckId: number, userId: string): Promise<IBreakdown> {
+    const { missing, notOwned } = (await this.substitution.computeReadiness(deckId, userId)).breakdown;
+    return { exact: [], substituted: [], missing, notOwned };
   }
 
   private async priceEntries(entries: readonly IBreakdownEntry[], breakdown: IBreakdown): Promise<TToolResult> {

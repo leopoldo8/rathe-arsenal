@@ -544,4 +544,58 @@ describe('LibraryService', () => {
       ]);
     });
   });
+  describe('versions of one card', () => {
+    it('the library quantity sums every version of a card', async () => {
+      const MANUAL_ID = 'manual-source-uuid';
+      const LIST_ID = 'pasted-list-source-uuid';
+      const activeSources = [
+        { id: MANUAL_ID, label: 'Manual entries', kind: 'manual', userId: USER_ID, active: true },
+        { id: LIST_ID, label: 'Lista colada em 21/10', kind: 'csv', userId: USER_ID, active: true },
+      ] as unknown as CsvSourceEntity[];
+      csvSourceRepo.find.mockResolvedValue(activeSources);
+      const copy = (
+        sourceId: string,
+        quantity: number,
+        version: Partial<Pick<CollectionCardEntity, 'printingCode' | 'edition' | 'finish' | 'condition'>> = {},
+      ): CollectionCardEntity =>
+        ({
+          userId: USER_ID,
+          cardIdentifier: 'snatch-red',
+          sourceId,
+          quantity,
+          printingCode: '',
+          edition: '',
+          finish: '',
+          condition: '',
+          ...version,
+        }) as CollectionCardEntity;
+      collectionCardRepo.find.mockResolvedValue([
+        copy(MANUAL_ID, 2),
+        copy(MANUAL_ID, 1, { printingCode: 'WTR167', edition: 'unlimited', finish: 'rainbow', condition: 'NM' }),
+        copy(LIST_ID, 1),
+      ]);
+      const readService = new CollectionReadService(collectionCardRepo, csvSourceRepo);
+      const realReadModule: TestingModule = await Test.createTestingModule({
+        providers: [
+          LibraryService,
+          { provide: CollectionReadService, useValue: readService },
+          { provide: getRepositoryToken(StoreStockEntity), useValue: storeStockRepo },
+          { provide: getRepositoryToken(CollectionCardEntity), useValue: collectionCardRepo },
+          { provide: getRepositoryToken(CsvSourceEntity), useValue: csvSourceRepo },
+        ],
+      }).compile();
+      storeStockRepo.createQueryBuilder.mockReturnValue(buildQbMock([], { maxLastFetchedAt: null }));
+
+      const result = await realReadModule.get(LibraryService).load(USER_ID);
+
+      expect(result.cards).toHaveLength(1);
+      expect(result.cards[0]!.ownedQuantity).toBe(4);
+      expect(result.stats.totalCopies).toBe(4);
+      expect(result.cards[0]!.contributions.map((entry) => [entry.quantity, entry.printingCode, entry.finish])).toEqual([
+        [2, '', ''],
+        [1, 'WTR167', 'rainbow'],
+        [1, '', ''],
+      ]);
+    });
+  });
 });

@@ -90,6 +90,8 @@ export function ChatScreen({ conversationId, draftDeckId }: IChatScreenProps): R
 
   const conversation = thread.data;
   const boundDeckId = conversationId === null ? draftDeckId : (conversation?.trackedDeckId ?? null);
+  // The starter question is about the deck the chat is bound to; with none bound it is about the deck updated last.
+  const starterHero = (boundDeckId === null ? null : (deckList.find((candidate) => candidate.id === boundDeckId)?.hero ?? null)) ?? latestHero;
   const boundDeckName = boundDeckId === null ? undefined : deckNames.get(boundDeckId);
   const lastAnswer = lastAssistantMessage(conversation);
   const turnOpen = isTurnOpen(conversation);
@@ -108,7 +110,7 @@ export function ChatScreen({ conversationId, draftDeckId }: IChatScreenProps): R
   }, [conversation?.messages.length, lastMessage?.status]);
 
   const readyQuestions = [
-    ...(latestHero !== null ? [t('chat.readyHero', { hero: latestHero })] : []),
+    ...(starterHero !== null ? [t('chat.readyHero', { hero: starterHero })] : []),
     t('chat.readyNextHero'),
     t('chat.readyTriggers'),
   ];

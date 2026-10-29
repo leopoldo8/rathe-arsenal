@@ -1,0 +1,42 @@
+.block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ra-space-1) var(--ra-space-2);
+  font-family: var(--ra-font-ui);
+  font-size: 0.71875rem;
+  text-align: center;
+}
+
+.redChip,
+.greyChip,
+.stageChip {
+  padding: 2px var(--ra-space-2);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+}
+
+.redChip {
+  color: var(--ra-ready-low);
+  border-color: var(--ra-ready-low);
+}
+
+.greyChip,
+.stageChip,
+.size {
+  color: var(--ra-fg-secondary);
+}
+
+.cause {
+  inline-size: 100%;
+  margin: 0;
+  color: var(--ra-ready-low);
+  font-weight: var(--ra-weight-semibold);
+}
+
+.stageLine {
+  inline-size: 100%;
+  margin: 0;
+  color: var(--ra-fg-secondary);
+}

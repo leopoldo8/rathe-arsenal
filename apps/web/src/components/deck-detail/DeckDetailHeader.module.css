@@ -58,6 +58,8 @@
   align-items: center;
   gap: var(--ra-space-3);
   flex-shrink: 0;
+  flex-wrap: wrap;
+  max-inline-size: 100%;
 }
 
 /* Edit button */
@@ -171,7 +173,7 @@
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   color: var(--ra-ready-low);
-  white-space: nowrap;
+  text-align: right;
 }
 
 /* ---- Mobile adjustments ---- */

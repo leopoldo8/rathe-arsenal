@@ -13,6 +13,7 @@ import { AppModule } from '../../app.module';
 import { IDeckCardEntry, IDeckImportDto } from '../../fabrary/dtos/deck-import.dto';
 import { FabraryService } from '../../fabrary/fabrary.service';
 import { configureHttpApp } from '../../http/configure-http-app';
+import { sessionCookieHeader, sessionTokenOf } from '../../auth/__tests__/session-test-helpers';
 
 export const KATSU = 'katsu-the-wanderer';
 export const TALISHAR = 'talishar-the-lost-prince';
@@ -50,7 +51,7 @@ export function mainboard(cardIdentifier: string, quantity: number): IDeckCardEn
 }
 
 export interface IScenario {
-  readonly jwt: string;
+  readonly sessionToken: string;
   readonly deckId: number;
   readonly email: string;
 }
@@ -60,11 +61,12 @@ export interface IFixture {
   readonly dataSource: DataSource;
   /** Signs up a user and imports a deck for them. */
   scenario(extraMainboard?: readonly IDeckCardEntry[]): Promise<IScenario>;
-  signUp(label: string): Promise<{ readonly jwt: string; readonly email: string }>;
-  get(path: string, jwt: string): request.Test;
-  post(path: string, jwt: string): request.Test;
-  put(path: string, jwt: string): request.Test;
-  own(jwt: string, items: readonly { cardIdentifier: string; quantity: number }[]): Promise<void>;
+  signUp(label: string): Promise<{ readonly sessionToken: string; readonly email: string }>;
+  get(path: string, sessionToken: string): request.Test;
+  post(path: string, sessionToken: string): request.Test;
+  put(path: string, sessionToken: string): request.Test;
+  delete(path: string, sessionToken: string): request.Test;
+  own(sessionToken: string, items: readonly { cardIdentifier: string; quantity: number }[]): Promise<void>;
   deckCards(deckId: number): Promise<Record<string, number>>;
   replacementRows(deckId: number): Promise<Array<Record<string, unknown>>>;
   latestBreakdown(deckId: number): Promise<{
@@ -108,40 +110,41 @@ export async function bootFixture(options: { readonly throttle?: boolean } = {})
   const suffix = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   const emails: string[] = [];
   const server = app.getHttpServer();
-  const auth = (jwt: string) => `Bearer ${jwt}`;
+  const auth = (sessionToken: string) => sessionCookieHeader(sessionToken);
 
-  const signUp = async (label: string): Promise<{ jwt: string; email: string }> => {
+  const signUp = async (label: string): Promise<{ sessionToken: string; email: string }> => {
     const email = `repl-${label}-${suffix}-${emails.length}@test.local`;
     emails.push(email);
-    const created = await request(server).post('/api/auth/sign-up').send({ email, password: PASSWORD }).expect(202);
+    const created = await request(server).post('/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
     const token = new URL(created.body._devVerificationLink as string).searchParams.get('token');
     await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     const signIn = await request(server).post('/api/auth/sign-in').send({ email, password: PASSWORD }).expect(200);
-    return { jwt: signIn.body.jwt as string, email };
+    return { sessionToken: sessionTokenOf(signIn), email };
   };
 
   const fixture: IFixture = {
     app,
     dataSource,
     signUp,
-    get: (path, jwt) => request(server).get(path).set('Authorization', auth(jwt)),
-    post: (path, jwt) => request(server).post(path).set('Authorization', auth(jwt)),
-    put: (path, jwt) => request(server).put(path).set('Authorization', auth(jwt)),
+    get: (path, sessionToken) => request(server).get(path).set('Cookie', auth(sessionToken)),
+    post: (path, sessionToken) => request(server).post(path).set('Cookie', auth(sessionToken)),
+    put: (path, sessionToken) => request(server).put(path).set('Cookie', auth(sessionToken)),
+    delete: (path, sessionToken) => request(server).delete(path).set('Cookie', auth(sessionToken)),
     async scenario(extraMainboard = []) {
       const user = await signUp('owner');
       const ulid = newUlid();
       decks.set(ulid, baseDeck(extraMainboard));
       const imported = await request(server)
         .post('/api/decks/import')
-        .set('Authorization', auth(user.jwt))
-        .send({ urls: [`https://fabrary.net/decks/${ulid}`], seedInventory: false })
+        .set('Cookie', auth(user.sessionToken))
+        .send({ text: `https://fabrary.net/decks/${ulid}`, ownsCards: false })
         .expect(201);
-      return { ...user, deckId: imported.body.imported[0].trackedDeckId as number };
+      return { ...user, deckId: imported.body.deckId as number };
     },
-    async own(jwt, items) {
+    async own(sessionToken, items) {
       await request(server)
         .post('/api/collection/cards/batch')
-        .set('Authorization', auth(jwt))
+        .set('Cookie', auth(sessionToken))
         .send({ items })
         .expect(201);
     },

@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { LibraryGrid } from '../LibraryGrid';
 import type { ILibraryCard } from '../../../api/library';
@@ -16,9 +17,20 @@ vi.mock('../../card-art/CardArt', () => ({
 }));
 
 // LibraryCardStepper depends on the auth-aware api client. Stub it to a
-// noop so LibraryGrid's grouping/cell tests stay focused on layout.
-vi.mock('../LibraryCardStepper', () => ({
-  LibraryCardStepper: () => null,
+// noop so LibraryGrid's grouping/cell tests stay focused on layout; a test
+// that needs the real stepper flips `stepper.real` (its mutations are mocked below).
+const stepper = vi.hoisted(() => ({ real: false }));
+vi.mock('../LibraryCardStepper', async () => {
+  const react = await import('react');
+  const actual = await vi.importActual<typeof import('../LibraryCardStepper')>('../LibraryCardStepper');
+  return {
+    LibraryCardStepper: (props: React.ComponentProps<typeof actual.LibraryCardStepper>) =>
+      stepper.real ? react.createElement(actual.LibraryCardStepper, props) : null,
+  };
+});
+vi.mock('../../../api/collection', () => ({
+  useAddCardMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useDecrementCardMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -83,25 +95,47 @@ describe('LibraryGrid — happy path: renders all cards', () => {
 });
 
 describe('LibraryGrid — grouping by type', () => {
-  it('groups cards by type and renders a section header (type headings stay in English — game data)', () => {
+  it('groups cards by type and renders a section header in Portuguese', () => {
     const cards = [
-      makeCard({ cardIdentifier: 'A1', name: 'Hammer', types: ['attack'] }),
-      makeCard({ cardIdentifier: 'D1', name: 'Shield', types: ['defense'] }),
+      makeCard({ cardIdentifier: 'A1', name: 'Hammer', types: ['Action'] }),
+      makeCard({ cardIdentifier: 'D1', name: 'Shield', types: ['Defense Reaction'] }),
     ];
     render(<LibraryGrid cards={cards} group="type" />);
-    expect(screen.getByRole('heading', { name: 'attack' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'defense' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Ações' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Reações de defesa' })).toBeInTheDocument();
   });
 
   it('places cards into correct type groups', () => {
     const cards = [
-      makeCard({ cardIdentifier: 'A1', name: 'Hammer', types: ['attack'] }),
-      makeCard({ cardIdentifier: 'D1', name: 'Shield', types: ['defense'] }),
+      makeCard({ cardIdentifier: 'A1', name: 'Hammer', types: ['Action'] }),
+      makeCard({ cardIdentifier: 'D1', name: 'Shield', types: ['Defense Reaction'] }),
     ];
     render(<LibraryGrid cards={cards} group="type" />);
-    // Each type group renders a <ul aria-label="attack"> / <ul aria-label="defense">
-    const attackList = screen.getByRole('list', { name: 'attack' });
-    expect(within(attackList).getByText('Hammer')).toBeInTheDocument();
+    const actionList = screen.getByRole('list', { name: 'Ações' });
+    expect(within(actionList).getByText('Hammer')).toBeInTheDocument();
+  });
+
+  it('headings follow the shared grouping', () => {
+    const cards = [
+      makeCard({ cardIdentifier: 'rhinar', name: 'Rhinar, Reckless Rampage', types: ['Hero'] }),
+      makeCard({ cardIdentifier: 'club', name: 'Romping Club', types: ['Weapon'] }),
+      makeCard({ cardIdentifier: 'gauntlet', name: 'Goliath Gauntlet', types: ['Equipment'] }),
+      makeCard({ cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', types: ['Action'], pitch: 1 }),
+      makeCard({ cardIdentifier: 'swing-red', name: 'Reckless Swing', types: ['Attack Reaction'], pitch: 1 }),
+    ];
+
+    render(<LibraryGrid cards={cards} group="type" />);
+
+    expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      'Ações',
+      'Reações de ataque',
+      'Herói',
+      'Arma',
+      'Equipamentos',
+    ]);
+    for (const raw of ['ACTION', 'ATTACK REACTION', 'Attack Actions', 'Defense Reactions']) {
+      expect(screen.queryByText(raw)).not.toBeInTheDocument();
+    }
   });
 });
 
@@ -150,16 +184,16 @@ describe('LibraryGrid — flat grouping', () => {
 describe('LibraryGrid — grouping toggle: no refetch', () => {
   it('re-renders in new group order when group prop changes, same card data', () => {
     const cards = [
-      makeCard({ cardIdentifier: 'R1', name: 'Red Card', pitch: 1, types: ['attack'] }),
-      makeCard({ cardIdentifier: 'B1', name: 'Blue Card', pitch: 3, types: ['defense'] }),
+      makeCard({ cardIdentifier: 'R1', name: 'Red Card', pitch: 1, types: ['Action'] }),
+      makeCard({ cardIdentifier: 'B1', name: 'Blue Card', pitch: 3, types: ['Defense Reaction'] }),
     ];
     const { rerender } = render(<LibraryGrid cards={cards} group="type" />);
     // Initially grouped by type
-    expect(screen.getByRole('heading', { name: 'attack' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Ações' })).toBeInTheDocument();
 
     // Rerender with pitch grouping — same cards, no refetch
     rerender(<LibraryGrid cards={cards} group="pitch" />);
-    expect(screen.queryByRole('heading', { name: 'attack' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Ações' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Vermelho' })).toBeInTheDocument();
   });
 });
@@ -181,40 +215,29 @@ describe('LibraryGrid — accessibility', () => {
   });
 });
 
-describe('LibraryGrid — Action subtype split (group=type)', () => {
-  it('renders separate "Attack Action" and "Non-Attack Action" headings (game data — stays English)', () => {
+describe('LibraryGrid — attack and non-attack actions share one heading (group=type)', () => {
+  it('puts an attack action and a non-attack action under "Ações"', () => {
     const cards = [
-      makeCard({
-        cardIdentifier: 'A1',
-        name: 'Wild Ride',
-        types: ['Action'],
-        subtypes: ['Attack'],
-      }),
-      makeCard({
-        cardIdentifier: 'A2',
-        name: 'Nimblism',
-        types: ['Action'],
-        subtypes: ['Non-Attack'],
-      }),
+      makeCard({ cardIdentifier: 'A1', name: 'Wild Ride', types: ['Action'], subtypes: ['Attack'] }),
+      makeCard({ cardIdentifier: 'A2', name: 'Nimblism', types: ['Action'], subtypes: ['Non-Attack'] }),
     ];
     render(<LibraryGrid cards={cards} group="type" />);
-    expect(screen.getByRole('heading', { name: /^Attack Action$/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /^Non-Attack Action$/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual(['Ações']);
   });
 
-  it('keeps top-level types untouched (Equipment, Weapon, etc.)', () => {
+  it('names the top-level types in Portuguese (Equipment, Weapon, etc.)', () => {
     const cards = [
       makeCard({ cardIdentifier: 'E1', name: 'Hide Tanner', types: ['Equipment'], subtypes: ['Arms'] }),
       makeCard({ cardIdentifier: 'W1', name: 'Romping Club', types: ['Weapon'], subtypes: [] }),
     ];
     render(<LibraryGrid cards={cards} group="type" />);
-    expect(screen.getByRole('heading', { name: /Equipment/ })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Weapon/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Equipamentos' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Arma' })).toBeInTheDocument();
   });
 });
 
-describe('LibraryGrid — arena type groups sort last', () => {
-  it('orders deck-card groups before Equipment / Hero / Weapon / Token', () => {
+describe('LibraryGrid — hero, weapon and equipment sort last', () => {
+  it('orders the cards played from the hand before Hero / Weapon / Equipment', () => {
     const cards = [
       makeCard({ cardIdentifier: 'EQ', name: 'Hide Tanner', types: ['Equipment'] }),
       makeCard({ cardIdentifier: 'WP', name: 'Romping Club', types: ['Weapon'] }),
@@ -227,23 +250,7 @@ describe('LibraryGrid — arena type groups sort last', () => {
     const headings = screen
       .getAllByRole('heading', { level: 2 })
       .map((h) => h.textContent);
-    // All deck-card group names come before all arena ones.
-    const arenaIndices = headings
-      .map((name, i) => (['Equipment', 'Hero', 'Token', 'Weapon'].includes(name ?? '') ? i : -1))
-      .filter((i) => i !== -1);
-    const deckIndices = headings
-      .map((name, i) => (['Equipment', 'Hero', 'Token', 'Weapon'].includes(name ?? '') ? -1 : i))
-      .filter((i) => i !== -1);
-    expect(Math.min(...arenaIndices)).toBeGreaterThan(Math.max(...deckIndices));
-    // Within each block, alphabetical order survives.
-    expect(headings).toEqual([
-      'Attack Action',
-      'Block',
-      'Equipment',
-      'Hero',
-      'Token',
-      'Weapon',
-    ]);
+    expect(headings).toEqual(['Ações', 'Herói', 'Arma', 'Equipamentos', 'Outras cartas']);
   });
 });
 
@@ -289,5 +296,65 @@ describe('LibraryGrid — stable in-group sort', () => {
     items = screen.getAllByRole('listitem');
     expect(items[0]?.getAttribute('aria-label')).toBe('Alpha, na coleção: 1');
     expect(items[1]?.getAttribute('aria-label')).toBe('Bravo, na coleção: 2');
+  });
+});
+
+describe('LibraryGrid: the manual source label', () => {
+  it('the manual source reads in Portuguese', async () => {
+    stepper.real = true;
+    try {
+      const card = makeCard({
+        name: 'Hammer of Sol',
+        ownedQuantity: 3,
+        contributions: [
+          { sourceId: 's-manual', sourceLabel: 'Manual entries', kind: 'manual', quantity: 1 },
+          { sourceId: 's-csv', sourceLabel: 'Meu deck', kind: 'csv', quantity: 2 },
+        ],
+      });
+      const { container } = render(<LibraryGrid cards={[card]} group="flat" />);
+
+      await userEvent.click(screen.getByRole('button', { name: /Remover um/i }));
+
+      expect(screen.getByRole('menuitem', { name: /Entradas à mão/ })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: /Meu deck/ })).toBeInTheDocument();
+      expect(container.textContent).not.toContain('Manual entries');
+    } finally {
+      stepper.real = false;
+    }
+  });
+});
+
+describe('LibraryGrid: card names carry the pitch', () => {
+  it('names the pitch', () => {
+    const cards = [
+      makeCard({ cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', pitch: 1, ownedQuantity: 2 }),
+      makeCard({ cardIdentifier: 'dawnblade', name: 'Dawnblade', pitch: null, ownedQuantity: 1 }),
+    ];
+    render(<LibraryGrid cards={cards} group="flat" />);
+
+    const red = screen.getByRole('listitem', { name: /Pack Hunt \(Vermelho\).*na coleção: 2/ });
+    expect(within(red).getAllByText('Pack Hunt (Vermelho)').length).toBeGreaterThan(0);
+    expect(screen.getByRole('listitem', { name: 'Dawnblade, na coleção: 1' })).toBeInTheDocument();
+  });
+});
+
+describe('LibraryGrid: versions', () => {
+  it('the grid shows no unversioned count', () => {
+    const card = makeCard({
+      cardIdentifier: 'snatch-red',
+      name: 'Snatch',
+      pitch: 1,
+      ownedQuantity: 3,
+      contributions: [
+        { sourceId: 'list', sourceLabel: 'Lista colada', kind: 'csv', quantity: 2, printingCode: '', edition: '', finish: '', condition: '' },
+        { sourceId: 'list', sourceLabel: 'Lista colada', kind: 'csv', quantity: 1, printingCode: 'WTR167', edition: 'unlimited', finish: 'rainbow', condition: 'NM' },
+      ],
+    });
+
+    const { container } = render(<LibraryGrid cards={[card]} group="flat" />);
+
+    expect(container.textContent).not.toMatch(/sem versão informada/i);
+    expect(screen.queryByRole('button', { name: 'Mudar versão' })).not.toBeInTheDocument();
+    expect(container.textContent).toContain('×3');
   });
 });

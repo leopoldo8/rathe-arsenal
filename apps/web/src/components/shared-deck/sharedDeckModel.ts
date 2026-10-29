@@ -1,38 +1,23 @@
 import type { ISharedCard, ISharedDeckResponse } from '../../api/shared-decks';
-import { withPitch } from '../deck-detail/recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 
-export type TSharedGroupId = 'hero' | 'weapon' | 'equipment' | 'actions' | 'reactions' | 'other';
+import { groupCardsByKind, type TCardGroupId } from '../../lib/card-groups';
 
 export interface ISharedCardGroup {
-  readonly id: TSharedGroupId;
+  readonly id: TCardGroupId;
   readonly cards: readonly ISharedCard[];
   readonly total: number;
-}
-
-const GROUP_ORDER: readonly TSharedGroupId[] = ['hero', 'weapon', 'equipment', 'actions', 'reactions', 'other'];
-
-function groupOf(card: ISharedCard): TSharedGroupId {
-  if (card.slot === 'hero' || card.slot === 'weapon' || card.slot === 'equipment') return card.slot;
-  if (card.slot !== 'mainboard') return 'other';
-  return card.type.toLowerCase().includes('reaction') ? 'reactions' : 'actions';
 }
 
 function compareCards(a: ISharedCard, b: ISharedCard): number {
   return a.name.localeCompare(b.name) || (a.pitch ?? 0) - (b.pitch ?? 0);
 }
 
-/** Splits the deck into the groups the shared page lists, in reading order, skipping empty ones. */
+/** Splits the deck into the groups every card list uses, in reading order, skipping empty ones. */
 export function groupSharedCards(cards: readonly ISharedCard[]): readonly ISharedCardGroup[] {
-  const byGroup = new Map<TSharedGroupId, ISharedCard[]>();
-  for (const card of cards) {
-    const id = groupOf(card);
-    byGroup.set(id, [...(byGroup.get(id) ?? []), card]);
-  }
-  return GROUP_ORDER.flatMap((id) => {
-    const members = byGroup.get(id);
-    if (members === undefined) return [];
+  return groupCardsByKind(cards, (card) => ({ slot: card.slot, type: card.type })).map(({ id, cards: members }) => {
     const sorted = [...members].sort(compareCards);
-    return [{ id, cards: sorted, total: sorted.reduce((sum, card) => sum + card.quantity, 0) }];
+    return { id, cards: sorted, total: sorted.reduce((sum, card) => sum + card.quantity, 0) };
   });
 }
 
@@ -44,7 +29,7 @@ function missingLines(missing: readonly ISharedCard[], t: TTranslate): string[] 
   return missing.map((card) =>
     t('sharing.wanted.textLine', {
       count: card.quantity,
-      name: withPitch(card.name, card.pitch, (key) => t(key)),
+      name: cardName(card.name, card.pitch, (key) => t(key)),
     }),
   );
 }

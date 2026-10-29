@@ -2,6 +2,10 @@ import * as crypto from 'crypto';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as Papa from 'papaparse';
 import { CatalogService } from '../../catalog/catalog.service';
+import { CatalogCardLookup } from '../reader/catalog-card-lookup';
+import { decodeImportBuffer, checkedImportText } from '../reader/decode-import';
+import { IReadImportResult, MAX_IMPORT_ROWS, readImportText } from '../reader/import-table';
+import { LineReader } from '../reader/line-reader';
 import {
   ICsvParseResult,
   IParsedCsvRow,
@@ -73,7 +77,24 @@ let nameIndex: Map<string, string[]> | null = null;
 export class CsvParserService {
   private readonly logger = new Logger(CsvParserService.name);
 
+  private lineReader: LineReader | null = null;
+
   constructor(private readonly catalogService: CatalogService) {}
+
+  /** Reads a pasted body line by line, or as a table when its first line has a name header. */
+  readText(text: string): IReadImportResult {
+    const checked = checkedImportText(text);
+    if (checked.split(/\r?\n/).length > MAX_IMPORT_ROWS + 1) {
+      throw new BadRequestException({ code: 'IMPORT_TOO_MANY_ROWS', message: 'Too many lines to read' });
+    }
+    this.lineReader ??= new LineReader(new CatalogCardLookup(this.catalogService));
+    return readImportText(checked, this.lineReader);
+  }
+
+  /** The same reader over a file's bytes. */
+  readBuffer(buffer: Buffer): IReadImportResult {
+    return this.readText(decodeImportBuffer(buffer));
+  }
 
   /**
    * Parses a CSV buffer and resolves rows to catalog card identifiers.

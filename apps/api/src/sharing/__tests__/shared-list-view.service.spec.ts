@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
+import { SpareCopiesService } from '../../collection/spare/spare-copies.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { CardListLineEntity } from '../../database/entities/card-list-line.entity';
 import { CardListEntity } from '../../database/entities/card-list.entity';
@@ -12,6 +13,7 @@ import { ShareEventsService } from '../share-events.service';
 import { SharedListLookup } from '../shared-list-lookup';
 import { SharedListViewService } from '../shared-list-view.service';
 import { VisitorDecksMissingService } from '../visitor-decks-missing.service';
+import { VisitorWantListService } from '../visitor-want-list.service';
 
 const [CARD_A, CARD_B] = catalog.cards
   .filter((card) => card.pitch === 1 && card.types[0] !== 'Hero')
@@ -31,7 +33,9 @@ const line = (id: number, cardIdentifier: string, extra: Partial<CardListLineEnt
     id,
     cardIdentifier,
     quantity: 2,
-    printing: null,
+    printingCode: '',
+    edition: '',
+    finish: '',
     condition: null,
     priceCents: null,
     soldAt: null,
@@ -59,13 +63,18 @@ function build(options: { kind?: 'want' | 'sell'; showsContact?: boolean; lines?
     userId === 'visitor-1' ? new Map([[CARD_A.cardIdentifier, 1]]) : new Map(),
   );
   const visitorDecks = createMock<VisitorDecksMissingService>();
-  visitorDecks.missingByCard.mockResolvedValue(new Map([[CARD_A.cardIdentifier, 3]]));
+  visitorDecks.missingPerDeck.mockResolvedValue(new Map([[CARD_A.cardIdentifier, [{ deckId: 1, deckName: 'Kayo CC', missing: 3 }]]]));
   const lines = createMock<Repository<CardListLineEntity>>();
   lines.find.mockResolvedValue(options.lines ?? [line(1, CARD_A.cardIdentifier), line(2, CARD_B.cardIdentifier, { soldAt: new Date() })]);
   const config = createMock<ConfigService>();
   config.get.mockReturnValue('https://app.example');
+  const spareCopies = createMock<SpareCopiesService>();
+  spareCopies.spareByCard.mockResolvedValue({ needsRule: false, spare: new Map(), topHolder: new Map(), versions: new Map() });
+  const visitorWant = createMock<VisitorWantListService>();
+  visitorWant.suggestedCents.mockResolvedValue(new Map());
+  visitorWant.ownWantList.mockResolvedValue(null);
   return {
-    service: new SharedListViewService(lookup, events, collection, visitorDecks, config, lines),
+    service: new SharedListViewService(lookup, events, collection, visitorDecks, config, spareCopies, visitorWant, lines),
     events,
     visitorDecks,
   };
@@ -150,7 +159,7 @@ describe('SharedListViewService.matches', () => {
     const { service, visitorDecks } = build();
 
     expect(await service.matches('live', 'owner-1')).toEqual({ lines: [] });
-    expect(visitorDecks.missingByCard).not.toHaveBeenCalled();
+    expect(visitorDecks.missingPerDeck).not.toHaveBeenCalled();
   });
 
   it('on a sell list asks the deck gap only for lines still for sale', async () => {
@@ -158,14 +167,14 @@ describe('SharedListViewService.matches', () => {
 
     const result = await service.matches('live', 'visitor-1');
 
-    expect(visitorDecks.missingByCard).toHaveBeenCalledWith(
+    expect(visitorDecks.missingPerDeck).toHaveBeenCalledWith(
       'visitor-1',
       new Set([CARD_A.cardIdentifier]),
       expect.any(Map),
     );
     expect(result.lines).toEqual([
-      { lineId: 1, owned: 1, missingInDecks: 3 },
-      { lineId: 2, owned: 0, missingInDecks: 0 },
+      { lineId: 1, owned: 1, missingInDecks: 3, decks: [{ deckId: 1, deckName: 'Kayo CC', missing: 3 }] },
+      { lineId: 2, owned: 0, missingInDecks: 0, decks: [] },
     ]);
   });
 
@@ -174,7 +183,7 @@ describe('SharedListViewService.matches', () => {
 
     const result = await service.matches('live', 'visitor-1');
 
-    expect(visitorDecks.missingByCard).not.toHaveBeenCalled();
-    expect(result.lines[0]).toEqual({ lineId: 1, owned: 1, missingInDecks: 0 });
+    expect(visitorDecks.missingPerDeck).not.toHaveBeenCalled();
+    expect(result.lines[0]).toEqual({ lineId: 1, owned: 1, missingInDecks: 0, decks: [] });
   });
 });

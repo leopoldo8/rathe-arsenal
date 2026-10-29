@@ -4,6 +4,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ICardList, IPriceSuggestion } from '../../../api/lists';
 import { createFakeApi, renderWithProviders, type IFakeApi } from '../../shared-deck/__tests__/sharingTestKit';
+import { setTestLocale } from '../../../test/i18n-test-utils';
 import { makeLine, makeList } from './listsTestKit';
 
 const apiRef = vi.hoisted(() => ({ current: null as IFakeApi | null }));
@@ -191,7 +192,7 @@ describe('list prices', () => {
     await user.clear(field);
     await user.type(field, '6,5');
     await user.tab();
-    await waitFor(() => expect(screen.getByLabelText('Cotação TCGPlayer')).toHaveValue('6.5'));
+    await waitFor(() => expect(screen.getByLabelText('Cotação TCGPlayer')).toHaveValue('6,5'));
     await user.clear(screen.getByLabelText('Cotação TCGPlayer'));
     await user.tab();
     await waitFor(() =>
@@ -211,8 +212,66 @@ describe('list prices', () => {
     await user.clear(field);
     await user.type(field, '80');
     await user.tab();
-    expect(await screen.findByRole('alert')).toHaveTextContent('Use um número entre 1 e 50.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Use um número de 0,01 a 50.');
     expect(api.calls.some((call) => call.key.startsWith('PATCH'))).toBe(false);
+  });
+
+  it("shows the multiplier with the locale's decimal comma", async () => {
+    serve(makeList({ priceMultiplier: 5.5, lines: [makeLine({ id: 1 })] }));
+    api.handlers.set('PATCH /lists/7', ({ body }) => {
+      current = { ...current, priceMultiplier: (body as { priceMultiplier: number | null }).priceMultiplier };
+      return current;
+    });
+    const user = userEvent.setup();
+
+    // After a reload the saved 5.5 reads "5,5" in pt-BR and "5.5" in en-US.
+    const portuguese = renderWithProviders(<ListEditor listId="7" />);
+    expect(await screen.findByLabelText('Cotação TCGPlayer')).toHaveValue('5,5');
+    portuguese.unmount();
+    await setTestLocale('en-US');
+    const english = renderWithProviders(<ListEditor listId="7" />);
+    expect(await screen.findByLabelText('TCGPlayer rate')).toHaveValue('5.5');
+    english.unmount();
+    await setTestLocale('pt-BR');
+
+    // "5,5" typed is accepted as 5.5, and what comes back is shown with the comma.
+    serve(makeList({ priceMultiplier: 7, lines: [makeLine({ id: 1 })] }));
+    renderWithProviders(<ListEditor listId="7" />);
+    const field = await screen.findByLabelText('Cotação TCGPlayer');
+    await user.clear(field);
+    await user.type(field, '5,5');
+    await user.tab();
+    await waitFor(() => expect(api.calls.filter((call) => call.key === 'PATCH /lists/7').at(-1)?.body).toEqual({ priceMultiplier: 5.5 }));
+    await waitFor(() => expect(screen.getByLabelText('Cotação TCGPlayer')).toHaveValue('5,5'));
+  });
+
+  it('the multiplier error text matches what the field accepts', async () => {
+    serve(makeList({ priceMultiplier: 7, lines: [] }));
+    api.handlers.set('PATCH /lists/7', ({ body }) => {
+      current = { ...current, priceMultiplier: (body as { priceMultiplier: number | null }).priceMultiplier };
+      return current;
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<ListEditor listId="7" />);
+
+    const field = await screen.findByLabelText('Cotação TCGPlayer');
+    // The range is 0,01 to 50: the DTO's `@Min(0.01)` and `@Max(50)` are what the text names.
+    await user.clear(field);
+    await user.type(field, '0');
+    await user.tab();
+    const message = await screen.findByRole('alert');
+    expect(message).toHaveTextContent('Use um número de 0,01 a 50.');
+    expect(message.textContent).not.toMatch(/entre 1 e 50/);
+
+    await user.clear(field);
+    await user.type(field, '0,01');
+    await user.tab();
+    await waitFor(() => expect(api.calls.filter((call) => call.key === 'PATCH /lists/7').at(-1)?.body).toEqual({ priceMultiplier: 0.01 }));
+
+    await user.clear(field);
+    await user.type(field, '50,01');
+    await user.tab();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Use um número de 0,01 a 50.');
   });
 
   it('shows no multiplier or suggestion controls on a want list', async () => {

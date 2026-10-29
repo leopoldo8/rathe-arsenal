@@ -128,7 +128,9 @@
 
 .freshnessStale {
   font-size: var(--ra-text-caption);
-  color: var(--ra-ember);
+  /* Not --ra-ember: it is 3.41:1 on the dark surface. --ra-ready-low is the same
+     colour in the light theme and clears AA (4.5:1) on both surfaces. */
+  color: var(--ra-ready-low);
 }
 
 .manageCsvs {
@@ -177,4 +179,12 @@
   .valueBlock {
     align-items: flex-start;
   }
+}
+
+.estimateNote {
+  margin: 0;
+  max-inline-size: 22rem;
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-caption);
+  line-height: var(--ra-leading-normal);
 }

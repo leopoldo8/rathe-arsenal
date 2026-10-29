@@ -92,6 +92,13 @@ describe('CatalogService — U17 search legality fields', () => {
       }
     });
 
+    it('each result carries the facts the browser needs to run the engine rules', async () => {
+      const response = await service.search(USER_ID, 'drop in the ocean', 10);
+
+      const legendary = response.results.find((result) => result.cardIdentifier === 'a-drop-in-the-ocean-blue');
+      expect(legendary).toMatchObject({ legendary: true, restrictedFormats: [], legalOverrides: [], specializations: [] });
+    });
+
     it('legality fields are present alongside existing fields', async () => {
       // Act
       const response = await service.search(USER_ID, 'Snatch', 3);

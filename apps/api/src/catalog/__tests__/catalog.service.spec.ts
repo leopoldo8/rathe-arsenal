@@ -1,5 +1,8 @@
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import request from 'supertest';
 import { createMock } from '@golevelup/ts-jest';
+import { CatalogController } from '../catalog.controller';
 import { CatalogService } from '../catalog.service';
 import { CardNotFoundError } from '@rathe-arsenal/engine';
 import { CollectionReadService } from '../../collection/collection-read.service';
@@ -194,5 +197,102 @@ describe('CatalogService', () => {
         expect(r.name.toLowerCase()).toContain('heart');
       }
     });
+  });
+  describe('getVersionOptions', () => {
+    interface IExpectedPrinting {
+      readonly printingCode: string;
+      readonly setName: string;
+      readonly editions: readonly string[];
+      readonly finishes: readonly string[];
+    }
+
+    it.each<[string, string, number, IExpectedPrinting]>([
+      [
+        'a card with a single printing',
+        'back-for-seconds-yellow',
+        1,
+        { printingCode: 'DDD011', setName: 'Dorinthea Demo Deck', editions: [], finishes: ['none'] },
+      ],
+      [
+        'a card whose printings name no edition',
+        '10000-year-reunion-red',
+        1,
+        { printingCode: 'MST131', setName: 'Part the Mistveil', editions: [], finishes: ['none', 'rainbow'] },
+      ],
+      [
+        'WTR167 on Snatch (Vermelho), in two editions and two finishes',
+        'snatch-red',
+        10,
+        {
+          printingCode: 'WTR167',
+          setName: 'Welcome to Rathe',
+          editions: ['unlimited', 'alpha'],
+          finishes: ['none', 'rainbow'],
+        },
+      ],
+    ])("version options come from the card's own printings: %s", (_label, cardIdentifier, printingCount, expected) => {
+      const options = service.getVersionOptions(cardIdentifier);
+
+      expect(options.cardIdentifier).toBe(cardIdentifier);
+      expect(options.printings).toHaveLength(printingCount);
+      const printing = options.printings.find((candidate) => candidate.printingCode === expected.printingCode);
+      expect(printing).toBeDefined();
+      expect(printing!.setName).toBe(expected.setName);
+      expect(printing!.imageUrl?.small).toMatch(/^https?:\/\/.+\.webp$/);
+      expect(printing!.editions).toEqual(expected.editions);
+      expect(printing!.finishes).toEqual(expected.finishes);
+      expect(new Set(options.printings.map((candidate) => candidate.printingCode)).size).toBe(printingCount);
+    });
+
+    it("version options come from the card's own printings: Snatch (Vermelho) lists no other card's code", () => {
+      const codes = service.getVersionOptions('snatch-red').printings.map((printing) => printing.printingCode);
+
+      expect(codes).toContain('WTR167');
+      expect(codes).not.toContain('WTR168');
+    });
+
+    it('refuses a card that is not in the catalog', () => {
+      expect(() => service.getVersionOptions('not-a-real-card')).toThrow(/does not exist/);
+    });
+  });
+});
+
+describe("version options come from the card's own printings: the GET route", () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const collectionReadService = createMock<CollectionReadService>();
+    const module = await Test.createTestingModule({
+      controllers: [CatalogController],
+      providers: [CatalogService, { provide: CollectionReadService, useValue: collectionReadService }],
+    }).compile();
+    app = module.createNestApplication();
+    app.setGlobalPrefix('api');
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it.each<[string, string, number, string, readonly string[], readonly string[]]>([
+    ['a card with a single printing', 'back-for-seconds-yellow', 1, 'DDD011', [], ['none']],
+    ['a card whose printings name no edition', '10000-year-reunion-red', 1, 'MST131', [], ['none', 'rainbow']],
+    ['WTR167 on Snatch (Vermelho)', 'snatch-red', 10, 'WTR167', ['unlimited', 'alpha'], ['none', 'rainbow']],
+  ])('answers 200 with only the printings of %s', async (_label, cardIdentifier, printingCount, code, editions, finishes) => {
+    const response = await request(app.getHttpServer()).get(`/api/catalog/cards/${cardIdentifier}/versions`).expect(200);
+
+    expect(response.body.cardIdentifier).toBe(cardIdentifier);
+    expect(response.body.printings).toHaveLength(printingCount);
+    const printing = response.body.printings.find((candidate: { printingCode: string }) => candidate.printingCode === code);
+    expect(printing).toMatchObject({ printingCode: code, editions, finishes });
+    expect(printing.setName).toEqual(expect.any(String));
+    expect(printing.imageUrl.small).toMatch(/^https?:\/\/.+\.webp$/);
+  });
+
+  it('answers 400 for a card the catalog does not have', async () => {
+    const response = await request(app.getHttpServer()).get('/api/catalog/cards/not-a-real-card/versions').expect(400);
+
+    expect(response.body.code).toBe('INVALID_CARD_IDENTIFIER');
   });
 });

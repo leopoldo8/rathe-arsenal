@@ -122,7 +122,7 @@ describe('LibraryCardStepper — multi-source picker', () => {
     expect(decrementMutate).not.toHaveBeenCalled();
     expect(screen.getByRole('menu')).toBeInTheDocument();
     expect(
-      screen.getByRole('menuitem', { name: /Manual entries/i }),
+      screen.getByRole('menuitem', { name: /Entradas à mão/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('menuitem', { name: /Fabrary: Kayo Brute Bash/i }),
@@ -148,6 +148,62 @@ describe('LibraryCardStepper — multi-source picker', () => {
       sourceId: 's-csv',
       quantity: 1,
     });
+  });
+});
+
+describe('LibraryCardStepper — imports and versions', () => {
+  const UNVERSIONED = { printingCode: '', edition: '', finish: '', condition: '' };
+  const MARKED = { printingCode: 'WTR167', edition: 'unlimited', finish: 'rainbow', condition: 'NM' };
+  const SEVERAL = makeCard({
+    cardIdentifier: 'snatch-red',
+    name: 'Snatch',
+    ownedQuantity: 4,
+    contributions: [
+      { sourceId: 'list', sourceLabel: 'Lista colada', kind: 'csv', quantity: 2, ...UNVERSIONED },
+      { sourceId: 'list', sourceLabel: 'Lista colada', kind: 'csv', quantity: 1, ...MARKED },
+      { sourceId: 'kayo', sourceLabel: 'Armory Deck: Kayo', kind: 'csv', quantity: 1, ...UNVERSIONED },
+    ],
+  });
+
+  it('minus on a card with several imports or versions opens the picker', async () => {
+    render(<LibraryCardStepper card={SEVERAL} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Remover um/i }));
+
+    expect(decrementMutate).not.toHaveBeenCalled();
+    const rows = screen.getAllByRole('menuitem');
+    expect(rows.map((row) => row.textContent)).toEqual([
+      'Lista colada×2',
+      'Lista colada · WTR167 · Unlimited · Rainbow Foil · NM×1',
+      'Armory Deck: Kayo×1',
+    ]);
+  });
+
+  it('takes the copy from the import and version that was picked', async () => {
+    render(<LibraryCardStepper card={SEVERAL} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Remover um/i }));
+    await userEvent.click(screen.getByRole('menuitem', { name: /WTR167/ }));
+
+    expect(decrementMutate).toHaveBeenCalledWith({
+      cardIdentifier: 'snatch-red',
+      sourceId: 'list',
+      ...MARKED,
+      quantity: 1,
+    });
+  });
+
+  it('a card in one import at one version is decremented at once, naming that version', async () => {
+    const single = makeCard({
+      cardIdentifier: 'snatch-red',
+      ownedQuantity: 1,
+      contributions: [{ sourceId: 'list', sourceLabel: 'Lista colada', kind: 'csv', quantity: 1, ...MARKED }],
+    });
+    render(<LibraryCardStepper card={single} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Remover um/i }));
+
+    expect(decrementMutate).toHaveBeenCalledWith({ cardIdentifier: 'snatch-red', sourceId: 'list', ...MARKED, quantity: 1 });
   });
 });
 

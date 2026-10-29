@@ -140,6 +140,84 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: C52 / card-replacement.entity.ts:40 (round 2) (apps/web ui checks)
 - last seen: 2026-10-12T04:32:55Z
 
+### L-031 - Assert a pinned element while the page is mid-scroll, not only at the document end where a static element also fits the viewport
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `web-e2e` · harmful: 0
+- features: persona-rethink
+- evidence: E3 C36 (web-e2e)
+- last seen: 2026-10-26T15:48:47Z
+
+### L-032 - Assert the accessible name of a dialog in every proof that claims the dialog, not only the text inside it
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `web-e2e` · harmful: 0
+- features: persona-rethink
+- evidence: E5 C425 (web-e2e)
+- last seen: 2026-10-26T15:48:47Z
+
+### L-033 - Match each element of an ordered list by its own node, not by indexOf from the previous match, so a substring of the preceding text cannot satisfy it
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `web-unit` · harmful: 0
+- features: persona-rethink
+- evidence: C48 C118 (web-unit)
+- last seen: 2026-10-26T15:48:48Z
+
+### L-034 - A test that compares the application clock with a database timestamp must pass in the full suite run, not only alone
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `api-e2e` · harmful: 0
+- features: persona-rethink
+- evidence: C452 share-report-queries.e2e-spec.ts (api-e2e)
+- last seen: 2026-10-26T15:48:48Z
+
+### L-035 - Assert the queued lookups and the no_price lines when a budget claim names them, not only the allow flag and the warning count
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `stores` · harmful: 0
+- features: persona-rethink
+- evidence: C195 (stores)
+- last seen: 2026-10-26T15:48:48Z
+
+### L-036 - When a check names an order of parts inside one row, the test fixture needs a row that carries every named part together, or swapping two of them survives every proof.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `web e2e layout, fixtures` · harmful: 0
+- features: persona-rethink
+- evidence: P3a: apps/web/src/components/missing-list/MissingListRow.tsx:156 (C219) (web e2e layout, fixtures)
+- last seen: 2026-10-26T17:17:55Z
+
+### L-037 - When a claim names a screen the player reaches through a route, add one browser proof that walks to it, because a component test renders the screen without the route tree and stays green while the page never mounts.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web routes` · harmful: 0
+- features: persona-rethink
+- evidence: C161 apps/web/tests/e2e/product-add-flow.spec.ts (web routes)
+- last seen: 2026-10-26T19:44:12Z
+
+### L-038 - A layout test that collects controls from a container must assert the collected list is not empty, because a selector for an element the page does not render makes every overlap and edge assertion pass over nothing.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `web/layout` · harmful: 0
+- features: persona-rethink
+- evidence: e756b4a0 (verification round 5 to 7) (web/layout)
+- last seen: 2026-10-28T12:44:24Z
+
+### L-039 - A Retry-After built from the process clock against a database-stamped createdAt can exceed its window under Docker clock skew, so clamp it to the window and assert the upper bound.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `apps/api/rate-limit` · harmful: 0
+- features: persona-rethink
+- evidence: 1ec29e09, C452 (verification round 5 to 7) (apps/api/rate-limit)
+- last seen: 2026-10-28T12:44:24Z
+
+### L-040 - A visual-regression test must stub the data it shows, or it passes only on rows left in a long-lived local database and fails on a fresh one; run it once against a fresh database.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `web/visual-regression` · harmful: 0
+- features: persona-rethink
+- evidence: 747c877a (verification round 5 to 7) (web/visual-regression)
+- last seen: 2026-10-28T12:44:24Z
+
+### L-041 - A query whose result order an e2e assertion checks needs an explicit ORDER BY with a tiebreaker, or the assertion passes most runs on the database's arbitrary order.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `apps/api/e2e` · harmful: 0
+- features: persona-rethink
+- evidence: 35d8a8ba (verification round 5 to 7) (apps/api/e2e)
+- last seen: 2026-10-28T12:44:24Z
+
+### L-042 - Every part a claim names needs a Proof that names it and a test that asserts it; a colour claim needs a computed-style browser assertion, because unit runs do not evaluate CSS.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
+- features: persona-rethink
+- evidence: verification round 5: Wh skip note, Wp and P2c colours, A3 tried codes (94639402) (web)
+- last seen: 2026-10-28T12:44:24Z
+
+### L-043 - Count the sign-ups the web e2e suite already spends against the API's per-address hourly limit before adding a test; fold new sign-up flows into existing walks instead of adding sign-ups.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `web/e2e` · harmful: 0
+- features: persona-rethink
+- evidence: web e2e sign-up throttle, fix rounds 5 to 7 (57a131bf) (web/e2e)
+- last seen: 2026-10-28T12:44:24Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

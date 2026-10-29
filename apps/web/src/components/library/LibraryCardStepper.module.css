@@ -60,17 +60,22 @@
 /* Multi-source picker — small floating popover anchored under the
    stepper. Sized to read at a glance, not to compete with the cell. */
 .picker {
-  position: absolute;
-  inset-block-start: calc(28px + var(--ra-space-1));
-  inset-inline-end: 0;
-  min-width: 220px;
+  /* Drawn in the page body, fixed to the bottom of the screen, so it fits a 360 px phone whatever the
+     cell it came from sits next to. */
+  position: fixed;
+  inset-inline: var(--ra-space-4);
+  inset-block-end: var(--ra-space-4);
+  inline-size: auto;
+  max-inline-size: 360px;
+  margin-inline: auto;
+  max-block-size: 60vh;
+  overflow-y: auto;
   background: var(--ra-bg-surface);
   border: 1px solid var(--ra-border-strong);
   border-radius: var(--ra-radius-sm);
   box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.45);
   padding: var(--ra-space-2);
-  z-index: 3;
-  /* Trap pointer events so the cell hover reveal doesn't dismiss us. */
+  z-index: 950;
   pointer-events: auto;
 }
 
@@ -129,9 +134,7 @@
 }
 
 .pickerLabel {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .pickerCount {

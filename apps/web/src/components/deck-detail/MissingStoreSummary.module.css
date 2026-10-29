@@ -45,7 +45,9 @@
   color: var(--ra-ready-mid);
 }
 
-.cooldown {
+.estimateNote {
+  margin: 0;
   color: var(--ra-fg-secondary);
-  font-size: var(--ra-text-small);
+  font-size: var(--ra-text-caption);
+  line-height: var(--ra-leading-normal);
 }

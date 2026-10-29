@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, IsNull, Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckTagEntity } from '../database/entities/deck-tag.entity';
@@ -27,8 +27,9 @@ export class AuthzService {
     userId: string,
     trackedDeckId: number,
   ): Promise<void> {
+    // A deleted deck (door 4) is answered like a missing one on every owner route.
     const deck = await this.trackedDecks.findOne({
-      where: { id: trackedDeckId },
+      where: { id: trackedDeckId, deletedAt: IsNull() },
       select: ['id', 'userId'],
     });
 
@@ -38,6 +39,15 @@ export class AuthzService {
         resourceId: trackedDeckId,
         userId,
       });
+      throw new NotFoundException('Tracked deck not found');
+    }
+  }
+
+  /** Ownership alone, a deleted deck included: restore and "Excluir de vez" act on decks `assertOwnsTrackedDeck` hides. */
+  async assertOwnsTrackedDeckInAnyState(userId: string, trackedDeckId: number): Promise<void> {
+    const deck = await this.trackedDecks.findOne({ where: { id: trackedDeckId }, select: ['id', 'userId'] });
+    if (!deck || deck.userId !== userId) {
+      this.logger.warn('AUTHZ_DENIED', { resource: 'TrackedDeck', resourceId: trackedDeckId, userId });
       throw new NotFoundException('Tracked deck not found');
     }
   }

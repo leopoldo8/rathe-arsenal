@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate, useRouter } from '@tanstack/react-router';
+import type { IDeckLegalityResult } from '@rathe-arsenal/engine/legality';
 import { DeckNameInline } from './DeckNameInline';
 import { TagChipRow } from './TagChipRow';
 import { StatusDropdown } from './StatusDropdown';
@@ -8,8 +9,9 @@ import { DiscardChangesConfirm } from './DiscardChangesConfirm';
 import { SaveCascadeConfirmModal } from './SaveCascadeConfirmModal';
 import type { TDeckStatus } from '../../api/decks';
 import type { ITagResponse } from '../../api/tags';
-import { usePutDeckMutation, type IPutDeckBody } from '../../api/decks';
+import { useDiscardDeckMutation, usePutDeckMutation, type IPutDeckBody } from '../../api/decks';
 import { DeckOverflowMenu } from './DeckOverflowMenu';
+import { EditorVerdictRow } from './EditorVerdictRow';
 import styles from './DeckDetailHeader.module.css';
 
 interface IDeckDetailHeaderProps {
@@ -42,7 +44,7 @@ interface IDeckDetailHeaderProps {
    */
   readonly changeCount?: number;
   /**
-   * Count of cards that may be illegal in the current format (from useCascadeCheck).
+   * Count of cards the engine refuses in the draft.
    * Used to check before Save. 0 = no warning. N > 5 = SaveCascadeConfirmModal.
    */
   readonly cascadeCheckCount?: number;
@@ -59,6 +61,22 @@ interface IDeckDetailHeaderProps {
    * nav-away → Discard). Route clears localStorage + exits Edit.
    */
   readonly onConfirmDiscard?: (() => void) | undefined;
+  /**
+   * The editor's verdict row: the engine's verdict on the draft and what "Compartilhar" needs.
+   * Rendered in edit mode only.
+   */
+  readonly editor?:
+    | {
+        readonly format: string;
+        readonly legality: IDeckLegalityResult | null;
+        readonly missingCount: number;
+      }
+    | undefined;
+  /**
+   * True for a deck created in this visit that has no cards: Cancel then drops the deck and goes
+   * back to where the player came from, instead of leaving an empty deck behind.
+   */
+  readonly discardOnCancel?: boolean;
   /**
    * Ref pointing to the Edit-toggle button; passed to DraftRestoreModal
    * so focus returns there after restore/discard.
@@ -102,11 +120,15 @@ export function DeckDetailHeader({
   saveDraftPayload,
   onSaveSuccess,
   onConfirmDiscard,
+  editor,
+  discardOnCancel = false,
   editButtonRef,
 }: IDeckDetailHeaderProps): React.ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const router = useRouter();
   const putMutation = usePutDeckMutation(deckId);
+  const discardMutation = useDiscardDeckMutation(deckId);
 
   // Always create a fallback ref; use the provided one if available.
   const _fallbackEditBtnRef = React.useRef<HTMLButtonElement | null>(null);
@@ -157,10 +179,16 @@ export function DeckDetailHeader({
 
   // ---- Cancel flow ----
 
+  function discardNewDeckAndGoBack(): void {
+    discardMutation.mutate(undefined, { onSettled: () => router.history.back() });
+  }
+
   function handleCancelClick(): void {
     if (isSaving) return;
     if (isDirty) {
       setDiscardOpen(true);
+    } else if (discardOnCancel) {
+      discardNewDeckAndGoBack();
     } else {
       // Clean — exit immediately without confirm.
       void navigate({ to: '/decks/$deckId', params: { deckId: String(deckId) }, search: { edit: undefined } });
@@ -174,6 +202,7 @@ export function DeckDetailHeader({
   function handleConfirmDiscard(): void {
     setDiscardOpen(false);
     onConfirmDiscard?.();
+    if (discardOnCancel) discardNewDeckAndGoBack();
   }
 
   return (
@@ -247,6 +276,17 @@ export function DeckDetailHeader({
               <DeckOverflowMenu deckId={deckId} deckName={deckName} />
             </div>
           </div>
+
+          {mode === 'edit' && editor !== undefined && (
+            <EditorVerdictRow
+              deckId={deckId}
+              deckName={deckName}
+              format={editor.format}
+              status={status}
+              legality={editor.legality}
+              missingCount={editor.missingCount}
+            />
+          )}
 
           {/* Tags row below the name */}
           <TagChipRow deckId={deckId} tags={tags} />

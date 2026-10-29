@@ -26,6 +26,18 @@ function makeCard(overrides: Partial<ICatalogCard> = {}): ICatalogCard {
 }
 
 describe('composeRationale', () => {
+  it('says the pitch differs, and names no class that is not shared', () => {
+    const missing = makeCard({ pitch: 1, classes: [Class.Generic] });
+    const substitute = makeCard({ pitch: 3, classes: [Class.Generic] });
+
+    const result = composeRationale(missing, substitute);
+
+    expect(result).toContain('Different pitch: blue instead of red');
+    expect(result).not.toContain('Same pitch');
+    expect(result).not.toContain('Generic class');
+    expect(result).toContain('generic card');
+  });
+
   it('produces correct string with shared keywords, same power and defense', () => {
     const missing = makeCard({
       cardIdentifier: 'missing-red',
@@ -138,11 +150,66 @@ describe('describeRationale', () => {
     expect(describeRationale(missing, substitute, 2)).toEqual({
       tier: 2,
       pitch: 'yellow',
+      pitchRelation: { relation: 'same', pitch: 'yellow' },
+      originalClasses: [Class.Brute, Class.Warrior],
+      candidateGeneric: false,
       sharedClasses: [Class.Brute],
       powerDelta: 1,
       defenseDelta: -1,
       sharedKeywords: [Keyword.GoAgain],
     });
+  });
+
+  it.each([
+    ['same pitch red', { pitch: 1 }, { pitch: 1 }, { relation: 'same', pitch: 'red' }],
+    ['a blue candidate for a red original', { pitch: 1 }, { pitch: 3 }, { relation: 'different', original: 'red', candidate: 'blue' }],
+    ['a yellow candidate for a blue original', { pitch: 3 }, { pitch: 2 }, { relation: 'different', original: 'blue', candidate: 'yellow' }],
+  ])('states the real relation between the two cards: pitch, %s', (_label, originalOverrides, candidateOverrides, expected) => {
+    const original = makeCard(originalOverrides);
+    const candidate = makeCard(candidateOverrides);
+
+    expect(describeRationale(original, candidate).pitchRelation).toEqual(expected);
+  });
+
+  it('states the real relation between the two cards: a shared Brute class', () => {
+    const original = makeCard({ classes: [Class.Brute] });
+    const candidate = makeCard({ classes: [Class.Brute, Class.Warrior] });
+
+    const detail = describeRationale(original, candidate);
+
+    expect(detail.sharedClasses).toEqual([Class.Brute]);
+    expect(detail.candidateGeneric).toBe(false);
+  });
+
+  it('states the real relation between the two cards: a Generic candidate shares no class with a Generic original', () => {
+    const original = makeCard({ classes: [Class.Generic] });
+    const candidate = makeCard({ classes: [Class.Generic] });
+
+    const detail = describeRationale(original, candidate);
+
+    expect(detail.candidateGeneric).toBe(true);
+    expect(detail.sharedClasses).toEqual([]);
+  });
+
+  it('states the real relation between the two cards: a Generic candidate for a classed original', () => {
+    const original = makeCard({ classes: [Class.Brute] });
+    const candidate = makeCard({ classes: [Class.Generic] });
+
+    const detail = describeRationale(original, candidate);
+
+    expect(detail.candidateGeneric).toBe(true);
+    expect(detail.sharedClasses).toEqual([]);
+    expect(detail.originalClasses).toEqual([Class.Brute]);
+  });
+
+  it('states the real relation between the two cards: a classed original and a candidate with no shared class', () => {
+    const original = makeCard({ classes: [Class.Brute] });
+    const candidate = makeCard({ classes: [Class.Warrior] });
+
+    const detail = describeRationale(original, candidate);
+
+    expect(detail.sharedClasses).toEqual([]);
+    expect(detail.candidateGeneric).toBe(false);
   });
 
   it('reports a colorless pitch and empty overlaps when nothing is shared', () => {

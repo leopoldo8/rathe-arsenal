@@ -4,14 +4,15 @@ import { CardListLineEntity } from '../../database/entities/card-list-line.entit
 import { CardListEntity } from '../../database/entities/card-list.entity';
 import { ListAccess, IListWriteContext } from '../list-access.service';
 import { ListLinesService } from '../list-lines.service';
-import { printingsOfCard } from '../printing-key';
+import { printingsOfCard, printingVersion } from '../printing-key';
 import { PriceSuggestionService } from '../../prices/price-suggestion.service';
 
 const CARD = 'fallen-herald-yellow';
-const PRINTING_KEY = printingsOfCard(CARD)?.[0]?.key ?? '';
+const [FIRST_PRINTING] = printingsOfCard(CARD) ?? [];
+const OWN_VERSION = printingVersion(FIRST_PRINTING!);
 
 function line(overrides: Partial<CardListLineEntity>): CardListLineEntity {
-  return { id: 1, listId: 1, cardIdentifier: CARD, quantity: 1, printing: null, condition: null, priceCents: null, soldAt: null, ...overrides } as CardListLineEntity;
+  return { id: 1, listId: 1, cardIdentifier: CARD, quantity: 1, printingCode: '', edition: '', finish: '', condition: null, priceCents: null, soldAt: null, ...overrides } as CardListLineEntity;
 }
 
 describe('ListLinesService', () => {
@@ -57,7 +58,7 @@ describe('ListLinesService', () => {
     expect(result.created).toBe(true);
     expect(manager.insert).toHaveBeenCalledWith(
       CardListLineEntity,
-      expect.objectContaining({ listId: 1, quantity: 2, printing: null, condition: null, priceCents: null }),
+      expect.objectContaining({ listId: 1, quantity: 2, printingCode: '', edition: '', finish: '', condition: null, priceCents: null }),
     );
   });
 
@@ -75,10 +76,10 @@ describe('ListLinesService', () => {
     openList('sell');
     manager.find.mockResolvedValue([]);
 
-    await expect(service.add('u', 1, { cardIdentifier: CARD, quantity: 1, printing: 'NOPE999' })).rejects.toMatchObject({
+    await expect(service.add('u', 1, { cardIdentifier: CARD, quantity: 1, printingCode: 'NOPE999' })).rejects.toMatchObject({
       response: { code: 'UNKNOWN_PRINTING' },
     });
-    await expect(service.add('u', 1, { cardIdentifier: CARD, quantity: 1, printing: PRINTING_KEY })).resolves.toMatchObject({
+    await expect(service.add('u', 1, { cardIdentifier: CARD, quantity: 1, ...OWN_VERSION })).resolves.toMatchObject({
       created: true,
     });
   });

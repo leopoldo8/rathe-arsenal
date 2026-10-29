@@ -1,43 +1,30 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { FirstMessageError, useChatConversationsQuery, useStartConversation } from '../../../api/chat';
-import { localizeApiError } from '../../card-scanner/localize-api-error';
+import { useChatConversationsQuery } from '../../../api/chat';
+import type { IDeckLegality } from '../../../api/decks';
 import { TutorMark } from '../../chat/TutorMark';
+import { useAskTutor } from '../../chat/useAskTutor';
+import { firstTutorQuestion } from './tutorTileQuestion';
 import styles from './DeckTutorTile.module.css';
 
 interface IDeckTutorTileProps {
   readonly deckId: number;
   readonly heroName: string;
+  /** The deck's verdict; with it the first question follows the deck's state. */
+  readonly legality?: Pick<IDeckLegality, 'details'> | null | undefined;
+  readonly format?: string;
 }
 
-export function DeckTutorTile({ deckId, heroName }: IDeckTutorTileProps): React.ReactElement {
+export function DeckTutorTile({ deckId, heroName, legality, format }: IDeckTutorTileProps): React.ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const conversations = useChatConversationsQuery();
-  const start = useStartConversation();
-  const [error, setError] = useState<string | null>(null);
+  const { ask, pending, error } = useAskTutor(deckId);
   const bound = (conversations.data ?? [])
     .filter((conversation) => conversation.trackedDeckId === deckId)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  const questions = [t('chat.tile.readyHero', { hero: heroName }), t('chat.tile.readySwap'), t('chat.tile.readyMissing')];
-
-  function ask(text: string): void {
-    setError(null);
-    start.mutate(
-      { text, trackedDeckId: deckId },
-      {
-        onSuccess: ({ id }) => void navigate({ to: '/chat/$conversationId', params: { conversationId: id } }),
-        onError: (cause) => {
-          if (cause instanceof FirstMessageError) {
-            void navigate({ to: '/chat/$conversationId', params: { conversationId: cause.conversationId } });
-            return;
-          }
-          setError(localizeApiError(cause, t));
-        },
-      },
-    );
-  }
+  const questions = [firstTutorQuestion({ legality, format, heroName, t }), t('chat.tile.readySwap'), t('chat.tile.readyMissing')];
 
   return (
     <li className={styles.tile} data-testid="tutor-tile">
@@ -48,7 +35,7 @@ export function DeckTutorTile({ deckId, heroName }: IDeckTutorTileProps): React.
       <ul className={styles.questions}>
         {questions.map((question) => (
           <li key={question}>
-            <button type="button" className={styles.question} disabled={start.isPending} onClick={() => ask(question)} data-testid="tile-question">
+            <button type="button" className={styles.question} disabled={pending} onClick={() => ask(question)} data-testid="tile-question">
               {question}
             </button>
           </li>

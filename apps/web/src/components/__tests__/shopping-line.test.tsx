@@ -33,6 +33,7 @@ const TWO_HOURS_AGO = new Date(NOW_MS - 2 * 60 * 60 * 1000).toISOString();
 const BASE_LINE = {
   cardIdentifier: 'rhinar-brute-of-brokenbone',
   cardName: 'Rhinar, Brute of Brokenbone',
+  pitch: null,
   quantityNeeded: 1,
   quantityAvailable: 1,
   unitPriceCents: 4990,
@@ -43,6 +44,7 @@ const BASE_LINE = {
 const UNAVAILABLE_LINE = {
   cardIdentifier: 'pummel',
   cardName: 'Pummel',
+  pitch: null,
   quantityNeeded: 3,
   quantityAvailable: 0,
   unitPriceCents: null,

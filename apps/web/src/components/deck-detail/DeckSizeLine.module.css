@@ -1,0 +1,7 @@
+.line {
+  margin: var(--ra-space-3) 0 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+}

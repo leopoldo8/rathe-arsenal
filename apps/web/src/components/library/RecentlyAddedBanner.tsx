@@ -25,19 +25,17 @@ export function RecentlyAddedBanner(): React.ReactElement | null {
   if (!payload) return null;
 
   const count = payload.cardCount;
-  const verb =
+  const sentence =
     payload.kind === 'fabrary'
-      ? t('library.bannerVerbFabrary', { count })
+      ? `${t('library.bannerImported', { count })} ${t('library.bannerViaFabrary')}`
       : payload.kind === 'csv'
-        ? t('library.bannerVerbCsv', { count })
-        : t('library.bannerVerbAdded', { count });
+        ? `${t('library.bannerImported', { count })} ${t('library.bannerViaCsv')}`
+        : t('library.bannerAdded', { count });
 
   return (
     <aside className={styles.banner} role="status" aria-live="polite">
       <p className={styles.body}>
-        <span className={styles.count}>{payload.cardCount}</span>{' '}
-        {payload.cardCount === 1 ? t('library.bannerCardSingular') : t('library.bannerCardPlural')} {verb} {t('library.bannerAs')}{' '}
-        <em>{payload.label}</em>.
+        {sentence} {t('library.bannerAs')} <em>{payload.label}</em>.
       </p>
       <button
         type="button"

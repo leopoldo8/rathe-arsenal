@@ -17,10 +17,10 @@ describe('alternatives ordered by the latest recommendation run (e2e)', () => {
   });
 
   it('a done run reorders a group without changing it', async () => {
-    const { jwt, deckId } = await fixture.scenario();
+    const { sessionToken, deckId } = await fixture.scenario();
     await fixture.clearRuns(deckId);
     const list = async (): Promise<IGroup[]> =>
-      (await fixture.get(`/api/decks/${deckId}/alternatives`, jwt).query({ cardIdentifier: EMISSARY, slot: 'mainboard' }).expect(200)).body.groups;
+      (await fixture.get(`/api/decks/${deckId}/alternatives`, sessionToken).query({ cardIdentifier: EMISSARY, slot: 'mainboard' }).expect(200)).body.groups;
 
     const before = await list();
     const group = before[0]!;

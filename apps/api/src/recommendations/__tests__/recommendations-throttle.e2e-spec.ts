@@ -27,11 +27,11 @@ describe('recommendation routes under the throttler (e2e)', () => {
       const owner = await fixture.scenario();
       const base = `/api/decks/${owner.deckId}/recommendations`;
       const routes: ReadonlyArray<readonly [string, () => PromiseLike<{ status: number }>]> = [
-        ['read', () => fixture.get(base, owner.jwt)],
-        ['dismiss', () => fixture.post(`${base}/dismissals`, owner.jwt).send({ cardIdentifier: 'not-a-card' })],
-        ['undismiss', () => fixture.del(`${base}/dismissals/adrenaline-rush-red`, owner.jwt)],
-        ['adopt', () => fixture.post(`${base}/${RANDOM_UUID}/adopt`, owner.jwt).send({ cutCardIdentifier: FLEX, cutSlot: 'mainboard' })],
-        ['deck list', () => fixture.get('/api/decks', owner.jwt)],
+        ['read', () => fixture.get(base, owner.sessionToken)],
+        ['dismiss', () => fixture.post(`${base}/dismissals`, owner.sessionToken).send({ cardIdentifier: 'not-a-card' })],
+        ['undismiss', () => fixture.del(`${base}/dismissals/adrenaline-rush-red`, owner.sessionToken)],
+        ['adopt', () => fixture.post(`${base}/${RANDOM_UUID}/adopt`, owner.sessionToken).send({ cutCardIdentifier: FLEX, cutSlot: 'mainboard' })],
+        ['deck list', () => fixture.get('/api/decks', owner.sessionToken)],
       ];
 
       for (const [label, send] of routes) {
@@ -47,7 +47,7 @@ describe('recommendation routes under the throttler (e2e)', () => {
     const owner = await fixture.scenario();
 
     const statuses = await statusesOf(
-      () => fixture.post(`/api/decks/${owner.deckId}/recommendations/runs`, owner.jwt),
+      () => fixture.post(`/api/decks/${owner.deckId}/recommendations/runs`, owner.sessionToken),
       GENERATE_LIMIT_PER_MINUTE + 1,
     );
 

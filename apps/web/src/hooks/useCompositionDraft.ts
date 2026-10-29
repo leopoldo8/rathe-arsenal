@@ -18,6 +18,7 @@ import {
   type TCompositionDraftPayload,
 } from './useCompositionDraft.schema';
 import type { ISearchCardResult } from '../api/catalog';
+import type { ICardLegalityExtraFacts, ICardLegalityOverride } from '../api/card-legality-facts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,10 +26,16 @@ import type { ISearchCardResult } from '../api/catalog';
 
 export type TDraftSlot = 'mainboard' | 'hero' | 'weapon' | 'equipment' | 'other';
 
-export interface IDraftCard {
+/** The two places a copy of a card sits: the starting deck or the inventory. */
+export type TCopySide = 'deck' | 'inventory';
+
+export interface IDraftCard extends ICardLegalityExtraFacts {
   readonly cardIdentifier: string;
   readonly name: string;
+  /** Copies in the starting deck. */
   readonly quantity: number;
+  /** Copies carried outside the starting deck (door 3); absent means none. A row may hold only these. */
+  readonly inventoryQuantity?: number;
   /** The slot this card occupies in the deck. */
   readonly slot: TDraftSlot;
   readonly pitch: number | null;
@@ -67,6 +74,9 @@ export interface ICompositionDraftResult {
    */
   readonly addCard: (card: ISearchCardResult) => void;
   readonly updateQuantity: (cardIdentifier: string, slot: TDraftSlot, quantity: number) => void;
+  readonly updateInventoryQuantity: (cardIdentifier: string, slot: TDraftSlot, quantity: number) => void;
+  /** Moves `count` copies (at most what the source side holds) from one side of a row to the other. */
+  readonly moveCopies: (cardIdentifier: string, slot: TDraftSlot, from: TCopySide, count: number) => void;
   readonly removeCard: (cardIdentifier: string, slot: TDraftSlot) => void;
   readonly removeIllegalCards: (illegalCardIds: ReadonlySet<string>) => void;
   /** True when the current draft differs from the initial payload. */
@@ -103,6 +113,7 @@ export interface ICompositionDraftInitialPayload {
     readonly cardIdentifier: string;
     readonly name: string;
     readonly quantity: number;
+    readonly inventoryQuantity?: number;
     readonly slot: string;
     readonly pitch: number | null;
     readonly cost: number | null;
@@ -115,6 +126,10 @@ export interface ICompositionDraftInitialPayload {
     readonly legalFormats?: readonly string[];
     readonly legalHeroes?: readonly string[];
     readonly bannedFormats?: readonly string[];
+    readonly restrictedFormats?: readonly string[];
+    readonly legalOverrides?: readonly ICardLegalityOverride[];
+    readonly specializations?: readonly string[];
+    readonly legendary?: boolean;
   }>;
   readonly heroIdentifier: string | null;
   readonly format: string;
@@ -129,12 +144,36 @@ type TDraftAction =
   | { readonly type: 'SET_FORMAT'; readonly format: string }
   | { readonly type: 'ADD_CARD'; readonly card: IDraftCard }
   | { readonly type: 'UPDATE_QUANTITY'; readonly cardIdentifier: string; readonly slot: TDraftSlot; readonly quantity: number }
+  | { readonly type: 'UPDATE_INVENTORY'; readonly cardIdentifier: string; readonly slot: TDraftSlot; readonly quantity: number }
+  | { readonly type: 'MOVE_COPIES'; readonly cardIdentifier: string; readonly slot: TDraftSlot; readonly from: TCopySide; readonly count: number }
   | { readonly type: 'REMOVE_CARD'; readonly cardIdentifier: string; readonly slot: TDraftSlot }
   | { readonly type: 'REMOVE_ILLEGAL'; readonly illegalCardIds: ReadonlySet<string> }
-  | { readonly type: 'RESET'; readonly initial: ICompositionDraft }
+  | { readonly type: 'RESET' }
   | { readonly type: 'APPLY_DRAFT'; readonly payload: ICompositionDraft };
 
-function draftReducer(state: ICompositionDraft, action: TDraftAction): ICompositionDraft {
+type TEditAction = Exclude<TDraftAction, { readonly type: 'RESET' | 'APPLY_DRAFT' }>;
+
+/** Copies of a row carried outside the starting deck. */
+export function inventoryOf(card: { readonly inventoryQuantity?: number }): number {
+  return card.inventoryQuantity ?? 0;
+}
+
+/**
+ * Applies `change` to the row of one card and slot; a row left with no copy on either side goes, a
+ * row with only inventory copies stays.
+ */
+function withCopies(
+  state: ICompositionDraft,
+  target: { readonly cardIdentifier: string; readonly slot: TDraftSlot },
+  change: (card: IDraftCard) => IDraftCard,
+): ICompositionDraft {
+  const cards = state.cards
+    .map((card) => (card.cardIdentifier === target.cardIdentifier && card.slot === target.slot ? change(card) : card))
+    .filter((card) => card.quantity + inventoryOf(card) > 0);
+  return { ...state, cards };
+}
+
+function draftReducer(state: ICompositionDraft, action: TEditAction): ICompositionDraft {
   switch (action.type) {
     case 'SET_HERO':
       return { ...state, heroIdentifier: action.heroIdentifier };
@@ -156,25 +195,21 @@ function draftReducer(state: ICompositionDraft, action: TDraftAction): IComposit
       return { ...state, cards: [...state.cards, action.card] };
     }
 
-    case 'UPDATE_QUANTITY': {
-      if (action.quantity <= 0) {
-        // quantity reaches 0 → auto-remove row
-        return {
-          ...state,
-          cards: state.cards.filter(
-            (c) => !(c.cardIdentifier === action.cardIdentifier && c.slot === action.slot),
-          ),
-        };
-      }
-      return {
-        ...state,
-        cards: state.cards.map((c) =>
-          c.cardIdentifier === action.cardIdentifier && c.slot === action.slot
-            ? { ...c, quantity: action.quantity }
-            : c,
-        ),
-      };
-    }
+    case 'UPDATE_QUANTITY':
+      return withCopies(state, action, (card) => ({ ...card, quantity: Math.max(0, action.quantity) }));
+
+    case 'UPDATE_INVENTORY':
+      return withCopies(state, action, (card) => ({ ...card, inventoryQuantity: Math.max(0, action.quantity) }));
+
+    case 'MOVE_COPIES':
+      return withCopies(state, action, (card) => {
+        const deck = card.quantity;
+        const inventory = inventoryOf(card);
+        const moved = Math.max(0, Math.min(action.count, action.from === 'deck' ? deck : inventory));
+        return action.from === 'deck'
+          ? { ...card, quantity: deck - moved, inventoryQuantity: inventory + moved }
+          : { ...card, quantity: deck + moved, inventoryQuantity: inventory - moved };
+      });
 
     case 'REMOVE_CARD':
       return {
@@ -189,12 +224,6 @@ function draftReducer(state: ICompositionDraft, action: TDraftAction): IComposit
         ...state,
         cards: state.cards.filter((c) => !action.illegalCardIds.has(c.cardIdentifier)),
       };
-
-    case 'RESET':
-      return action.initial;
-
-    case 'APPLY_DRAFT':
-      return action.payload;
 
     default:
       return state;
@@ -247,21 +276,54 @@ export function inferSlotFromCardTypes(
   return 'mainboard';
 }
 
-function buildInitialDraft(payload: ICompositionDraftInitialPayload): ICompositionDraft {
+function extraFactsOf(card: ICardLegalityExtraFacts): ICardLegalityExtraFacts {
   return {
-    cards: payload.cards.map((c) => ({
-      cardIdentifier: c.cardIdentifier,
-      name: c.name,
-      quantity: c.quantity,
-      slot: normaliseDraftSlot(c.slot),
-      pitch: c.pitch,
-      cost: c.cost,
-      type: c.type,
-      imageUrl: c.imageUrl,
-      legalFormats: c.legalFormats ?? [],
-      legalHeroes: c.legalHeroes ?? [],
-      bannedFormats: c.bannedFormats ?? [],
-    })),
+    ...(card.restrictedFormats === undefined ? {} : { restrictedFormats: card.restrictedFormats }),
+    ...(card.legalOverrides === undefined ? {} : { legalOverrides: card.legalOverrides }),
+    ...(card.specializations === undefined ? {} : { specializations: card.specializations }),
+    ...(card.legendary === undefined ? {} : { legendary: card.legendary }),
+  };
+}
+
+/**
+ * One draft row per card and slot. A partly owned card arrives as two entries (the copies owned and
+ * the copies missing), and the editor works on the card's total.
+ */
+function buildInitialDraft(payload: ICompositionDraftInitialPayload): ICompositionDraft {
+  const rows = new Map<string, IDraftCard>();
+  for (const c of payload.cards) {
+    const slot = normaliseDraftSlot(c.slot);
+    const key = `${c.cardIdentifier}::${slot}`;
+    const existing = rows.get(key);
+    const inventoryQuantity = c.inventoryQuantity ?? 0;
+    if (c.quantity + inventoryQuantity <= 0) continue;
+    rows.set(
+      key,
+      existing === undefined
+        ? {
+            cardIdentifier: c.cardIdentifier,
+            name: c.name,
+            quantity: c.quantity,
+            inventoryQuantity,
+            slot,
+            pitch: c.pitch,
+            cost: c.cost,
+            type: c.type,
+            imageUrl: c.imageUrl,
+            legalFormats: c.legalFormats ?? [],
+            legalHeroes: c.legalHeroes ?? [],
+            bannedFormats: c.bannedFormats ?? [],
+            ...extraFactsOf(c),
+          }
+        : {
+            ...existing,
+            quantity: existing.quantity + c.quantity,
+            inventoryQuantity: inventoryOf(existing) + inventoryQuantity,
+          },
+    );
+  }
+  return {
+    cards: [...rows.values()],
     heroIdentifier: payload.heroIdentifier,
     format: payload.format,
   };
@@ -285,13 +347,13 @@ function computeChangeCount(
 
   // Cards: build a map keyed by cardIdentifier+slot for O(n) comparison
   type TCardKey = string;
-  const initialMap = new Map<TCardKey, number>();
+  const initialMap = new Map<TCardKey, string>();
   for (const c of initial.cards) {
-    initialMap.set(`${c.cardIdentifier}::${c.slot}`, c.quantity);
+    initialMap.set(`${c.cardIdentifier}::${c.slot}`, `${c.quantity}+${inventoryOf(c)}`);
   }
-  const currentMap = new Map<TCardKey, number>();
+  const currentMap = new Map<TCardKey, string>();
   for (const c of current.cards) {
-    currentMap.set(`${c.cardIdentifier}::${c.slot}`, c.quantity);
+    currentMap.set(`${c.cardIdentifier}::${c.slot}`, `${c.quantity}+${inventoryOf(c)}`);
   }
 
   // Added or changed
@@ -384,6 +446,7 @@ function writeStoredDraft(deckId: string | number, draft: ICompositionDraft): vo
     cards: draft.cards.map((c) => ({
       cardIdentifier: c.cardIdentifier,
       quantity: c.quantity,
+      inventoryQuantity: inventoryOf(c),
       slot: c.slot,
     })),
   };
@@ -408,10 +471,21 @@ export function useCompositionDraft(
 ): ICompositionDraftResult {
   const initial = useMemo(() => buildInitialDraft(initialPayload), [initialPayload]);
 
-  const [draft, dispatch] = useReducer(draftReducer, initial);
+  // `null` until the player edits: the draft then is the server data itself, so new server data
+  // replaces it and a refetch never looks like an unsaved change.
+  const reducer = useCallback(
+    (state: ICompositionDraft | null, action: TDraftAction): ICompositionDraft | null => {
+      if (action.type === 'RESET') return null;
+      if (action.type === 'APPLY_DRAFT') return action.payload;
+      return draftReducer(state ?? initial, action);
+    },
+    [initial],
+  );
+  const [edited, dispatch] = useReducer(reducer, null);
+  const draft = edited ?? initial;
 
-  const isDirty = useMemo(() => isDraftDirty(initial, draft), [initial, draft]);
-  const changeCount = useMemo(() => computeChangeCount(initial, draft), [initial, draft]);
+  const isDirty = useMemo(() => edited !== null && isDraftDirty(initial, edited), [initial, edited]);
+  const changeCount = useMemo(() => (edited === null ? 0 : computeChangeCount(initial, edited)), [initial, edited]);
 
   // Debounced localStorage write — 500ms after the last change.
   // Skip when the draft is clean (matches the loaded payload). The mount-time
@@ -449,6 +523,7 @@ export function useCompositionDraft(
       legalFormats: card.legalFormats,
       legalHeroes: card.legalHeroes,
       bannedFormats: card.bannedFormats,
+      ...extraFactsOf(card),
     };
     dispatch({ type: 'ADD_CARD', card: draftCard });
   }, []);
@@ -460,6 +535,17 @@ export function useCompositionDraft(
     [],
   );
 
+  const updateInventoryQuantity = useCallback(
+    (cardIdentifier: string, slot: TDraftSlot, quantity: number) => {
+      dispatch({ type: 'UPDATE_INVENTORY', cardIdentifier, slot, quantity });
+    },
+    [],
+  );
+
+  const moveCopies = useCallback((cardIdentifier: string, slot: TDraftSlot, from: TCopySide, count: number) => {
+    dispatch({ type: 'MOVE_COPIES', cardIdentifier, slot, from, count });
+  }, []);
+
   const removeCard = useCallback((cardIdentifier: string, slot: TDraftSlot) => {
     dispatch({ type: 'REMOVE_CARD', cardIdentifier, slot });
   }, []);
@@ -469,8 +555,8 @@ export function useCompositionDraft(
   }, []);
 
   const reset = useCallback(() => {
-    dispatch({ type: 'RESET', initial });
-  }, [initial]);
+    dispatch({ type: 'RESET' });
+  }, []);
 
   const applyDraft = useCallback((payload: ICompositionDraft) => {
     dispatch({ type: 'APPLY_DRAFT', payload });
@@ -490,6 +576,8 @@ export function useCompositionDraft(
     setFormat,
     addCard,
     updateQuantity,
+    updateInventoryQuantity,
+    moveCopies,
     removeCard,
     removeIllegalCards,
     isDirty,

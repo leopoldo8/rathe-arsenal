@@ -9,7 +9,9 @@ import { VarFill } from '../deck-detail/VarFill';
 import { DeckChip } from './DeckChip';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { imageSources } from '../deck-detail/recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 import { useImageFallback } from '../../hooks/useImageFallback';
+import { copiesLeftLine, effectLine, incomingNote, swapViewOf, whyThisCard } from './swapProposalModel';
 import styles from './ProposalCard.module.css';
 
 const LISTED_CARDS = 4;
@@ -55,7 +57,7 @@ function DeckBody({ proposal }: { readonly proposal: IDeckProposal }): React.Rea
             <li key={`${card.cardIdentifier}@${card.slot}`} className={styles.cardRow} data-testid="proposal-card-row">
               <span className={styles.quantity}>{`${card.quantity}x`}</span>
               <PitchDot pitch={card.pitch} />
-              <span className={styles.cardName}>{card.name}</span>
+              <span className={styles.cardName}>{cardName(card.name, card.pitch, t)}</span>
               <span className={short === 0 ? styles.has : styles.lacks}>
                 {short === 0 ? t('chat.proposal.cardOwned') : t('chat.proposal.cardMissing', { count: short })}
               </span>
@@ -73,37 +75,44 @@ function DeckBody({ proposal }: { readonly proposal: IDeckProposal }): React.Rea
 function SwapSide({
   label,
   card,
-  note,
+  text,
   testId,
   className,
   onPreview,
 }: {
   readonly label: string;
   readonly card: ISwapProposal['display']['original' | 'replacement'];
-  readonly note: React.ReactElement;
+  readonly text: { readonly quantity: number; readonly name: string; readonly note: React.ReactNode; readonly testId: string; readonly stop: string };
   readonly testId: string;
   readonly className: string;
   readonly onPreview: () => void;
 }): React.ReactElement {
   const { t } = useTranslation();
   const { src, onError } = useImageFallback(imageSources(card.imageUrl, 'large'));
+  const displayName = cardName(card.name, card.pitch, t);
   return (
     <div className={`${styles.side} ${className}`} data-testid={testId}>
-      <span className={styles.sideLabel}>{label}</span>
       {src === null ? (
         <span className={`${styles.art} ${styles.artFallback}`} data-testid="swap-art-fallback">
-          {card.name}
+          {displayName}
         </span>
       ) : (
-        <button type="button" className={styles.art} aria-label={t('chat.proposal.previewAria', { name: card.name })} onClick={onPreview}>
-          <img className={styles.artImage} src={src} alt={card.name} onError={onError} draggable={false} />
+        <button type="button" className={styles.art} aria-label={t('chat.proposal.previewAria', { name: displayName })} onClick={onPreview}>
+          <img className={styles.artImage} src={src} alt={displayName} onError={onError} draggable={false} />
         </button>
       )}
-      <span className={styles.sideCard}>
-        <PitchDot pitch={card.pitch} />
-        <span>{card.name}</span>
-      </span>
-      {note}
+      <div className={styles.sideText} data-testid={text.testId}>
+        <span className={styles.sideLabel}>{label}</span>
+        <span className={styles.srOnly}>: </span>
+        <span className={styles.sideCard}>
+          <span className={styles.sideQuantity}>{text.quantity}</span>
+          <span className={styles.srOnly}> </span>
+          <PitchDot pitch={card.pitch} />
+          <span>{text.name}</span>
+        </span>
+        <span className={styles.srOnly}>{text.stop} </span>
+        {text.note}
+      </div>
     </div>
   );
 }
@@ -111,7 +120,10 @@ function SwapSide({
 function SwapBody({ proposal, deckName }: { readonly proposal: ISwapProposal; readonly deckName: string | null }): React.ReactElement {
   const { t } = useTranslation();
   const { original, replacement } = proposal.display;
+  const { quantity, side, effect } = swapViewOf(proposal);
   const [preview, setPreview] = useState<typeof original | typeof replacement | null>(null);
+  const why = whyThisCard(proposal.display, t);
+  const outSuffix = t(side === 'deck' ? 'chat.proposal.outDeck' : 'chat.proposal.outInventory', { count: quantity });
   return (
     <>
       {deckName !== null && proposal.trackedDeckId !== null && (
@@ -123,7 +135,13 @@ function SwapBody({ proposal, deckName }: { readonly proposal: ISwapProposal; re
         <SwapSide
           label={t('chat.proposal.out')}
           card={original}
-          note={<span className={styles.sideNote}>{t('chat.proposal.copiesInDeck', { count: original.copiesInDeck })}</span>}
+          text={{
+            quantity,
+            name: `${cardName(original.name, original.pitch, t)}${outSuffix}`,
+            note: <span className={styles.sideNote}>{copiesLeftLine(original.copiesLeft, t)}</span>,
+            testId: 'swap-out-text',
+            stop: '.',
+          }}
           testId="swap-out"
           className={styles.sideOut!}
           onPreview={() => setPreview(original)}
@@ -134,17 +152,29 @@ function SwapBody({ proposal, deckName }: { readonly proposal: ISwapProposal; re
         <SwapSide
           label={t('chat.proposal.in')}
           card={replacement}
-          note={
-            <span className={replacement.freeCopies > 0 ? styles.has : styles.lacks}>
-              {replacement.freeCopies > 0 ? t('chat.proposal.freeCopies', { count: replacement.freeCopies }) : t('chat.proposal.noFreeCopies')}
-            </span>
-          }
+          text={{
+            quantity,
+            name: `${cardName(replacement.name, replacement.pitch, t)}${t(side === 'deck' ? 'chat.proposal.inDeck' : 'chat.proposal.inInventory')}`,
+            note: <span className={replacement.freeCopies > 0 ? styles.has : styles.lacks}>{incomingNote(replacement, t)}</span>,
+            testId: 'swap-in-text',
+            stop: '',
+          }}
           testId="swap-in"
           className={styles.sideIn!}
           onPreview={() => setPreview(replacement)}
         />
       </div>
       <p className={styles.reason}>{proposal.reason}</p>
+      {why !== null && (
+        <p className={styles.why} data-testid="swap-why">
+          <strong>{t('chat.proposal.whyLabel')}</strong> {why}
+        </p>
+      )}
+      {effect !== null && (
+        <p className={styles.effect} data-testid="swap-effect">
+          {effectLine(effect, t)}
+        </p>
+      )}
       {preview !== null && preview.imageUrl !== null && (
         <CardLightbox
           imageUrl={preview.imageUrl.large}
@@ -211,12 +241,17 @@ export function ProposalCard({ conversationId, proposal }: { readonly conversati
               {t('chat.proposal.undo')}
             </Button>
           )}
+          {proposal.trackedDeckId !== null && (
+            <Link to="/decks/$deckId" params={{ deckId: String(proposal.trackedDeckId) }} search={{ edit: undefined }} className={styles.viewDeck}>
+              {t('chat.proposal.viewDeck')}
+            </Link>
+          )}
         </div>
       )}
       {proposal.status === 'pending' && (
         <div className={styles.actions}>
           <Button variant="primary" size="sm" loading={apply.isPending} disabled={busy} onClick={() => decide(apply)}>
-            {proposal.kind === 'deck' ? t('chat.proposal.apply') : t('chat.proposal.applySwap')}
+            {proposal.kind === 'deck' ? t('chat.proposal.apply') : t('chat.proposal.applySwap', { count: swapViewOf(proposal).quantity })}
           </Button>
           <Button variant="secondary" size="sm" loading={dismiss.isPending} disabled={busy} onClick={() => decide(dismiss)}>
             {t('chat.proposal.dismiss')}

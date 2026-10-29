@@ -35,12 +35,19 @@ export interface ICardListLine {
   type: string;
   imageUrl: ICardImage | null;
   quantity: number;
+  /** The version of the line (door 1); `''` is "Não sei". */
+  printingCode: string;
+  edition: '' | 'first' | 'unlimited' | 'alpha';
+  finish: '' | 'none' | 'rainbow' | 'cold' | 'gold';
+  /** The catalog printing the version points at, as a key; null while no printing code is named. */
   printing: string | null;
   printingLabel: string | null;
   condition: TCondition | null;
   priceCents: number | null;
   sold: boolean;
   suggestion: IPriceSuggestion | null;
+  /** Sell lists: the copies of the card in the player's collection, whatever the version; null on a want list. */
+  owned: number | null;
 }
 
 export interface ICardList {
@@ -56,6 +63,9 @@ export interface ICardList {
 
 export interface IListPrintingOption {
   printing: string;
+  printingCode: string;
+  edition: '' | 'first' | 'unlimited' | 'alpha';
+  finish: '' | 'none' | 'rainbow' | 'cold' | 'gold';
   label: string;
   suggestion: IPriceSuggestion | null;
 }

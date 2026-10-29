@@ -52,6 +52,8 @@ const CATALOG_CARDS: readonly ICatalogCard[] = [
   buildCatalogCard({ cardIdentifier: 'cast-bones-red', name: 'Cast Bones', pitch: 1 }),
   // Equipment: no pitch, exported without suffix.
   buildCatalogCard({ cardIdentifier: 'hide-tanner', name: 'Hide Tanner', pitch: null }),
+  // A name with a comma, which a spreadsheet may carry without quotes.
+  buildCatalogCard({ cardIdentifier: 'rhinar-reckless-rampage', name: 'Rhinar, Reckless Rampage', pitch: null }),
 ];
 
 // Raw card data used for set disambiguation (via getRawCard).
@@ -657,5 +659,115 @@ describe('computeContentHash', () => {
 
     // Assert
     expect(h1).toBe(h2);
+  });
+});
+
+describe('CsvParserService reader', () => {
+  let service: CsvParserService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [CsvParserService, { provide: CatalogService, useValue: buildCatalogService() }],
+    }).compile();
+    service = module.get<CsvParserService>(CsvParserService);
+  });
+
+  it.each([
+    ['nome,quantidade,cor', ['nome', 'quantidade', 'cor']],
+    ['cor,quantidade,nome', ['cor', 'quantidade', 'nome']],
+    ['Quantidade;Nome;Versão;Estado', ['quantidade', 'nome', 'versão', 'estado']],
+    ['qty,card name,set', ['quantidade', 'nome', 'set']],
+    ['count,name', ['quantidade', 'nome']],
+    ['name,quantity,set code', ['nome', 'quantidade', 'set']],
+  ])('reads Portuguese and English headers in any order: %s', (header, expectedColumns) => {
+    const delimiter = header.includes(';') ? ';' : ',';
+    const cellsByColumn: Record<string, string> = {
+      nome: 'Command and Conquer',
+      'card name': 'Command and Conquer',
+      name: 'Command and Conquer',
+      quantidade: '2',
+      quantity: '2',
+      qty: '2',
+      count: '2',
+      cor: 'Vermelho',
+      'versão': 'foil',
+      estado: 'NM',
+      set: 'ARC',
+      'set code': 'ARC',
+    };
+    const row = header.split(delimiter).map((name) => cellsByColumn[name.toLowerCase()] ?? '').join(delimiter);
+
+    const result = service.readText(`${header}\n${row}\n`);
+
+    expect(result.columns).toEqual(expectedColumns);
+    expect(result.lines).toHaveLength(1);
+    expect(result.lines[0]).toMatchObject({ outcome: 'ready', cardIdentifier: 'command-and-conquer', quantity: 2, lineNumber: 2 });
+  });
+
+  // The Coverage row "CSV headers (12)": every spelling the reader accepts is read on its own, not only as part of a longer header.
+  it.each([
+    ['nome', 'nome', 'nome,quantidade'],
+    ['card name', 'nome', 'card name,quantidade'],
+    ['name', 'nome', 'name,quantidade'],
+    ['quantidade', 'quantidade', 'nome,quantidade'],
+    ['quantity', 'quantidade', 'nome,quantity'],
+    ['qty', 'quantidade', 'nome,qty'],
+    ['count', 'quantidade', 'nome,count'],
+    ['cor', 'cor', 'nome,quantidade,cor'],
+    ['versão', 'versão', 'nome,quantidade,versão'],
+    ['estado', 'estado', 'nome,quantidade,estado'],
+    ['set', 'set', 'nome,quantidade,set'],
+    ['set code', 'set', 'nome,quantidade,set code'],
+  ])('reads the header spelling %s as the column %s', (_spelling, expectedColumn, header) => {
+    const cellsByColumn: Record<string, string> = {
+      nome: 'Command and Conquer',
+      'card name': 'Command and Conquer',
+      name: 'Command and Conquer',
+      quantidade: '2',
+      quantity: '2',
+      qty: '2',
+      count: '2',
+      cor: 'Vermelho',
+      'versão': 'foil',
+      estado: 'NM',
+      set: 'ARC',
+      'set code': 'ARC',
+    };
+    const row = header.split(',').map((name) => cellsByColumn[name] ?? '').join(',');
+
+    const result = service.readText(`${header}\n${row}\n`);
+
+    expect(result.columns).toContain(expectedColumn);
+    expect(result.columns).toEqual(header.split(',').map((name) => ({ 'card name': 'nome', name: 'nome', quantity: 'quantidade', qty: 'quantidade', count: 'quantidade', 'set code': 'set' } as Record<string, string>)[name] ?? name));
+    expect(result.lines[0]).toMatchObject({ outcome: 'ready', cardIdentifier: 'command-and-conquer', quantity: 2 });
+    if (expectedColumn === 'estado') expect(result.lines[0]!.version.condition).toBe('NM');
+  });
+
+  it('an unquoted comma inside a known card name is read and noted', () => {
+    const result = service.readText('name,quantity\nRhinar, Reckless Rampage,1\nRazor, Reflex,1\n');
+
+    expect(result.lines[0]).toMatchObject({ outcome: 'ready', cardIdentifier: 'rhinar-reckless-rampage', quantity: 1 });
+    expect(result.lines[0]!.notes).toEqual(['lemos "Rhinar, Reckless Rampage" certo']);
+    expect(result.lines[1]!.cardIdentifier).toBeNull();
+    expect(result.lines[1]!.notes).toEqual([]);
+  });
+
+  it('keeps the copies of a table whose rows differ only by version', () => {
+    const result = service.readText('nome,quantidade,versão,estado\nCommand and Conquer,1,,NM\nCommand and Conquer,2,,LP\n');
+
+    expect(result.lines.map((line) => [line.cardIdentifier, line.quantity, line.version.condition])).toEqual([
+      ['command-and-conquer', 1, 'NM'],
+      ['command-and-conquer', 2, 'LP'],
+    ]);
+  });
+
+  it('a row with thousands of cells is read within a small time bound', () => {
+    const hostile = `Rhinar${',a b'.repeat(30_000)}\n`;
+
+    const started = performance.now();
+    const result = service.readText(`name,quantity\n${hostile}`);
+
+    expect(performance.now() - started).toBeLessThan(200);
+    expect(result.lines).toHaveLength(1);
   });
 });

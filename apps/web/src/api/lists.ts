@@ -1,5 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../auth/useAuth';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { authFetch } from '../lib/auth-fetch';
 
 export type TListKind = 'want' | 'sell';
@@ -45,12 +44,19 @@ export interface IListLine {
   readonly type: string;
   readonly imageUrl: IListCardImage | null;
   readonly quantity: number;
+  /** The version of a sell line (door 1); `''` is "Não sei". */
+  readonly printingCode: string;
+  readonly edition: string;
+  readonly finish: string;
+  /** The catalog key the version points at; null while no printing code is named. */
   readonly printing: string | null;
   readonly printingLabel: string | null;
   readonly condition: TCondition | null;
   readonly priceCents: number | null;
   readonly sold: boolean;
   readonly suggestion: IPriceSuggestion | null;
+  /** Sell lists: the copies of the card in the collection, whatever the version; null on a want list. */
+  readonly owned?: number | null;
 }
 
 export interface ICardList {
@@ -66,6 +72,9 @@ export interface ICardList {
 
 export interface IListPrinting {
   readonly printing: string;
+  readonly printingCode: string;
+  readonly edition: string;
+  readonly finish: string;
   readonly label: string;
   readonly suggestion: IPriceSuggestion | null;
 }
@@ -83,20 +92,49 @@ export interface IPatchListBody {
   readonly priceMultiplier?: number | null;
 }
 
-export interface IAddLineBody {
+/** The three parts of a version a line names besides its condition. */
+export interface ILineVersionBody {
+  readonly printingCode?: string;
+  readonly edition?: string;
+  readonly finish?: string;
+}
+
+export const NO_LINE_VERSION: Required<ILineVersionBody> = { printingCode: '', edition: '', finish: '' };
+
+export interface IAddLineBody extends ILineVersionBody {
   readonly cardIdentifier: string;
   readonly quantity: number;
-  readonly printing?: string | null;
   readonly condition?: TCondition | null;
   readonly priceCents?: number | null;
 }
 
-export interface IPatchLineBody {
+export interface IPatchLineBody extends ILineVersionBody {
   readonly quantity?: number;
-  readonly printing?: string | null;
   readonly condition?: TCondition | null;
   readonly priceCents?: number | null;
   readonly sold?: boolean;
+}
+
+/** One copy a sale took out of the collection, with the import and version it came from. */
+export interface ISoldRemovedCopy {
+  readonly sourceId: string;
+  readonly printingCode: string;
+  readonly edition: string;
+  readonly finish: string;
+  readonly condition: string;
+  readonly quantity: number;
+}
+
+export interface ISoldResult extends ICardList {
+  /** The line the sold copies sit in; "Desfazer" puts this one back on sale. */
+  readonly soldLineId: number;
+  readonly removed: readonly ISoldRemovedCopy[];
+}
+
+export interface IMarkSoldBody {
+  readonly quantity: number;
+  readonly removeFromCollection: boolean;
+  readonly sourceId?: string;
 }
 
 export const listsQueryKey = ['lists'] as const;
@@ -107,39 +145,35 @@ export const listPrintingsQueryKey = (listId: number | string, cardIdentifier: s
 const json = (body: unknown): RequestInit => ({ body: JSON.stringify(body) });
 
 export function useListsQuery() {
-  const { token } = useAuth();
   return useQuery({
     queryKey: listsQueryKey,
-    queryFn: () => authFetch<IListSummary[]>('/lists', {}, token),
+    queryFn: () => authFetch<IListSummary[]>('/lists'),
   });
 }
 
 export function useListQuery(listId: number | string) {
-  const { token } = useAuth();
   return useQuery({
     queryKey: listQueryKey(listId),
-    queryFn: () => authFetch<ICardList>(`/lists/${listId}`, {}, token),
+    queryFn: () => authFetch<ICardList>(`/lists/${listId}`),
     retry: false,
   });
 }
 
 export function useListPrintingsQuery(listId: number | string, cardIdentifier: string | null) {
-  const { token } = useAuth();
   return useQuery({
     queryKey: listPrintingsQueryKey(listId, cardIdentifier ?? ''),
     queryFn: () =>
-      authFetch<IListPrinting[]>(`/lists/${listId}/printings/${encodeURIComponent(cardIdentifier ?? '')}`, {}, token),
+      authFetch<IListPrinting[]>(`/lists/${listId}/printings/${encodeURIComponent(cardIdentifier ?? '')}`),
     enabled: cardIdentifier !== null,
     staleTime: 60_000,
   });
 }
 
 export function useCreateListMutation() {
-  const { token } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: ICreateListBody) =>
-      authFetch<ICardList>('/lists', { method: 'POST', ...json(body) }, token),
+      authFetch<ICardList>('/lists', { method: 'POST', ...json(body) }),
     onSuccess: (list) => {
       queryClient.setQueryData<ICardList>(listQueryKey(list.id), list);
       void queryClient.invalidateQueries({ queryKey: listsQueryKey, exact: true });
@@ -148,10 +182,9 @@ export function useCreateListMutation() {
 }
 
 export function useDeleteListMutation(listId: number | string) {
-  const { token } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => authFetch<void>(`/lists/${listId}`, { method: 'DELETE' }, token),
+    mutationFn: () => authFetch<void>(`/lists/${listId}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: listQueryKey(listId) });
       void queryClient.invalidateQueries({ queryKey: listsQueryKey, exact: true });
@@ -162,12 +195,11 @@ export function useDeleteListMutation(listId: number | string) {
 /** Every list write answers with the whole list, so one response replaces the cache. */
 function useListWrite<TVariables>(
   listId: number | string,
-  request: (variables: TVariables, token: string | null) => Promise<ICardList>,
+  request: (variables: TVariables) => Promise<ICardList>,
 ) {
-  const { token } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (variables: TVariables) => request(variables, token),
+    mutationFn: (variables: TVariables) => request(variables),
     onSuccess: (list) => {
       queryClient.setQueryData<ICardList>(listQueryKey(listId), list);
       void queryClient.invalidateQueries({ queryKey: listsQueryKey, exact: true });
@@ -176,35 +208,68 @@ function useListWrite<TVariables>(
 }
 
 export function usePatchListMutation(listId: number | string) {
-  return useListWrite<IPatchListBody>(listId, (body, token) =>
-    authFetch<ICardList>(`/lists/${listId}`, { method: 'PATCH', ...json(body) }, token),
+  return useListWrite<IPatchListBody>(listId, (body) =>
+    authFetch<ICardList>(`/lists/${listId}`, { method: 'PATCH', ...json(body) }),
   );
 }
 
 export function useAddLineMutation(listId: number | string) {
-  return useListWrite<IAddLineBody>(listId, (body, token) =>
-    authFetch<ICardList>(`/lists/${listId}/lines`, { method: 'POST', ...json(body) }, token),
+  return useListWrite<IAddLineBody>(listId, (body) =>
+    authFetch<ICardList>(`/lists/${listId}/lines`, { method: 'POST', ...json(body) }),
   );
 }
 
 export function usePatchLineMutation(listId: number | string) {
-  return useListWrite<{ readonly lineId: number; readonly body: IPatchLineBody }>(listId, ({ lineId, body }, token) =>
-    authFetch<ICardList>(`/lists/${listId}/lines/${lineId}`, { method: 'PATCH', ...json(body) }, token),
+  return useListWrite<{ readonly lineId: number; readonly body: IPatchLineBody }>(listId, ({ lineId, body }) =>
+    authFetch<ICardList>(`/lists/${listId}/lines/${lineId}`, { method: 'PATCH', ...json(body) }),
   );
 }
 
 export function useApplySuggestionsMutation(listId: number | string) {
-  return useListWrite<readonly number[] | undefined>(listId, (lineIds, token) =>
+  return useListWrite<readonly number[] | undefined>(listId, (lineIds) =>
     authFetch<ICardList>(
       `/lists/${listId}/apply-suggestions`,
       { method: 'POST', ...json(lineIds === undefined ? {} : { lineIds }) },
-      token,
     ),
   );
 }
 
 export function useRemoveLineMutation(listId: number | string) {
-  return useListWrite<number>(listId, (lineId, token) =>
-    authFetch<ICardList>(`/lists/${listId}/lines/${lineId}`, { method: 'DELETE' }, token),
+  return useListWrite<number>(listId, (lineId) =>
+    authFetch<ICardList>(`/lists/${listId}/lines/${lineId}`, { method: 'DELETE' }),
   );
+}
+
+/** Marks copies of a sell line sold; the answer is the whole list plus the copies taken out of the collection. */
+export function useMarkSoldMutation(listId: number | string, lineId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: IMarkSoldBody) =>
+      authFetch<ISoldResult>(`/lists/${listId}/lines/${lineId}/sold`, { method: 'POST', ...json(body) }),
+    onSuccess: (result) => {
+      const { soldLineId: _soldLineId, removed: _removed, ...list } = result;
+      queryClient.setQueryData<ICardList>(listQueryKey(listId), list);
+      void queryClient.invalidateQueries({ queryKey: listsQueryKey, exact: true });
+      if (result.removed.length > 0) refreshCollectionReads(queryClient);
+    },
+  });
+}
+
+/** Undoes a sale: the sold line goes back on sale and the copies a removal took are put back. */
+export function useMarkUnsoldMutation(listId: number | string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ soldLineId, restore }: { readonly soldLineId: number; readonly restore: readonly ISoldRemovedCopy[] }) =>
+      authFetch<ICardList>(`/lists/${listId}/lines/${soldLineId}/unsold`, { method: 'POST', ...json({ restore }) }),
+    onSuccess: (list, { restore }) => {
+      queryClient.setQueryData<ICardList>(listQueryKey(listId), list);
+      void queryClient.invalidateQueries({ queryKey: listsQueryKey, exact: true });
+      if (restore.length > 0) refreshCollectionReads(queryClient);
+    },
+  });
+}
+
+function refreshCollectionReads(queryClient: QueryClient): void {
+  void queryClient.invalidateQueries({ queryKey: ['library'] });
+  void queryClient.invalidateQueries({ queryKey: ['spare'] });
 }

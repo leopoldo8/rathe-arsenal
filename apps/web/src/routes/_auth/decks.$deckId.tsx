@@ -1,18 +1,8 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useQueryClient } from '@tanstack/react-query';
+import React, { useRef } from 'react';
+import { createFileRoute, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import {
-  IDeckDetailResponse,
-  useDeckDetailQuery,
-  useMarkOwnedMutation,
-  deckDetailQueryKey,
-} from '../../api/deck-detail';
-import { useVariantFetchMutation } from '../../api/variant-fetch';
-import { requestOpenVariantQueueDrawer } from '../../components/variant-queue/variantQueueDrawerBus';
-import { useVariantJobsQuery } from '../../api/variant-jobs';
-import type { IVariantFetchProgress } from '../../api/shopping-line';
-import { useToast } from '../../components/ui/Toast/useToast';
+import { useAuth } from '../../auth/useAuth';
+import { IDeckDetailResponse, useDeckDetailQuery } from '../../api/deck-detail';
 import { DeckDetailSkeleton } from '../../components/deck-detail/DeckDetailSkeleton';
 import { DeckDetailEmptyState } from '../../components/deck-detail/DeckDetailEmptyState';
 import { DeckDetailLayout } from '../../components/deck-detail/DeckDetailLayout';
@@ -21,15 +11,15 @@ import { DeckDetailSidebar } from '../../components/deck-detail/DeckDetailSideba
 import { DeckDetailView } from '../../components/deck-detail/DeckDetailView';
 import { DeckCanvas } from '../../components/deck-detail/DeckCanvas';
 import { DraftRestoreModal } from '../../components/deck-detail/DraftRestoreModal';
-import { useCompositionDraft, readStoredDraft } from '../../hooks/useCompositionDraft';
-import { buildDraftInitialPayload } from './-deck-detail-draft';
-import { useCascadeCheck } from '../../hooks/useCascadeCheck';
+import { inventoryOf, useCompositionDraft, readStoredDraft } from '../../hooks/useCompositionDraft';
+import { buildDraftInitialPayload, shouldDiscardOnCancel } from './-deck-detail-draft';
+import { cascadeFromLegality, computeDraftLegality, toDeckLegality } from '../../lib/draft-legality';
+import { summariseDeck } from '../../components/deck-detail/deckDetailModel';
 import { useHeroesQuery } from '../../api/catalog';
 import { useNavigationAwayGuard } from '../../hooks/useNavigationAwayGuard';
 import { DiscardChangesConfirm } from '../../components/deck-detail/DiscardChangesConfirm';
 import { useTagsQuery, type ITagResponse } from '../../api/tags';
 import { resolveDeckTags } from '../../components/deck-edit/deckEditModel';
-import type { TVariantFetchMutationStatus } from '../../components/ShoppingLine';
 import styles from './decks.$deckId.module.css';
 import { validateDeckDetailSearch } from './-deck-detail-search';
 
@@ -43,10 +33,7 @@ function DeckDetailPage(): React.ReactElement {
   const { deckId } = Route.useParams();
   const { edit } = Route.useSearch();
   const navigate = useNavigate();
-  const { show: showToast } = useToast();
-  const queryClient = useQueryClient();
   const { t } = useTranslation();
-
   // Derive current mode from ?edit=1 search param
   const mode = edit === 1 ? 'edit' : 'view';
 
@@ -62,78 +49,8 @@ function DeckDetailPage(): React.ReactElement {
     void navigate({ to: '/decks/$deckId', params: { deckId }, search: { edit: undefined } });
   }
 
-  // pollingStartedAt tracks when variant fetch polling began (epoch ms).
-  // undefined means polling is inactive. Passed to useDeckDetailQuery to
-  // enable dynamic refetchInterval and enforce the 5-minute safety timeout.
-  const [pollingStartedAt, setPollingStartedAt] = useState<number | undefined>(
-    undefined,
-  );
-
-  const detailQuery = useDeckDetailQuery(deckId, pollingStartedAt);
+  const detailQuery = useDeckDetailQuery(deckId);
   const tagsQuery = useTagsQuery();
-  const markOwnedMutation = useMarkOwnedMutation(deckId);
-  const variantFetchMutation = useVariantFetchMutation(deckId);
-
-  // Derive this deck's variant-fetch progress from the global jobs queue.
-  // useVariantJobsQuery self-polls every 4 s while any job is active,
-  // so the deck-detail refetch loop (pollingStartedAt) is no longer the
-  // primary source of progress updates — it remains for backward compat
-  // but the jobs query drives the live progress display.
-  const variantJobsQuery = useVariantJobsQuery();
-  const variantJobsProgress: IVariantFetchProgress | undefined =
-    (() => {
-      const numericDeckId = Number(deckId);
-      const job = variantJobsQuery.data?.jobs.find(
-        (j) => j.deckId === numericDeckId,
-      );
-      if (job == null) return undefined;
-      return {
-        fetchId: job.jobId,
-        total: job.total,
-        completed: job.completed,
-        failed: job.failed,
-        inProgress: job.status === 'pending' || job.status === 'running',
-      };
-    })();
-
-  // Stable callback passed to ShoppingPanel so that it can notify the page
-  // when polling begins or ends. The page updates pollingStartedAt which
-  // flows back into useDeckDetailQuery to control refetchInterval.
-  const handlePollingChange = useCallback(
-    (startedAt: number | undefined) => {
-      setPollingStartedAt(startedAt);
-    },
-    [],
-  );
-
-  const handleFetchVariants = useCallback(() => {
-    variantFetchMutation.mutate(undefined, {
-      onSuccess: (data) => {
-        // Pop the queue drawer open the moment a job is enqueued, so the user
-        // sees live progress without hunting for the navbar icon.
-        if (data.status === 'started') requestOpenVariantQueueDrawer();
-      },
-    });
-  }, [variantFetchMutation]);
-
-  // Retry handler for ShoppingLine error state: invalidates the deck-detail
-  // query so TanStack re-fetches fresh data. Toast notification of the failure
-  // is the host's responsibility — ShoppingLine stays portal-free.
-  const handleShoppingLineRetry = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: deckDetailQueryKey(deckId) });
-    showToast({
-      kind: 'error',
-      message: t('decks.retryShoppingLineToast'),
-    });
-  }, [queryClient, deckId, showToast, t]);
-
-  const isCooldownActive =
-    variantFetchMutation.isSuccess &&
-    variantFetchMutation.data?.status === 'already_fresh';
-
-  // Cooldown from mutation: already_fresh means no new job was queued.
-  // Also derive from jobs: if no job exists for this deck, defer to mutation state.
-  // (variantJobsProgress already encodes inProgress=false when the job is done/absent)
 
   if (detailQuery.isLoading) {
     return <DeckDetailSkeleton />;
@@ -179,35 +96,16 @@ function DeckDetailPage(): React.ReactElement {
       mode={mode}
       tagsForHeader={tagsForHeader}
       snapshot={snapshot}
-      variantJobsProgress={variantJobsProgress}
       onEnterEdit={handleEnterEdit}
       onOpenMetadataEdit={handleOpenMetadataEdit}
       onExitEdit={handleExitEdit}
-      onMarkOwned={(cardIdentifier) => {
-        markOwnedMutation.mutate(cardIdentifier, {
-          onError: (err) => {
-            showToast({
-              kind: 'error',
-              message: t('decks.failedToMarkCard', { error: (err as Error).message }),
-              retry: () => markOwnedMutation.mutate(cardIdentifier),
-            });
-          },
-        });
-      }}
-      isMarkingOwned={markOwnedMutation.isPending}
-      pendingCard={markOwnedMutation.isPending ? (markOwnedMutation.variables ?? null) : null}
-      onFetchVariants={handleFetchVariants}
-      fetchMutationStatus={variantFetchMutation.status}
-      isCooldownActive={isCooldownActive}
-      onPollingChange={handlePollingChange}
-      onShoppingRetry={handleShoppingLineRetry}
     />
   );
 }
 
 // ---------------------------------------------------------------------------
 // DeckDetailPageWithData — sub-component that can safely call edit-mode hooks
-// (useCompositionDraft, useCascadeCheck) because it always renders with data.
+// (useCompositionDraft, the draft's verdict) because it always renders with data.
 // ---------------------------------------------------------------------------
 
 interface IDeckDetailPageWithDataProps {
@@ -216,29 +114,14 @@ interface IDeckDetailPageWithDataProps {
   readonly mode: 'view' | 'edit';
   readonly tagsForHeader: ITagResponse[];
   readonly snapshot: IDeckDetailResponse['latestSnapshot'];
-  /**
-   * Variant-fetch progress derived from the global jobs queue.
-   * When defined, this overrides the `variantFetchProgress` field embedded
-   * in `deck.shoppingLine` so the progress bar reflects the queue state
-   * rather than the old in-memory progress store.
-   */
-  readonly variantJobsProgress: IVariantFetchProgress | undefined;
   readonly onEnterEdit: () => void;
   readonly onOpenMetadataEdit: () => void;
   readonly onExitEdit: () => void;
-  readonly onMarkOwned: (cardIdentifier: string) => void;
-  readonly isMarkingOwned: boolean;
-  readonly pendingCard: string | null;
-  readonly onFetchVariants: () => void;
-  readonly fetchMutationStatus: string;
-  readonly isCooldownActive: boolean;
-  readonly onPollingChange: (startedAt: number | undefined) => void;
-  readonly onShoppingRetry: () => void;
 }
 
 /**
  * DeckDetailPageWithData — renders after data is confirmed loaded.
- * Calls Edit-mode hooks (useCompositionDraft, useCascadeCheck) unconditionally.
+ * Calls Edit-mode hooks (useCompositionDraft, the draft's verdict) unconditionally.
  * Mounts DraftRestoreModal + NavigationAwayGuard (U13).
  */
 function DeckDetailPageWithData({
@@ -247,20 +130,13 @@ function DeckDetailPageWithData({
   mode,
   tagsForHeader,
   snapshot,
-  variantJobsProgress,
   onEnterEdit,
   onOpenMetadataEdit,
   onExitEdit,
-  onMarkOwned,
-  isMarkingOwned,
-  pendingCard,
-  onFetchVariants,
-  fetchMutationStatus,
-  isCooldownActive,
-  onPollingChange,
-  onShoppingRetry,
 }: IDeckDetailPageWithDataProps): React.ReactElement {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const chatAccess = user?.chatAccess === true;
 
   // Ref to the Edit button for DraftRestoreModal focus return.
   const editBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -287,9 +163,26 @@ function DeckDetailPageWithData({
         : null,
     [compositionDraft.draft.heroIdentifier, heroesQuery.data],
   );
-  const draftHeroEnum = draftHeroCard?.hero ?? null;
 
-  const cascadeCheck = useCascadeCheck(compositionDraft.draft, draftHeroEnum);
+  // The verdict is the engine's own, run on the draft in the browser: what the player sees while
+  // editing is never the saved verdict.
+  const draftLegality = React.useMemo(
+    () => computeDraftLegality(compositionDraft.draft, draftHeroCard),
+    [compositionDraft.draft, draftHeroCard],
+  );
+  const cascadeCheck = React.useMemo(() => cascadeFromLegality(draftLegality), [draftLegality]);
+
+  const discardEmptyNewDeck = useRouterState({
+    select: (state) => shouldDiscardOnCancel(state.location.state, deck.totalCards),
+  });
+  const missingCount = React.useMemo(
+    () =>
+      snapshot === null
+        ? 0
+        : summariseDeck({ pct: snapshot.effectivePercent, breakdown: snapshot.breakdown, replacements: deck.replacements })
+            .missingCards,
+    [snapshot, deck.replacements],
+  );
 
   // In Edit mode the sidebar must reflect the LIVE draft hero/format, not the
   // last-saved deck values, so switching the hero updates the displayed name.
@@ -345,6 +238,7 @@ function DeckDetailPageWithData({
           cardIdentifier: sc.cardIdentifier,
           name: initial?.name ?? sc.cardIdentifier,
           quantity: sc.quantity,
+          inventoryQuantity: sc.inventoryQuantity,
           slot: sc.slot,
           pitch: initial?.pitch ?? null,
           cost: initial?.cost ?? null,
@@ -353,6 +247,10 @@ function DeckDetailPageWithData({
           legalFormats: initial?.legalFormats ?? [],
           legalHeroes: initial?.legalHeroes ?? [],
           bannedFormats: initial?.bannedFormats ?? [],
+          ...(initial?.restrictedFormats === undefined ? {} : { restrictedFormats: initial.restrictedFormats }),
+          ...(initial?.legalOverrides === undefined ? {} : { legalOverrides: initial.legalOverrides }),
+          ...(initial?.specializations === undefined ? {} : { specializations: initial.specializations }),
+          ...(initial?.legendary === undefined ? {} : { legendary: initial.legendary }),
         };
       }),
     });
@@ -402,6 +300,7 @@ function DeckDetailPageWithData({
     cards: compositionDraft.draft.cards.map((c) => ({
       cardIdentifier: c.cardIdentifier,
       quantity: c.quantity,
+      inventoryQuantity: inventoryOf(c),
       // `other` is a frontend-only fallback for unknown stored slot strings;
       // the backend enum allows only the four real deck slots.
       slot: (c.slot === 'other' ? 'mainboard' : c.slot) as
@@ -432,29 +331,8 @@ function DeckDetailPageWithData({
     // nav-away guard so it does not fire a second DiscardChangesConfirm
     // as soon as `onExitEdit` triggers the post-confirm navigation.
     navGuard.bypassNext();
-    onExitEdit();
+    if (!discardEmptyNewDeck) onExitEdit();
   }
-
-  // Build the shopping data to pass to the sidebar.
-  // When the jobs queue provides progress for this deck, inject it as the
-  // authoritative `variantFetchProgress`, overriding whatever the deck-detail
-  // API response carried (which may be stale or absent on the new queue path).
-  const rawShoppingData = deck.shoppingLine ?? null;
-  const shoppingData = React.useMemo(() => {
-    if (
-      rawShoppingData == null ||
-      rawShoppingData.kind !== 'populated' ||
-      variantJobsProgress == null
-    ) {
-      return rawShoppingData;
-    }
-    return {
-      ...rawShoppingData,
-      variantFetchProgress: variantJobsProgress,
-    };
-  }, [rawShoppingData, variantJobsProgress]);
-
-  const typedFetchStatus = fetchMutationStatus as TVariantFetchMutationStatus;
 
   return (
     <>
@@ -463,17 +341,8 @@ function DeckDetailPageWithData({
           deck={deck}
           snapshot={snapshot}
           tags={tagsForHeader}
-          shoppingData={shoppingData}
           onEdit={onOpenMetadataEdit}
           onEditCards={onEnterEdit}
-          onMarkOwned={onMarkOwned}
-          isMarkingOwned={isMarkingOwned}
-          pendingCard={pendingCard}
-          onFetchVariants={onFetchVariants}
-          fetchMutationStatus={typedFetchStatus}
-          isCooldownActive={isCooldownActive}
-          onPollingChange={onPollingChange}
-          onShoppingRetry={onShoppingRetry}
         />
       ) : (
         <DeckDetailLayout
@@ -491,6 +360,8 @@ function DeckDetailPageWithData({
               saveDraftPayload={saveDraftPayload}
               onSaveSuccess={handleSaveSuccess}
               onConfirmDiscard={handleConfirmDiscard}
+              editor={{ format: compositionDraft.draft.format, legality: draftLegality, missingCount }}
+              discardOnCancel={discardEmptyNewDeck}
               editButtonRef={editBtnRef}
             />
           }
@@ -500,14 +371,8 @@ function DeckDetailPageWithData({
               heroName={null}
               heroLegacy={sidebarHeroName}
               format={sidebarFormat}
-              legality={deck.legality}
+              legality={isEditing && draftLegality !== null ? toDeckLegality(draftLegality) : deck.legality}
               fabraryUlid={deck.fabraryUlid ?? null}
-              shoppingData={shoppingData}
-              onFetchVariants={onFetchVariants}
-              fetchMutationStatus={typedFetchStatus}
-              isCooldownActive={isCooldownActive}
-              onPollingChange={onPollingChange}
-              onShoppingRetry={onShoppingRetry}
               mode={mode}
               compositionDraft={compositionDraft.draft}
               cascadeCheck={cascadeCheck}
@@ -519,11 +384,16 @@ function DeckDetailPageWithData({
             <DeckCanvas
               compositionDraft={compositionDraft.draft}
               cascadeCheck={cascadeCheck}
+              legality={draftLegality}
+              heroName={draftHeroCard?.name ?? deck.hero}
               onAddCard={compositionDraft.addCard}
               onUpdateQuantity={compositionDraft.updateQuantity}
+              onUpdateInventoryQuantity={compositionDraft.updateInventoryQuantity}
+              onMoveCopies={compositionDraft.moveCopies}
               onRemoveCard={compositionDraft.removeCard}
               onRemoveIllegalCards={compositionDraft.removeIllegalCards}
               onSetHero={compositionDraft.setHero}
+              tutorDeckId={chatAccess ? deck.id : undefined}
             />
           }
         />

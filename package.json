@@ -19,6 +19,7 @@
     "purge:deleted-users": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/purge-deleted-users.ts",
     "share:report": "tsx scripts/share-report.ts",
     "prices:sync": "pnpm --filter @rathe-arsenal/api build && pnpm --filter @rathe-arsenal/api prices:sync",
+    "products:import": "pnpm --filter @rathe-arsenal/api build && pnpm --filter @rathe-arsenal/api products:import",
     "gold:sample": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/sample-decks.ts",
     "gold:generate": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/generate-candidates.ts",
     "gold:export": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/export-csv.ts",

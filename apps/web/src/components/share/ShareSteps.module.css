@@ -56,9 +56,9 @@
 /* ---- Intent step ---- */
 .option {
   display: flex;
-  flex-direction: column;
-  gap: var(--ra-space-1);
-  min-block-size: 96px;
+  align-items: center;
+  gap: var(--ra-space-3);
+  min-block-size: 80px;
   box-sizing: border-box;
   padding: var(--ra-space-4);
   border: 1px solid var(--ra-border-strong);
@@ -68,6 +68,34 @@
   font-family: var(--ra-font-ui);
   text-align: start;
   cursor: pointer;
+}
+
+.optionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  inline-size: 44px;
+  block-size: 44px;
+  border: 1px solid var(--ra-accent-soft-bd);
+  border-radius: var(--ra-radius-full);
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-accent-body);
+}
+
+.optionText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+  min-inline-size: 0;
+}
+
+.optionChevron {
+  flex: 0 0 auto;
+  color: var(--ra-fg-secondary);
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 .option:hover:not(:disabled) {
@@ -84,13 +112,6 @@
   cursor: not-allowed;
 }
 
-.optionHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--ra-space-2);
-}
-
 .optionTitle {
   font-size: var(--ra-text-body);
   font-weight: var(--ra-weight-semibold);
@@ -99,17 +120,6 @@
 .optionBody {
   color: var(--ra-fg-secondary);
   font-size: var(--ra-text-small);
-}
-
-.active {
-  padding: 1px var(--ra-space-2);
-  border: 1px solid var(--ra-accent-soft-bd);
-  border-radius: var(--ra-radius-full);
-  background: var(--ra-accent-soft-bg);
-  color: var(--ra-accent-body);
-  font-size: var(--ra-text-xs);
-  font-weight: var(--ra-weight-semibold);
-  white-space: nowrap;
 }
 
 /* ---- Link step ---- */
@@ -252,4 +262,52 @@
 .backGlyph {
   font-size: 1.75rem;
   line-height: 1;
+}
+
+.turnOffRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+  padding-block-start: var(--ra-space-2);
+  border-block-start: 1px solid var(--ra-border);
+}
+
+.turnOffAlone {
+  align-self: center;
+}
+
+.turnOffAsk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+}
+
+.turnOffActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ra-space-4);
+}
+
+.turnOffBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  padding: 0 var(--ra-space-2);
+  border: 0;
+  background: transparent;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  cursor: pointer;
+}
+
+.turnOffKeep {
+  color: var(--ra-accent-body);
+}
+
+.turnOffBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
 }

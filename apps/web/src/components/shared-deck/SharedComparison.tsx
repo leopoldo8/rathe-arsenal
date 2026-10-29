@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { localizeAuthError } from '../../auth/localize-auth-error';
@@ -7,9 +7,11 @@ import {
   useCopySharedDeckMutation,
   useSharedCoverageQuery,
   type ISharedDeckResponse,
+  type TCopyVariant,
 } from '../../api/shared-decks';
 import { VarFill } from '../deck-detail/VarFill';
 import { Button } from '../ui/Button/Button';
+import { SaveDeckChoice } from './SaveDeckChoice';
 import { writeShareReturn } from '../../lib/share-return';
 import styles from './SharedComparison.module.css';
 
@@ -75,21 +77,56 @@ function Invitation({ token }: { readonly token: string }): React.ReactElement {
   );
 }
 
+/** A new account on a shared deck owns nothing yet: say how to put cards in (journey 2's entries) instead of 0%. */
+function EmptyCollectionPanel(): React.ReactElement {
+  const { t } = useTranslation();
+  return (
+    <aside className={`${styles.panel} ${styles.brass}`} aria-labelledby="shared-coverage-title" data-testid="shared-coverage-empty">
+      <p id="shared-coverage-title" className={styles.eyebrow}>
+        {t('sharing.coverage.eyebrow')}
+      </p>
+      <p className={styles.copy}>{t('sharing.coverage.emptyCollection')}</p>
+      <div className={styles.actions}>
+        <Link to="/add-cards" className={styles.primaryLink}>
+          {t('sharing.coverage.pasteList')}
+        </Link>
+        <Link to="/add-cards/csv" className={styles.secondaryLink}>
+          {t('sharing.coverage.uploadSheet')}
+        </Link>
+      </div>
+    </aside>
+  );
+}
+
+function uniqueNames(names: readonly string[]): string[] {
+  return [...new Set(names)];
+}
+
 function CoveragePanel({ deck }: { readonly deck: ISharedDeckResponse }): React.ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const coverage = useSharedCoverageQuery(deck.token, true);
   const copy = useCopySharedDeckMutation(deck.token);
 
-  function handleCopy(): void {
-    copy.mutate(undefined, {
+  const [choosing, setChoosing] = useState(false);
+  const replaced = deck.cards.flatMap((card) => (card.replaces ? [{ card, original: card.replaces }] : []));
+
+  function save(variant?: TCopyVariant): void {
+    copy.mutate(variant, {
       onSuccess: ({ deckId }) => {
         void navigate({ to: '/decks/$deckId', params: { deckId: String(deckId) }, search: { edit: undefined } });
       },
     });
   }
 
+  // A deck with swaps asks which list first; one with none saves at once.
+  function handleCopy(): void {
+    if (replaced.length > 0) return setChoosing(true);
+    save();
+  }
+
   const data = coverage.data;
+  if (data?.collectionEmpty === true) return <EmptyCollectionPanel />;
   const missingCopies = data === undefined ? 0 : Math.max(0, data.totalCopies - data.ownedCopies);
 
   return (
@@ -140,10 +177,21 @@ function CoveragePanel({ deck }: { readonly deck: ISharedDeckResponse }): React.
           {t('sharing.coverage.copy')}
         </Button>
       </div>
-      {copy.isError && (
+      {copy.isError && !choosing && (
         <p className={styles.error} role="alert">
           {localizeAuthError(copy.error, t)}
         </p>
+      )}
+      {choosing && (
+        <SaveDeckChoice
+          sharerName={deck.sharerName}
+          originals={uniqueNames(replaced.map((entry) => entry.original.name))}
+          replacements={uniqueNames(replaced.map((entry) => entry.card.name))}
+          pending={copy.isPending}
+          failed={copy.isError}
+          onSave={save}
+          onClose={() => setChoosing(false)}
+        />
       )}
     </aside>
   );

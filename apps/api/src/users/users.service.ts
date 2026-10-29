@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserEntity } from '../database/entities/user.entity';
+import { TSpareRule, UserEntity } from '../database/entities/user.entity';
 import { normalizeWhatsappNumber } from './normalize-whatsapp';
 
 export interface IUserSettings {
@@ -69,9 +69,30 @@ export class UsersService {
     return { whatsappNumber: normalized };
   }
 
+  async updateShareClosingLine(userId: string, text: string): Promise<{ text: string }> {
+    const trimmed = text.trim();
+    await this.updateProfileColumn(userId, { shareClosingLine: trimmed === '' ? null : trimmed });
+    return { text: trimmed };
+  }
+
+  async updateSellClosingLine(userId: string, text: string): Promise<{ text: string }> {
+    const trimmed = text.trim();
+    await this.updateProfileColumn(userId, { sellClosingLine: trimmed === '' ? null : trimmed });
+    return { text: trimmed };
+  }
+
+  /** `firstAnswer` is true when the player had no rule yet, so the review can tell a first answer from a change. */
+  async updateSpareRule(userId: string, rule: TSpareRule): Promise<{ rule: TSpareRule }> {
+    const user = await this.users.findOne({ where: { id: userId }, select: { id: true, spareRule: true } });
+    if (!user) throw new NotFoundException('User not found');
+    await this.updateProfileColumn(userId, { spareRule: rule });
+    this.logger.log({ event: 'spare.rule.set', userId, rule, firstAnswer: user.spareRule === null });
+    return { rule };
+  }
+
   private async updateProfileColumn(
     userId: string,
-    column: Partial<Pick<UserEntity, 'displayName' | 'whatsappNumber'>>,
+    column: Partial<Pick<UserEntity, 'displayName' | 'whatsappNumber' | 'shareClosingLine' | 'sellClosingLine' | 'spareRule'>>,
   ): Promise<void> {
     const result = await this.users.update({ id: userId }, column);
     if (result.affected === 0) {

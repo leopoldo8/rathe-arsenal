@@ -39,8 +39,8 @@ export class RecommendationQueueService {
 
   /** Called inside every deck-list write's transaction; a retired deck gets no automatic run. */
   async enqueueAuto(manager: EntityManager, trackedDeckId: number): Promise<void> {
-    const deck = await manager.findOne(TrackedDeckEntity, { where: { id: trackedDeckId }, select: ['id', 'status'] });
-    if (!deck || deck.status === 'retired') return;
+    const deck = await manager.findOne(TrackedDeckEntity, { where: { id: trackedDeckId }, select: ['id', 'status', 'deletedAt'] });
+    if (!deck || deck.deletedAt !== null || deck.status === 'retired') return;
     await this.upsertPending(manager, trackedDeckId, 'auto');
     this.logger.log({ event: 'recommendations.enqueued', trackedDeckId, trigger: 'auto' });
   }
@@ -87,6 +87,7 @@ export class RecommendationQueueService {
         WHERE id = (
           SELECT r.id FROM recommendation_run r
            WHERE r."status" = 'pending' AND r."runAfter" <= clock_timestamp()
+             AND EXISTS (SELECT 1 FROM tracked_deck d WHERE d.id = r."trackedDeckId" AND d."deletedAt" IS NULL)
              AND NOT EXISTS (
                SELECT 1 FROM recommendation_run x WHERE x."trackedDeckId" = r."trackedDeckId" AND x."status" = 'running'
              )

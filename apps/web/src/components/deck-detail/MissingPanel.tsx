@@ -3,9 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { IBreakdownEntry, ISubstitutedEntry } from '../../api/deck-detail';
 import type { IAlternativesTarget, IDeckReplacement } from '../../api/replacements';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
-import type { TVariantFetchMutationStatus } from '../ShoppingLine';
-import { useVariantFetchPolling } from '../useVariantFetchPolling';
-import { withPitch } from './recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 import { MarkOwnedButton } from './MarkOwnedButton';
 import { MissingRowBuy, MissingRowStoreMeta, MissingRowVariants } from './MissingRowStore';
 import { MissingStoreSummary } from './MissingStoreSummary';
@@ -13,8 +11,9 @@ import { ReplacementMark } from './ReplacementMark';
 import { SuggestionUseButton } from './SuggestionUseButton';
 import { entryKey } from './deckDetailModel';
 import { resolveRowStore } from './missingStoreModel';
-import { MISSING_PANEL_ID } from './DeckStatusStrip';
 import styles from './MissingPanel.module.css';
+
+export const MISSING_PANEL_ID = 'deck-missing-panel';
 
 interface IMissingPanelProps {
   readonly entries: readonly IBreakdownEntry[];
@@ -22,10 +21,6 @@ interface IMissingPanelProps {
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
   readonly pendingCard: string | null;
-  readonly onFetchVariants: () => void;
-  readonly fetchMutationStatus: TVariantFetchMutationStatus;
-  readonly isCooldownActive: boolean;
-  readonly onPollingChange: (startedAt: number | undefined) => void;
   readonly onShoppingRetry: () => void;
   /** Active replacements of the deck; a row for a replacement's own copies is marked and offers no alternatives. */
   readonly replacements?: readonly IDeckReplacement[];
@@ -56,10 +51,6 @@ export function MissingPanel({
   onMarkOwned,
   isMarkingOwned,
   pendingCard,
-  onFetchVariants,
-  fetchMutationStatus,
-  isCooldownActive,
-  onPollingChange,
   onShoppingRetry,
   replacements = [],
   onOpenAlternatives,
@@ -69,8 +60,6 @@ export function MissingPanel({
 }: IMissingPanelProps): React.ReactElement {
   const { t } = useTranslation();
   const populated = shoppingData?.kind === 'populated' ? shoppingData : null;
-  const isFetching = useVariantFetchPolling(populated?.variantFetchProgress, onPollingChange);
-  const cardStatus = populated?.variantFetchProgress?.cards;
   // Same test the rows use, so the number matches the rows marked as not in the store.
   const unavailableCopies = entries.reduce(
     (sum, entry) => (resolveRowStore(shoppingData, entry.cardIdentifier).kind === 'unavailable' ? sum + entry.quantity : sum),
@@ -88,13 +77,7 @@ export function MissingPanel({
         {t('deckDetail.missingTitle')}
       </h2>
       {populated !== null && (
-        <MissingStoreSummary
-          data={populated}
-          isFetching={isFetching}
-          onFetchVariants={onFetchVariants}
-          fetchMutationStatus={fetchMutationStatus}
-          isCooldownActive={isCooldownActive}
-        />
+        <MissingStoreSummary data={populated} />
       )}
       {onShareMissing !== undefined && populated !== null && unavailableCopies > 0 && (
         <div className={styles.shareCallout} data-testid="missing-share-callout">
@@ -118,6 +101,7 @@ export function MissingPanel({
         <ul className={styles.list}>
           {entries.map((entry) => {
             const store = resolveRowStore(shoppingData, entry.cardIdentifier);
+            const displayName = cardName(entry.name, entry.pitch, t);
             const held = replacements.filter(
               (replacement) =>
                 replacement.replacementCardIdentifier === entry.cardIdentifier && replacement.slot === entry.slot,
@@ -132,12 +116,12 @@ export function MissingPanel({
               <li key={entryKey(entry)} className={styles.row} data-testid="missing-row">
                 <span className={`${styles.pitchBar} ${pitchClass(entry.pitch)}`} aria-hidden="true" />
                 <div className={styles.body}>
-                  <span className={styles.name}>{entry.name}</span>
+                  <span className={styles.name}>{displayName}</span>
                   {held[0] !== undefined && <ReplacementMark replacement={held[0]} />}
                   {suggestion !== undefined && (
                     <span className={styles.suggestion} data-testid="missing-row-suggestion">
                       <span className={styles.suggestionName}>
-                        {withPitch(suggestion.match.substitute.name, suggestion.match.substitute.pitch, t)}
+                        {cardName(suggestion.match.substitute.name, suggestion.match.substitute.pitch, t)}
                       </span>
                       <span>{t('deckDetail.suggestionFrom')}</span>
                     </span>
@@ -150,14 +134,12 @@ export function MissingPanel({
                     <MissingRowStoreMeta
                       store={store}
                       storeName={populated?.storeName ?? ''}
-                      cardName={entry.name}
-                      fetchStatus={cardStatus?.[entry.cardIdentifier]}
                     />
                   </span>
                 </div>
                 <span className={styles.qty}>{t('deckDetail.missingCopies', { count: entry.quantity })}</span>
                 <span className={styles.action}>
-                  <MissingRowBuy store={store} cardName={entry.name} />
+                  <MissingRowBuy store={store} cardName={displayName} />
                   {suggestion !== undefined && (
                     <SuggestionUseButton deckId={deckId} entry={entry} suggestion={suggestion} />
                   )}
@@ -165,7 +147,7 @@ export function MissingPanel({
                     <button
                       type="button"
                       className={styles.alternatives}
-                      aria-label={t('alternatives.openAria', { name: entry.name })}
+                      aria-label={t('alternatives.openAria', { name: displayName })}
                       onClick={() =>
                         onOpenAlternatives({ cardIdentifier: entry.cardIdentifier, name: entry.name, slot: entry.slot })
                       }
@@ -177,6 +159,8 @@ export function MissingPanel({
                 <span className={styles.owned}>
                   <MarkOwnedButton
                     cardIdentifier={entry.cardIdentifier}
+                    name={entry.name}
+                    pitch={entry.pitch}
                     onMarkOwned={onMarkOwned}
                     isPending={isMarkingOwned}
                     pendingCard={pendingCard}

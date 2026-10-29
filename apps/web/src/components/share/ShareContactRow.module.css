@@ -122,3 +122,24 @@
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
 }
+
+.warning {
+  margin: 0;
+  color: var(--ra-ready-mid, var(--ra-accent));
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.skip {
+  align-self: center;
+  min-block-size: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}

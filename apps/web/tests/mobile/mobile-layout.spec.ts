@@ -16,6 +16,8 @@ import { ANON_STORAGE_STATE, BASE_URL, loadFixture, resetFixture } from '../supp
 
 const SETTLE_MS = 1000;
 const MIN_TAP_TARGET_PX = 44;
+// Home, library and lists; the tutor tab only shows for users with chat access.
+const EXPECTED_TAB_COUNT = 3;
 const SUBPIXEL_PX = 1;
 
 interface IRoute {
@@ -27,9 +29,7 @@ interface IRoute {
 }
 
 const ROUTES: readonly IRoute[] = [
-  { name: 'sign-in', url: '/sign-in', shell: false, anonymous: true },
-  { name: 'sign-up', url: '/sign-up', shell: false, anonymous: true },
-  { name: 'forgot-password', url: '/forgot-password', shell: false, anonymous: true },
+  { name: 'start', url: '/entrar', shell: false, anonymous: true },
   { name: 'about', url: '/about', shell: false, anonymous: true },
   { name: 'home', url: '/home', shell: true },
   { name: 'deck-detail', url: '/decks/:deckId', shell: true },
@@ -41,7 +41,6 @@ const ROUTES: readonly IRoute[] = [
   { name: 'add-cards', url: '/add-cards', shell: true },
   { name: 'add-cards-manual', url: '/add-cards/manual', shell: true },
   { name: 'add-cards-csv', url: '/add-cards/csv', shell: true },
-  { name: 'add-cards-fabrary', url: '/add-cards/fabrary', shell: true },
   { name: 'add-cards-scan', url: '/add-cards/scan', shell: false },
 ];
 
@@ -108,16 +107,6 @@ async function mockWorstCaseTopBar(page: Page): Promise<void> {
       body: JSON.stringify({ id: 'mobile-layout', email: LONG_EMAIL, role: 'user', settings: { theme: 'dark' } }),
     }),
   );
-  await page.route('**/api/variant-jobs', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        etaSeconds: 30,
-        jobs: [{ jobId: 'j1', deckId: 1, deckName: 'Deck', status: 'running', total: 10, completed: 3, failed: 0 }],
-      }),
-    }),
-  );
 }
 
 async function openRoute(page: Page, url: string, anonymous = false): Promise<void> {
@@ -165,7 +154,7 @@ test.describe('mobile layout', () => {
           expect(report.tabBar!.top).toBeGreaterThanOrEqual(0);
           expect(report.tabBar!.bottom).toBeLessThanOrEqual(report.viewportHeight + SUBPIXEL_PX);
           expect(report.tabBar!.right).toBeLessThanOrEqual(report.innerWidth + SUBPIXEL_PX);
-          expect(report.tabHeights.length).toBe(2);
+          expect(report.tabHeights.length).toBe(EXPECTED_TAB_COUNT);
           for (const height of report.tabHeights) {
             expect(height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
           }

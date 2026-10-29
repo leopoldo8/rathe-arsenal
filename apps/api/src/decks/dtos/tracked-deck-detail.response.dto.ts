@@ -57,6 +57,10 @@ export interface IBreakdownEntry {
   readonly legalFormats?: readonly string[];
   readonly legalHeroes?: readonly string[];
   readonly bannedFormats?: readonly string[];
+  readonly restrictedFormats?: readonly string[];
+  readonly legalOverrides?: readonly { readonly format: string; readonly heroes: readonly string[] }[];
+  readonly specializations?: readonly string[];
+  readonly legendary?: boolean;
 }
 
 export interface ISubstitutionEntry {
@@ -118,9 +122,22 @@ export interface IDeckReplacement {
   readonly originalCardIdentifier: string;
   /** Catalog name of the original; the identifier when the card left the catalog. */
   readonly originalName: string;
+  /** Pitch of the original (1 to 3), null for a card with no pitch or one that left the catalog. */
+  readonly originalPitch: number | null;
   readonly replacementCardIdentifier: string;
   readonly quantity: number;
   readonly originalOwned: boolean;
+}
+
+/**
+ * One saved line of the deck: the copies in the starting deck and the copies carried in the
+ * inventory next to them (door 3). A line with no deck copy and some inventory copies is valid.
+ */
+export interface IDeckCompositionRow {
+  readonly cardIdentifier: string;
+  readonly slot: string;
+  readonly quantity: number;
+  readonly inventoryQuantity: number;
 }
 
 export interface ITrackedDeckDetailResponse {
@@ -156,6 +173,8 @@ export interface ITrackedDeckDetailResponse {
    */
   readonly updatedAt: string;
   readonly totalCards: number;
+  /** The saved lines in the order they were stored, each with its inventory quantity. */
+  readonly cards: readonly IDeckCompositionRow[];
   readonly latestSnapshot: ITrackedDeckDetailSnapshot | null;
   /**
    * Shopping line derived at read time from the latest snapshot's breakdown.

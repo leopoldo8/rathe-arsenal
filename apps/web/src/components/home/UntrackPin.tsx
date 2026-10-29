@@ -22,7 +22,6 @@ export function UntrackPin({
       disabled={disabled}
       aria-label={t('home.untrackAriaLabel', { deckName })}
       aria-busy={disabled}
-      title={t('home.untrackTitle')}
     >
       <svg className={styles.untrackPinIcon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path d="M5 6 H 19" />

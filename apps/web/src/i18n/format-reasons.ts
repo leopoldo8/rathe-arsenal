@@ -8,14 +8,18 @@ const PITCH_KEYS: Readonly<Record<string, string>> = {
   blue: 'reasons.rationale.pitchBlue',
 };
 
+function copiesCode(detail: ILegalityReasonDetail): string {
+  if (detail.params.legendary === true) return 'too_many_copies_legendary';
+  return detail.params.restricted === true ? 'too_many_copies_restricted' : 'too_many_copies';
+}
+
 export function formatLegalityReason(
   detail: ILegalityReasonDetail | undefined,
   fallback: string,
   t: TFunction,
 ): string {
   if (!detail) return fallback;
-  const code =
-    detail.code === 'too_many_copies' && detail.params.legendary === true ? 'too_many_copies_legendary' : detail.code;
+  const code = detail.code === 'too_many_copies' ? copiesCode(detail) : detail.code;
   const key = `reasons.legality.${code}`;
   if (!t(key, { defaultValue: '' })) return fallback;
   return t(key, { ...detail.params });
@@ -25,6 +29,21 @@ function signed(delta: number): string {
   return delta > 0 ? `+${delta}` : String(delta);
 }
 
+function pitchPhrase(relation: IRationaleDetail['pitchRelation'], t: TFunction): string {
+  const word = (pitch: string): string => t(PITCH_KEYS[pitch] ?? 'reasons.rationale.pitchColorless');
+  if (relation.relation === 'same') return t('reasons.rationale.pitchSame', { pitch: word(relation.pitch) });
+  return t('reasons.rationale.pitchDifferent', {
+    candidate: word(relation.candidate),
+    original: word(relation.original),
+  });
+}
+
+function classPhrase(detail: IRationaleDetail, t: TFunction): string {
+  if (detail.candidateGeneric) return t('reasons.rationale.classGeneric');
+  if (detail.sharedClasses.length === 0) return '';
+  return t('reasons.rationale.classesShared', { classes: detail.sharedClasses.join(', ') });
+}
+
 export function formatSwapRationale(
   detail: IRationaleDetail | null | undefined,
   fallback: string,
@@ -32,11 +51,8 @@ export function formatSwapRationale(
 ): string {
   if (!detail) return fallback;
   const sentence = t('reasons.rationale.sentence', {
-    pitch: t(PITCH_KEYS[detail.pitch] ?? 'reasons.rationale.pitchColorless'),
-    classes:
-      detail.sharedClasses.length > 0
-        ? t('reasons.rationale.classesShared', { classes: detail.sharedClasses.join(', ') })
-        : t('reasons.rationale.classesNone'),
+    pitch: pitchPhrase(detail.pitchRelation, t),
+    classes: classPhrase(detail, t),
     power:
       detail.powerDelta === 0
         ? t('reasons.rationale.powerSame')

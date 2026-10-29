@@ -59,7 +59,7 @@ describe('suggestions from the collection (E2E)', () => {
   /** Emissary x2 suggests FIRST and flex x1 (one owned) suggests SECOND. */
   async function twoSuggestions(extraMainboard = [] as ReturnType<typeof mainboard>[], owned: Array<[string, number]> = []) {
     const owner = await fixture.scenario(extraMainboard);
-    await fixture.own(owner.jwt, [
+    await fixture.own(owner.sessionToken, [
       { cardIdentifier: FLEX, quantity: 1 },
       { cardIdentifier: FIRST, quantity: 2 },
       { cardIdentifier: SECOND, quantity: 1 },
@@ -69,7 +69,7 @@ describe('suggestions from the collection (E2E)', () => {
   }
 
   async function suggestionsOf(owner: IScenario): Promise<Record<string, string>> {
-    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.jwt).expect(200);
+    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.sessionToken).expect(200);
     const suggestions: Record<string, string> = {};
     for (const entry of detail.body.latestSnapshot.breakdown.substituted) {
       suggestions[entry.original.cardIdentifier] ??= entry.match.substitute.cardIdentifier;
@@ -79,20 +79,20 @@ describe('suggestions from the collection (E2E)', () => {
 
   function useSuggestion(owner: IScenario, original: string, replacement: string, pickedFrom = 'suggested') {
     return fixture
-      .post(`/api/decks/${owner.deckId}/replacements`, owner.jwt)
+      .post(`/api/decks/${owner.deckId}/replacements`, owner.sessionToken)
       .send({ originalCardIdentifier: original, slot: 'mainboard', replacementCardIdentifier: replacement, pickedFrom });
   }
 
   function useAll(owner: IScenario) {
-    return fixture.post(`/api/decks/${owner.deckId}/replacements/suggested`, owner.jwt);
+    return fixture.post(`/api/decks/${owner.deckId}/replacements/suggested`, owner.sessionToken);
   }
 
   it('the list and the deck read count the deck as it is', async () => {
     const owner = await twoSuggestions();
     expect(await suggestionsOf(owner)).toEqual({ [EMISSARY]: FIRST, [FLEX]: SECOND });
 
-    const list = await fixture.get('/api/decks', owner.jwt).expect(200);
-    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.jwt).expect(200);
+    const list = await fixture.get('/api/decks', owner.sessionToken).expect(200);
+    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.sessionToken).expect(200);
 
     const listed = list.body.trackedDecks.find((deck: { id: number }) => deck.id === owner.deckId).latestSnapshot;
     expect(listed.effectivePercent).toBe(listed.rawPercent);
@@ -108,7 +108,7 @@ describe('suggestions from the collection (E2E)', () => {
   it('the first read after the truncate stores a fresh snapshot', async () => {
     const owner = await twoSuggestions();
     const scratch = await fixture
-      .post('/api/decks', owner.jwt)
+      .post('/api/decks', owner.sessionToken)
       .send({ heroIdentifier: KATSU, format: FORMAT })
       .expect(201);
     const deckIds = [owner.deckId, scratch.body.id as number];
@@ -116,17 +116,17 @@ describe('suggestions from the collection (E2E)', () => {
       fixture.dataSource.query(`DELETE FROM deck_readiness_snapshot WHERE "trackedDeckId" = ANY($1)`, [deckIds]);
 
     await clear();
-    await fixture.get('/api/decks', owner.jwt).expect(200);
+    await fixture.get('/api/decks', owner.sessionToken).expect(200);
     expect([await fixture.snapshotCount(deckIds[0]!), await fixture.snapshotCount(deckIds[1]!)]).toEqual([1, 1]);
 
     await clear();
-    await fixture.get(`/api/decks/${owner.deckId}`, owner.jwt).expect(200);
+    await fixture.get(`/api/decks/${owner.deckId}`, owner.sessionToken).expect(200);
     expect(await fixture.snapshotCount(owner.deckId)).toBe(1);
   });
 
   it('a one-click use is a pick recorded as suggested', async () => {
     const owner = await fixture.scenario();
-    await fixture.own(owner.jwt, [
+    await fixture.own(owner.sessionToken, [
       { cardIdentifier: FLEX, quantity: 2 },
       { cardIdentifier: FIRST, quantity: 2 },
     ]);
@@ -142,7 +142,7 @@ describe('suggestions from the collection (E2E)', () => {
     expect(cards[`${EMISSARY}@mainboard`]).toBeUndefined();
     const rows = await fixture.replacementRows(owner.deckId);
     expect(rows.map((row) => [row['pickedFrom'], row['status']])).toEqual([['suggested', 'active']]);
-    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.jwt).expect(200);
+    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.sessionToken).expect(200);
     expect(detail.body.replacements).toEqual([
       expect.objectContaining({
         originalCardIdentifier: EMISSARY,
@@ -155,7 +155,7 @@ describe('suggestions from the collection (E2E)', () => {
 
   it('a use moves every missing copy even when the collection covers fewer', async () => {
     const owner = await fixture.scenario();
-    await fixture.own(owner.jwt, [
+    await fixture.own(owner.sessionToken, [
       { cardIdentifier: FLEX, quantity: 2 },
       { cardIdentifier: FIRST, quantity: 1 },
     ]);
@@ -173,7 +173,7 @@ describe('suggestions from the collection (E2E)', () => {
 
   it('accepts suggested and refuses swap as an origin', async () => {
     const owner = await fixture.scenario();
-    await fixture.own(owner.jwt, [
+    await fixture.own(owner.sessionToken, [
       { cardIdentifier: FLEX, quantity: 2 },
       { cardIdentifier: FIRST, quantity: 2 },
     ]);
@@ -233,7 +233,7 @@ describe('suggestions from the collection (E2E)', () => {
   it('the bulk route refuses when every suggestion is skipped', async () => {
     // Emissary's only suggestion would take FIRST from 2 copies in the deck to 4; flex is owned, so nothing else is suggested.
     const owner = await fixture.scenario([mainboard(FIRST, 2)]);
-    await fixture.own(owner.jwt, [
+    await fixture.own(owner.sessionToken, [
       { cardIdentifier: FLEX, quantity: 2 },
       { cardIdentifier: FIRST, quantity: 4 },
     ]);
@@ -276,17 +276,17 @@ describe('suggestions from the collection (E2E)', () => {
     const { app } = fixture;
     const request = (await import('supertest')).default;
     await request(app.getHttpServer()).post(`/api/decks/${owner.deckId}/replacements/suggested`).expect(401);
-    await fixture.post(`/api/decks/${owner.deckId}/replacements/suggested`, stranger.jwt).expect(404);
-    await fixture.post('/api/decks/2147483000/replacements/suggested', owner.jwt).expect(404);
+    await fixture.post(`/api/decks/${owner.deckId}/replacements/suggested`, stranger.sessionToken).expect(404);
+    await fixture.post('/api/decks/2147483000/replacements/suggested', owner.sessionToken).expect(404);
     expect(await fixture.replacementRows(owner.deckId)).toEqual([]);
   });
 
   it('the swaps routes are gone', async () => {
     const owner = await fixture.scenario();
 
-    await fixture.get('/api/swaps', owner.jwt).expect(404);
+    await fixture.get('/api/swaps', owner.sessionToken).expect(404);
     for (const action of ['approve', 'reject', 'revert', 'restore', 'outcome']) {
-      await fixture.post(`/api/swaps/${RANDOM_UUID}/${action}`, owner.jwt).send({}).expect(404);
+      await fixture.post(`/api/swaps/${RANDOM_UUID}/${action}`, owner.sessionToken).send({}).expect(404);
     }
   });
 
@@ -295,18 +295,18 @@ describe('suggestions from the collection (E2E)', () => {
     expect(table).toBeNull();
 
     const owner = await twoSuggestions();
-    await fixture.get('/api/decks', owner.jwt).expect(200);
-    await fixture.get(`/api/decks/${owner.deckId}`, owner.jwt).expect(200);
+    await fixture.get('/api/decks', owner.sessionToken).expect(200);
+    await fixture.get(`/api/decks/${owner.deckId}`, owner.sessionToken).expect(200);
     await fixture
-      .get(`/api/decks/${owner.deckId}/alternatives?cardIdentifier=${EMISSARY}&slot=mainboard`, owner.jwt)
+      .get(`/api/decks/${owner.deckId}/alternatives?cardIdentifier=${EMISSARY}&slot=mainboard`, owner.sessionToken)
       .expect(200);
     const picked = await useSuggestion(owner, EMISSARY, FIRST).expect(201);
-    await fixture.post(`/api/replacements/${picked.body.replacement.id}/revert`, owner.jwt).expect(200);
+    await fixture.post(`/api/replacements/${picked.body.replacement.id}/revert`, owner.sessionToken).expect(200);
     await useAll(owner).expect(201);
-    await fixture.own(owner.jwt, [{ cardIdentifier: EMISSARY, quantity: 1 }]);
-    await fixture.post('/api/collection/mark-owned', owner.jwt).send({ deckId: owner.deckId, cardIdentifier: FLEX }).expect(201);
+    await fixture.own(owner.sessionToken, [{ cardIdentifier: EMISSARY, quantity: 1 }]);
+    await fixture.post('/api/collection/mark-owned', owner.sessionToken).send({ deckId: owner.deckId, cardIdentifier: FLEX }).expect(201);
     await fixture
-      .put(`/api/decks/${owner.deckId}`, owner.jwt)
+      .put(`/api/decks/${owner.deckId}`, owner.sessionToken)
       .send({
         heroIdentifier: KATSU,
         format: FORMAT,
@@ -319,8 +319,8 @@ describe('suggestions from the collection (E2E)', () => {
     // A second import that seeds the collection recomputes the owner's existing decks, and swallows a failed recompute.
     const snapshotsBeforeImport = await fixture.snapshotCount(owner.deckId);
     await fixture
-      .post('/api/decks/import', owner.jwt)
-      .send({ urls: [`https://fabrary.net/decks/${newUlid()}`], seedInventory: true })
+      .post('/api/decks/import', owner.sessionToken)
+      .send({ text: `https://fabrary.net/decks/${newUlid()}`, ownsCards: true })
       .expect(201);
     expect(await fixture.snapshotCount(owner.deckId)).toBe(snapshotsBeforeImport + 1);
 

@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ValidRequestsThrottlerGuard } from './common/throttle/valid-requests-throttler.guard';
 import { join } from 'path';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
@@ -15,6 +16,7 @@ import { FabraryModule } from './fabrary/fabrary.module';
 import { SubstitutionModule } from './substitution/substitution.module';
 import { DecksModule } from './decks/decks.module';
 import { CollectionModule } from './collection/collection.module';
+import { ProductsModule } from './products/products.module';
 import { StoresModule } from './stores/stores.module';
 import { HealthController } from './health/health.controller';
 import { UsersModule } from './users/users.module';
@@ -27,6 +29,7 @@ import { ChatModule } from './chat/chat.module';
 import { SharingModule } from './sharing/sharing.module';
 import { SharePreviewModule } from './sharing/preview/share-preview.module';
 import { ListsModule } from './lists/lists.module';
+import { HousekeepingModule } from './housekeeping/housekeeping.module';
 
 @Module({
   imports: [
@@ -50,6 +53,7 @@ import { ListsModule } from './lists/lists.module';
     SubstitutionModule,
     DecksModule,
     CollectionModule,
+    ProductsModule,
     StoresModule,
     // U12: user settings (GET/PATCH /api/users/me/settings)
     UsersModule,
@@ -63,6 +67,7 @@ import { ListsModule } from './lists/lists.module';
     ChatModule,
     SharingModule,
     ListsModule,
+    HousekeepingModule,
     // Link-preview HTML for /d/:token and the generated share images.
     SharePreviewModule,
     // Serve the built SPA from apps/web/dist in production.
@@ -78,7 +83,7 @@ import { ListsModule } from './lists/lists.module';
   controllers: [HealthController],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: ValidRequestsThrottlerGuard },
   ],
 })
 export class AppModule {}

@@ -54,11 +54,6 @@ vi.mock('../../../assets/logo-mark.svg?react', () => ({
   default: () => <svg data-testid="logo-mark" aria-hidden="true" />,
 }));
 
-// VariantQueuePill — self-hiding; mock it so tests don't need the variant-jobs API
-vi.mock('../../variant-queue/VariantQueuePill', () => ({
-  VariantQueuePill: () => null,
-}));
-
 // ThemeToggle dependencies
 vi.mock('../../../components/ui/Toast/useToast', () => ({
   useToast: () => ({ show: vi.fn() }),
@@ -158,6 +153,14 @@ describe('TopBar — nav items', () => {
     const nav = screen.getByRole('navigation', { name: 'Principal' });
     const importLinks = nav.querySelectorAll('[data-to="/import"]');
     expect(importLinks).toHaveLength(0);
+  });
+});
+
+describe('TopBar — menu', () => {
+  it('the menu links Termos do jogo', () => {
+    render(<TopBar />);
+
+    expect(screen.getByRole('link', { name: 'Termos do jogo' })).toHaveAttribute('href', '/termos');
   });
 });
 

@@ -18,15 +18,15 @@ describe('adopt a recommendation (e2e)', () => {
     await fixture.close();
   });
 
-  async function deckWith(card: string, cut?: string): Promise<{ jwt: string; deckId: number; recommendationId: string }> {
+  async function deckWith(card: string, cut?: string): Promise<{ sessionToken: string; deckId: number; recommendationId: string }> {
     const scenario = await fixture.scenario();
     await fixture.clearRuns(scenario.deckId);
     const { ids } = await fixture.seedDoneRun(scenario.deckId, [{ card, strength: 'clear_upgrade', ...(cut ? { cut } : {}) }]);
     return { ...scenario, recommendationId: ids[0]! };
   }
 
-  function adopt(deckId: number, recommendationId: string, jwt: string, body: object) {
-    return fixture.post(`/api/decks/${deckId}/recommendations/${recommendationId}/adopt`, jwt).send(body);
+  function adopt(deckId: number, recommendationId: string, sessionToken: string, body: object) {
+    return fixture.post(`/api/decks/${deckId}/recommendations/${recommendationId}/adopt`, sessionToken).send(body);
   }
 
   async function snapshotOfRows(deckId: number) {
@@ -40,7 +40,7 @@ describe('adopt a recommendation (e2e)', () => {
   it('adopt moves the cut copies up to the copy limit', async () => {
     const plain = await deckWith(ADRENALINE, FLEX);
 
-    const response = await adopt(plain.deckId, plain.recommendationId, plain.jwt, { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(201);
+    const response = await adopt(plain.deckId, plain.recommendationId, plain.sessionToken, { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(201);
 
     expect(response.body.replacement).toEqual(
       expect.objectContaining({
@@ -66,7 +66,7 @@ describe('adopt a recommendation (e2e)', () => {
     expect(pending.map((run) => run.trigger)).toEqual(['auto']);
 
     const legendary = await deckWith(LEGENDARY, FLEX);
-    await adopt(legendary.deckId, legendary.recommendationId, legendary.jwt, { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(201);
+    await adopt(legendary.deckId, legendary.recommendationId, legendary.sessionToken, { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(201);
     const legendaryCards = await fixture.deckCards(legendary.deckId);
     expect(legendaryCards[`${LEGENDARY}@mainboard`]).toBe(1);
     expect(legendaryCards[`${FLEX}@mainboard`]).toBe(1);
@@ -97,7 +97,7 @@ describe('adopt a recommendation (e2e)', () => {
       await arrange(target.deckId);
       const before = await snapshotOfRows(target.deckId);
 
-      const response = await adopt(target.deckId, target.recommendationId, target.jwt, body);
+      const response = await adopt(target.deckId, target.recommendationId, target.sessionToken, body);
 
       expect({ label, status: response.status, code: response.body.code }).toEqual({ label, status: 409, code: 'REPLACEMENT_ILLEGAL' });
       expect({ label, rows: await snapshotOfRows(target.deckId) }).toEqual({ label, rows: before });
@@ -109,8 +109,8 @@ describe('adopt a recommendation (e2e)', () => {
     const body = { cutCardIdentifier: FLEX, cutSlot: 'mainboard' };
 
     const responses = await Promise.all([
-      adopt(target.deckId, target.recommendationId, target.jwt, body),
-      adopt(target.deckId, target.recommendationId, target.jwt, body),
+      adopt(target.deckId, target.recommendationId, target.sessionToken, body),
+      adopt(target.deckId, target.recommendationId, target.sessionToken, body),
     ]);
 
     expect(responses.map((response) => response.status).sort()).toEqual([201, 409]);
@@ -125,7 +125,7 @@ describe('adopt a recommendation (e2e)', () => {
     const target = await deckWith(ADRENALINE);
     const before = await snapshotOfRows(target.deckId);
 
-    const response = await adopt(target.deckId, target.recommendationId, target.jwt, { cutCardIdentifier: COAX, cutSlot: 'mainboard' }).expect(409);
+    const response = await adopt(target.deckId, target.recommendationId, target.sessionToken, { cutCardIdentifier: COAX, cutSlot: 'mainboard' }).expect(409);
 
     expect(response.body.code).toBe('NOTHING_TO_REPLACE');
     expect(await snapshotOfRows(target.deckId)).toEqual(before);
@@ -136,10 +136,10 @@ describe('adopt a recommendation (e2e)', () => {
     const other = await deckWith(ADRENALINE);
     const body = { cutCardIdentifier: FLEX, cutSlot: 'mainboard' };
 
-    await adopt(owner.deckId, other.recommendationId, owner.jwt, body).expect(404);
-    await adopt(owner.deckId, RANDOM_UUID, owner.jwt, body).expect(404);
-    await adopt(other.deckId, other.recommendationId, owner.jwt, body).expect(404);
-    await adopt(2147483000, owner.recommendationId, owner.jwt, body).expect(404);
+    await adopt(owner.deckId, other.recommendationId, owner.sessionToken, body).expect(404);
+    await adopt(owner.deckId, RANDOM_UUID, owner.sessionToken, body).expect(404);
+    await adopt(other.deckId, other.recommendationId, owner.sessionToken, body).expect(404);
+    await adopt(2147483000, owner.recommendationId, owner.sessionToken, body).expect(404);
     expect(await fixture.replacementRows(owner.deckId)).toHaveLength(0);
     expect(await fixture.replacementRows(other.deckId)).toHaveLength(0);
   });
@@ -154,42 +154,42 @@ describe('adopt a recommendation (e2e)', () => {
       ['unknown card', { cutCardIdentifier: 'not-a-card', cutSlot: 'mainboard' }],
     ];
     for (const [label, body] of bodies) {
-      const response = await adopt(target.deckId, target.recommendationId, target.jwt, body);
+      const response = await adopt(target.deckId, target.recommendationId, target.sessionToken, body);
       expect({ label, status: response.status }).toEqual({ label, status: 400 });
     }
-    await adopt(target.deckId, 'not-a-uuid', target.jwt, { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(400);
+    await adopt(target.deckId, 'not-a-uuid', target.sessionToken, { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(400);
     await adopt(target.deckId, target.recommendationId, '', { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(401);
     expect(await fixture.replacementRows(target.deckId)).toHaveLength(0);
   });
 
   it('revert restores the cut and relists the card', async () => {
     const target = await deckWith(ADRENALINE, FLEX);
-    const adopted = await adopt(target.deckId, target.recommendationId, target.jwt, { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(201);
-    const listedAfterAdopt = (await fixture.get(`/api/decks/${target.deckId}/recommendations`, target.jwt).expect(200)).body.recommendations;
+    const adopted = await adopt(target.deckId, target.recommendationId, target.sessionToken, { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(201);
+    const listedAfterAdopt = (await fixture.get(`/api/decks/${target.deckId}/recommendations`, target.sessionToken).expect(200)).body.recommendations;
     expect(listedAfterAdopt).toEqual([]);
 
-    await fixture.post(`/api/replacements/${adopted.body.replacement.id}/revert`, target.jwt).expect(200);
+    await fixture.post(`/api/replacements/${adopted.body.replacement.id}/revert`, target.sessionToken).expect(200);
 
     const cards = await fixture.deckCards(target.deckId);
     expect(cards[`${FLEX}@mainboard`]).toBe(2);
     expect(cards[`${ADRENALINE}@mainboard`]).toBeUndefined();
-    const listed = (await fixture.get(`/api/decks/${target.deckId}/recommendations`, target.jwt).expect(200)).body.recommendations;
+    const listed = (await fixture.get(`/api/decks/${target.deckId}/recommendations`, target.sessionToken).expect(200)).body.recommendations;
     expect(listed.map((row: { cardIdentifier: string }) => row.cardIdentifier)).toEqual([ADRENALINE]);
   });
 
   it('an adopted card never raises the original prompt', async () => {
     const target = await deckWith(ADRENALINE, FLEX);
-    await adopt(target.deckId, target.recommendationId, target.jwt, { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(201);
+    await adopt(target.deckId, target.recommendationId, target.sessionToken, { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(201);
     await fixture
-      .post(`/api/decks/${target.deckId}/replacements`, target.jwt)
+      .post(`/api/decks/${target.deckId}/replacements`, target.sessionToken)
       .send({ originalCardIdentifier: EMISSARY, slot: 'mainboard', replacementCardIdentifier: COAX, pickedFrom: 'close' })
       .expect(201);
-    await fixture.own(target.jwt, [
+    await fixture.own(target.sessionToken, [
       { cardIdentifier: FLEX, quantity: 4 },
       { cardIdentifier: EMISSARY, quantity: 2 },
     ]);
 
-    const detail = await fixture.get(`/api/decks/${target.deckId}`, target.jwt).expect(200);
+    const detail = await fixture.get(`/api/decks/${target.deckId}`, target.sessionToken).expect(200);
 
     const byOriginal = Object.fromEntries(
       detail.body.replacements.map((row: { originalCardIdentifier: string; originalOwned: boolean }) => [row.originalCardIdentifier, row.originalOwned]),
@@ -201,9 +201,9 @@ describe('adopt a recommendation (e2e)', () => {
     const log = jest.spyOn(Logger.prototype, 'log');
     try {
       const suggested = await deckWith(ADRENALINE, FLEX);
-      await adopt(suggested.deckId, suggested.recommendationId, suggested.jwt, { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(201);
+      await adopt(suggested.deckId, suggested.recommendationId, suggested.sessionToken, { cutCardIdentifier: FLEX, cutSlot: 'mainboard' }).expect(201);
       const chosen = await deckWith(ADRENALINE, FLEX);
-      await adopt(chosen.deckId, chosen.recommendationId, chosen.jwt, { cutCardIdentifier: EMISSARY, cutSlot: 'mainboard' }).expect(201);
+      await adopt(chosen.deckId, chosen.recommendationId, chosen.sessionToken, { cutCardIdentifier: EMISSARY, cutSlot: 'mainboard' }).expect(201);
 
       expect(log).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -230,7 +230,7 @@ describe('adopt a recommendation (e2e)', () => {
     const target = await deckWith(ADRENALINE);
 
     await fixture
-      .post(`/api/decks/${target.deckId}/replacements`, target.jwt)
+      .post(`/api/decks/${target.deckId}/replacements`, target.sessionToken)
       .send({ originalCardIdentifier: EMISSARY, slot: 'mainboard', replacementCardIdentifier: COAX, pickedFrom: 'recommendation' })
       .expect(400);
     expect(await fixture.replacementRows(target.deckId)).toHaveLength(0);

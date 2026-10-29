@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Not, Repository } from 'typeorm';
+import { DataSource, In, Not, Repository } from 'typeorm';
 import {
   StoreEntity,
   StoreStockEntity,
@@ -55,6 +55,12 @@ export type TUrlSyncState = 'idle' | 'queued' | 'running';
 export const URL_SYNC_STALE_AFTER_MS = 45 * 60 * 1000;
 
 const INTERRUPTED_SYNC_MESSAGE = 'The sync was interrupted before it finished (the worker restarted).';
+
+export interface IAvailabilityStatus {
+  readonly lastPassAt: Date | null;
+  readonly lastFailureAt: Date | null;
+  readonly syncQueuedOrRunning: boolean;
+}
 
 export interface IUrlSyncFailure {
   readonly message: string;
@@ -198,6 +204,7 @@ export class StoreIngestionService {
     let productsMatched = 0;
     let rowsUpserted = 0;
     const now = new Date();
+    const listed = new Set<string>();
 
     for await (const product of this.scraper.scrapeStore(store)) {
       productsFetched++;
@@ -210,6 +217,7 @@ export class StoreIngestionService {
       productsMatched++;
 
       for (const { cardIdentifier } of matchResults) {
+        listed.add(cardIdentifier);
         const existing = await this.stockRepo.findOne({
           where: { storeId: store.id, cardIdentifier },
         });
@@ -239,10 +247,15 @@ export class StoreIngestionService {
       }
     }
 
+    if (listed.size > 0) {
+      await this.stockRepo.update({ storeId: store.id, cardIdentifier: In([...listed]) }, { listedInStockAt: now });
+    }
+
     // Persist the sync timestamp + product count for status display.
     await this.storeRepo.update(
       { id: store.id },
       {
+        lastAvailabilityPassAt: now,
         lastUrlSyncAt: now,
         lastUrlSyncProductCount: productsFetched,
         lastUrlSyncError: null,
@@ -304,6 +317,27 @@ export class StoreIngestionService {
     // TypeORM returns `[rows, rowCount]` for UPDATE; unwrap before indexing.
     const rows: Array<{ slug: string }> = Array.isArray(result?.[0]) ? result[0] : result;
     return rows?.[0]?.slug ?? null;
+  }
+
+  async listActiveStoreSlugs(): Promise<string[]> {
+    const stores = await this.storeRepo.find({ where: { active: true }, select: ['id', 'slug'] });
+    return stores.map((store) => store.slug);
+  }
+
+  /** What the worker's availability step needs to decide whether a pass is due. */
+  async getAvailabilityStatus(storeSlug: string, now: Date = new Date()): Promise<IAvailabilityStatus> {
+    const store = await this.storeRepo.findOne({
+      where: { slug: storeSlug },
+      select: ['id', 'lastAvailabilityPassAt', 'lastUrlSyncErrorAt', 'urlSyncRequestedAt', 'urlSyncRunningAt'],
+    });
+    if (!store) {
+      throw new NotFoundException(`Store not found: ${storeSlug}`);
+    }
+    return {
+      lastPassAt: store.lastAvailabilityPassAt,
+      lastFailureAt: store.lastUrlSyncErrorAt,
+      syncQueuedOrRunning: Boolean(store.urlSyncRequestedAt) || (Boolean(store.urlSyncRunningAt) && !isStaleLock(store.urlSyncRunningAt, now)),
+    };
   }
 
   /** Clears the running lock after a claimed sync finishes (success or failure). */
@@ -749,6 +783,6 @@ function describeLastFailure(store: StoreEntity, staleLockAt: Date | null): IUrl
   return null;
 }
 
-function isStaleLock(runningAt: Date | null): runningAt is Date {
-  return runningAt !== null && Date.now() - runningAt.getTime() > URL_SYNC_STALE_AFTER_MS;
+function isStaleLock(runningAt: Date | null, now: Date = new Date()): runningAt is Date {
+  return runningAt !== null && now.getTime() - runningAt.getTime() > URL_SYNC_STALE_AFTER_MS;
 }

@@ -1,6 +1,8 @@
 import { TListKind } from '../database/entities/card-list.entity';
 import { ISharedListLineMatch } from './dtos/shared-list.dto';
 
+export type TBuiltMatch = Omit<ISharedListLineMatch, 'decks'>;
+
 export interface IMatchLine {
   readonly id: number;
   readonly cardIdentifier: string;
@@ -16,7 +18,7 @@ export function buildListMatches(
   lines: readonly IMatchLine[],
   owned: ReadonlyMap<string, number>,
   missingInDecks: ReadonlyMap<string, number>,
-): ISharedListLineMatch[] {
+): TBuiltMatch[] {
   return lines.map((line) => ({
     lineId: line.id,
     owned: owned.get(line.cardIdentifier) ?? 0,

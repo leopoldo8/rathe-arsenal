@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, IsNull, Repository } from 'typeorm';
 import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
@@ -47,6 +47,9 @@ export interface IDeleteSourceResult {
  * 2. On constraint violation the catch block re-reads the row within the same
  *    EntityManager context, ensuring the caller participates in the outer tx.
  */
+/** A source as the list answers it: with the copies it holds. */
+export type ISourceWithCopies = CsvSourceEntity & { readonly copies: number };
+
 @Injectable()
 export class SourcesService {
   private readonly logger = new Logger(SourcesService.name);
@@ -73,7 +76,7 @@ export class SourcesService {
    * newest first. The manual source never stores a running total, so its
    * `cardCount` is counted per request and never saved.
    */
-  async list(userId: string): Promise<CsvSourceEntity[]> {
+  async list(userId: string): Promise<ISourceWithCopies[]> {
     const sources = await this.csvSourceRepo.find({
       where: { userId },
       order: { createdAt: 'DESC' },
@@ -86,7 +89,20 @@ export class SourcesService {
       });
     }
 
-    return sources;
+    const copiesBySource = await this.copiesBySource(userId);
+    return sources.map((source) => Object.assign(source, { copies: copiesBySource.get(source.id) ?? 0 }));
+  }
+
+  /** Copies, not rows: a card at two versions or three copies counts every copy once. */
+  private async copiesBySource(userId: string): Promise<Map<string, number>> {
+    const rows: Array<{ sourceId: string; copies: string }> = await this.collectionCardRepo
+      .createQueryBuilder('copy')
+      .select('copy."sourceId"', 'sourceId')
+      .addSelect('COALESCE(SUM(copy.quantity), 0)', 'copies')
+      .where('copy."userId" = :userId', { userId })
+      .groupBy('copy."sourceId"')
+      .getRawMany();
+    return new Map(rows.map((row) => [row.sourceId, Number(row.copies)]));
   }
 
   // ---------------------------------------------------------------------------
@@ -160,7 +176,7 @@ export class SourcesService {
 
     // Find all tracked decks for this user with their latest snapshot.
     const trackedDecks = await this.trackedDeckRepo.find({
-      where: { userId },
+      where: { userId, deletedAt: IsNull() },
     });
 
     const affectedDecks: IAffectedDeck[] = [];
@@ -306,7 +322,7 @@ export class SourcesService {
       select: ['id', 'userId', 'kind'],
     });
 
-    if (!source || source.userId !== userId || source.kind !== 'csv') {
+    if (!source || source.userId !== userId || source.kind === 'manual') {
       this.logger.warn('AUTHZ_DENIED csv_source', { sourceId, userId });
       throw new NotFoundException('CSV source not found');
     }
@@ -329,7 +345,7 @@ export class SourcesService {
 
     let decks: TrackedDeckEntity[];
     try {
-      decks = await this.trackedDeckRepo.find({ where: { userId } });
+      decks = await this.trackedDeckRepo.find({ where: { userId, deletedAt: IsNull() } });
     } catch (error) {
       this.logger.warn({
         msg: 'Failed to load decks for readiness recompute after source deletion',
@@ -366,7 +382,7 @@ export class SourcesService {
   private async recomputeReadinessForUser(userId: string): Promise<void> {
     let decks: TrackedDeckEntity[];
     try {
-      decks = await this.trackedDeckRepo.find({ where: { userId } });
+      decks = await this.trackedDeckRepo.find({ where: { userId, deletedAt: IsNull() } });
     } catch (error) {
       this.logger.warn({
         msg: 'Failed to load decks for readiness recompute after source change',

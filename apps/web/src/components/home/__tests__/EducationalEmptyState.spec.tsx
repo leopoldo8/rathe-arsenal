@@ -31,22 +31,23 @@ const noopAsync = async (): Promise<void> => {
 
 const stubAuthContext: IAuthContext = {
   user: null,
-  token: null,
   isLoading: false,
   setSettings: () => {
     /* test stub */
   },
-  signUp: async () => ({}),
+  signUp: async () => undefined,
   signIn: noopAsync,
   signOut: () => {
     /* test stub */
   },
-  verifyEmail: noopAsync,
-  forgotPassword: noopAsync,
-  resetPassword: noopAsync,
+  verifyEmail: async () => ({ returnPath: null, email: '' }),
+  changeEmail: async () => undefined,
+  verifyCode: async () => ({ returnPath: null }),
+  redeemCode: async () => ({ returnPath: null }),
   deleteAccount: noopAsync,
   setDisplayName: () => undefined,
   setWhatsappNumber: () => undefined,
+  setHasPassword: () => undefined,
 };
 
 function createTestQueryClient(): QueryClient {

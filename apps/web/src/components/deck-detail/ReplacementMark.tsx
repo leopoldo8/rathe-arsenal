@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useResolveReplacement, type IDeckReplacement, type TResolveAction } from '../../api/replacements';
+import { cardName } from '../../lib/card-name';
 import { localizeApiError } from '../card-scanner/localize-api-error';
 import { useToast } from '../ui/Toast/useToast';
 import styles from './ReplacementMark.module.css';
@@ -10,7 +11,7 @@ export function ReplacementMark({ replacement }: { readonly replacement: IDeckRe
   const { t } = useTranslation();
   return (
     <span className={styles.mark} data-testid="replacement-mark">
-      {t('alternatives.inPlaceOf', { name: replacement.originalName })}
+      {t('alternatives.inPlaceOf', { name: cardName(replacement.originalName, replacement.originalPitch, t) })}
     </span>
   );
 }
@@ -29,7 +30,7 @@ export function ReplacementControls({
   const { t } = useTranslation();
   const resolve = useResolveReplacement(deckId);
   const { show: showToast } = useToast();
-  const originalName = replacement.originalName;
+  const originalName = cardName(replacement.originalName, replacement.originalPitch, t);
 
   function send(action: TResolveAction): void {
     resolve.mutate(

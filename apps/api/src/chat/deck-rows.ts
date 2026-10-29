@@ -5,6 +5,8 @@ import { slotOf } from './proposal-validation';
 export interface IDeckRow {
   readonly cardIdentifier: string;
   readonly quantity: number;
+  /** Copies carried in the inventory beside `quantity`; they count in the card pool and the copy limit. */
+  readonly inventoryQuantity?: number;
   readonly slot?: string;
 }
 

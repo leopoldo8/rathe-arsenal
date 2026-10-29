@@ -1,10 +1,23 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Put, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import type { Request, Response } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AuthService } from '../auth/auth.service';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
+import { SetPasswordDto } from '../auth/dtos/set-password.dto';
+import { AUTH_THROTTLE } from '../auth/auth-throttle';
+import { mapAuthError } from '../auth/auth-error.mapper';
+import { AuthError, EAuthErrorCode } from '../auth/errors';
+import { readSessionToken } from '../auth/session-cookie';
+import { AcceptLanguage } from '../common/i18n/accept-language.decorator';
+import { TLocale } from '../common/i18n/resolve-locale';
 import { UpdateContactDto } from './dtos/update-contact.dto';
+import { UpdateSellClosingLineDto } from './dtos/update-sell-closing-line.dto';
+import { UpdateSpareRuleDto } from './dtos/update-spare-rule.dto';
+import { UpdateShareClosingLineDto } from './dtos/update-share-closing-line.dto';
 import { UpdateDisplayNameDto } from './dtos/update-display-name.dto';
 import { PatchThemeDto } from './dtos/user-settings.dto';
+import type { TSpareRule } from '../database/entities/user.entity';
 import { UsersService, IUserSettings } from './users.service';
 
 // 30 PATCH requests per minute per user — tighter than the global 120/min
@@ -19,7 +32,10 @@ const MINUTE_MS = 60 * 1000;
  */
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly authService: AuthService,
+  ) {}
 
   /**
    * GET /api/users/me/settings
@@ -71,5 +87,81 @@ export class UsersController {
     @Body() dto: UpdateContactDto,
   ): Promise<{ whatsappNumber: string | null }> {
     return this.usersService.updateContact(currentUser.userId, dto.whatsappNumber);
+  }
+
+  @Patch('me/share-closing-line')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
+  async patchShareClosingLine(
+    @CurrentUser() currentUser: ICurrentUser,
+    @Body() dto: UpdateShareClosingLineDto,
+  ): Promise<{ text: string }> {
+    return this.usersService.updateShareClosingLine(currentUser.userId, dto.text);
+  }
+
+  @Patch('me/sell-closing-line')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
+  async patchSellClosingLine(
+    @CurrentUser() currentUser: ICurrentUser,
+    @Body() dto: UpdateSellClosingLineDto,
+  ): Promise<{ text: string }> {
+    return this.usersService.updateSellClosingLine(currentUser.userId, dto.text);
+  }
+
+  @Put('me/spare-rule')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
+  async putSpareRule(
+    @CurrentUser() currentUser: ICurrentUser,
+    @Body() dto: UpdateSpareRuleDto,
+  ): Promise<{ rule: TSpareRule }> {
+    return this.usersService.updateSpareRule(currentUser.userId, dto.rule);
+  }
+
+  /** E-mails a six-digit code to the account's own address; the password change needs it back. */
+  @Post('me/password-code')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Throttle({ default: AUTH_THROTTLE.codes })
+  async postPasswordCode(
+    @CurrentUser() currentUser: ICurrentUser,
+    @AcceptLanguage() locale: TLocale,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ expiresAt: Date; resendAfter: Date }> {
+    try {
+      return await this.authService.requestPasswordCode(currentUser.userId, locale);
+    } catch (err) {
+      throw this.asHttpError(err, res);
+    }
+  }
+
+  /**
+   * Sets or replaces the password once the e-mailed code is spent, and signs every other device out;
+   * this one stays signed in. A wrong code answers 400, never 401: the web client reads a 401 as a
+   * lost session.
+   */
+  @Put('me/password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
+  async putPassword(
+    @CurrentUser() currentUser: ICurrentUser,
+    @Body() dto: SetPasswordDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    try {
+      await this.authService.changePasswordWithCode(currentUser.userId, dto.code, dto.password, readSessionToken(req));
+    } catch (err) {
+      throw this.asHttpError(err, res);
+    }
+  }
+
+  private asHttpError(err: unknown, res: Response): unknown {
+    if (!(err instanceof AuthError)) return err;
+    if (err.retryAfterSeconds !== undefined) res.setHeader('Retry-After', String(err.retryAfterSeconds));
+    if (err.code === EAuthErrorCode.InvalidCode) {
+      return new BadRequestException({ message: err.message, code: err.code });
+    }
+    return mapAuthError(err);
   }
 }

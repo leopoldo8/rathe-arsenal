@@ -1,3 +1,4 @@
+import type { TImportKind } from '../../../database/entities/csv-source.entity';
 /**
  * Response shape for GET /api/collection/library.
  *
@@ -64,11 +65,16 @@ export interface ILibraryCard {
 export interface ILibraryCardContribution {
   readonly sourceId: string;
   /**
-   * Human label for the source. Manual entries always read "Manual entries"
-   * — `csv_source.label` defaults to that for `kind='manual'` rows.
+   * Human label for the source. Manual entries read "Entradas à mão" or "Hand entries", by the
+   * language of the request, whatever label the row stores.
    */
   readonly sourceLabel: string;
-  readonly kind: 'manual' | 'csv';
+  readonly kind: TImportKind;
+  /** The version of these copies; `''` is "Não sei". An import holding two versions of a card appears twice. */
+  readonly printingCode: string;
+  readonly edition: string;
+  readonly finish: string;
+  readonly condition: string;
   readonly quantity: number;
 }
 

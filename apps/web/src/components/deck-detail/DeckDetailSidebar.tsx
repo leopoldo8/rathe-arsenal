@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ShoppingPanel } from './ShoppingPanel';
 import { SidebarCollapseToggle } from './SidebarCollapseToggle';
 import { HeroDropdown } from './HeroDropdown';
 import { CascadeWarningPanelSidebar } from './CascadeWarningPanel';
@@ -9,8 +8,6 @@ import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { useHeroesQuery } from '../../api/catalog';
 import type { IDeckLegality } from '../../api/decks';
-import type { IShoppingLineResponse } from '../../api/shopping-line';
-import type { TVariantFetchMutationStatus } from '../ShoppingLine';
 import type { ICompositionDraft } from '../../hooks/useCompositionDraft';
 import type { ICascadeCheckResult } from '../../hooks/useCascadeCheck';
 import styles from './DeckDetailSidebar.module.css';
@@ -64,16 +61,6 @@ interface IDeckDetailSidebarProps {
    * The Fabrary link only renders when this is non-null.
    */
   readonly fabraryUlid: string | null;
-  /**
-   * Shopping panel data + controls — forwarded to ShoppingPanel.
-   */
-  readonly shoppingData: IShoppingLineResponse | null;
-  readonly onFetchVariants: () => void;
-  readonly fetchMutationStatus: TVariantFetchMutationStatus;
-  readonly isCooldownActive: boolean;
-  readonly onPollingChange: (startedAt: number | undefined) => void;
-  readonly onShoppingRetry: () => void;
-
   // ---------------------------------------------------------------------------
   // U12 Edit-mode props
   // ---------------------------------------------------------------------------
@@ -88,7 +75,7 @@ interface IDeckDetailSidebarProps {
    */
   readonly compositionDraft?: ICompositionDraft;
   /**
-   * Result from useCascadeCheck. Required when mode='edit'.
+   * The cards the engine refuses in the draft. Required when mode='edit'.
    */
   readonly cascadeCheck?: ICascadeCheckResult;
   /**
@@ -125,12 +112,6 @@ export function DeckDetailSidebar({
   format,
   legality,
   fabraryUlid,
-  shoppingData,
-  onFetchVariants,
-  fetchMutationStatus,
-  isCooldownActive,
-  onPollingChange,
-  onShoppingRetry,
   mode = 'view',
   compositionDraft,
   cascadeCheck,
@@ -151,7 +132,7 @@ export function DeckDetailSidebar({
     writeSidebarExpanded(expanded);
   }, [expanded]);
 
-  const fabraryUrl = fabraryUlid ? `https://fabrary.com/decks/${fabraryUlid}` : null;
+  const fabraryUrl = fabraryUlid ? `https://fabrary.net/decks/${fabraryUlid}` : null;
 
   // Look up the hero card image so the sidebar can render the actual art
   // instead of a generic placeholder. The heroes query is shared with the
@@ -206,10 +187,8 @@ export function DeckDetailSidebar({
               <span className={styles.formatPill} data-testid="sidebar-edit-format-pill">
                 {compositionDraft.format}
               </span>
-              {/* Legality badge stays visible in Edit so the user can see the
-                  status of the saved composition without leaving the canvas.
-                  Reflects the last save — the in-progress cascade check sits
-                  on the canvas as its own banner. */}
+              {/* Legality badge stays visible in Edit. The route hands it the
+                  engine's verdict on the draft, never the saved one. */}
               <div
                 className={styles.legalitySlot}
                 data-testid="sidebar-edit-legality-slot"
@@ -278,28 +257,7 @@ export function DeckDetailSidebar({
             />
           )}
 
-        {/* ---- Block 3: Shopping — only when a store has prices to show ---- */}
-        {shoppingData?.kind === 'populated' && (
-          <section
-            className={styles.block}
-            aria-labelledby="sidebar-shopping-title"
-            data-testid="sidebar-shopping-block"
-          >
-            <h3 id="sidebar-shopping-title" className={styles.blockTitle}>
-              {t('decks.shopping')}
-            </h3>
-            <ShoppingPanel
-              data={shoppingData}
-              onFetchVariants={onFetchVariants}
-              fetchMutationStatus={fetchMutationStatus}
-              isCooldownActive={isCooldownActive}
-              onPollingChange={onPollingChange}
-              onRetry={onShoppingRetry}
-            />
-          </section>
-        )}
-
-        {/* ---- Block 4: Fabrary link — conditional ---- */}
+        {/* ---- Block 3: Fabrary link — conditional ---- */}
         {fabraryUrl !== null && (
           <section className={styles.block} data-testid="sidebar-fabrary-block">
             <a

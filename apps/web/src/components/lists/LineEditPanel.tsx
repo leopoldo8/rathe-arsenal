@@ -5,16 +5,18 @@ import {
   CONDITIONS,
   LINE_QUANTITY_MAX,
   LINE_QUANTITY_MIN,
+  NO_LINE_VERSION,
   useApplySuggestionsMutation,
   useListPrintingsQuery,
   usePatchLineMutation,
   useRemoveLineMutation,
   type ICardList,
   type IListLine,
+  type IListPrinting,
   type IPatchLineBody,
 } from '../../api/lists';
 import { CardArt } from '../card-art/CardArt';
-import { withPitch } from '../deck-detail/recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 import { MoneyInput } from './MoneyInput';
 import { SuggestionBlock } from './SuggestionBlock';
 import { formatBrlWhole } from './listsModel';
@@ -24,6 +26,12 @@ interface ILineEditPanelProps {
   readonly list: ICardList;
   readonly line: IListLine;
   readonly onClose: () => void;
+}
+
+/** The version fields of the printing the player picked; the empty choice clears the version. */
+function versionOf(key: string, options: readonly IListPrinting[]): IPatchLineBody {
+  const option = options.find((candidate) => candidate.printing === key);
+  return option === undefined ? NO_LINE_VERSION : { printingCode: option.printingCode, edition: option.edition, finish: option.finish };
 }
 
 export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): React.ReactElement {
@@ -56,7 +64,7 @@ export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): Rea
                 <CardArt name={line.name} pitch={line.pitch} cost={null} type={line.type} missing={false} size="lg" imageUrl={line.imageUrl} />
               </div>
               <div className={styles.panelTopText}>
-                <p className={styles.panelName}>{withPitch(line.name, line.pitch, (key) => t(key))}</p>
+                <p className={styles.panelName}>{cardName(line.name, line.pitch, (key) => t(key))}</p>
                 <span className={styles.panelLabel} id="line-qty-label">{t('lists.panel.quantity')}</span>
                 <div className={styles.stepper} role="group" aria-labelledby="line-qty-label">
                   <button
@@ -89,7 +97,7 @@ export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): Rea
                     className={styles.panelField}
                     value={line.printing ?? ''}
                     disabled={busy}
-                    onChange={(event) => update({ printing: event.currentTarget.value === '' ? null : event.currentTarget.value })}
+                    onChange={(event) => update(versionOf(event.currentTarget.value, printingOptions))}
                   >
                     <option value="">{t('lists.panel.noPrinting')}</option>
                     {!hasCurrent && line.printing !== null && (
@@ -141,9 +149,9 @@ export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): Rea
             )}
 
             <div className={styles.panelActions}>
-              {isSell && (
-                <button type="button" className={styles.panelBtn} disabled={busy} onClick={() => update({ sold: !line.sold })}>
-                  {line.sold ? t('lists.panel.unmarkSold') : t('lists.panel.markSold')}
+              {isSell && line.sold && (
+                <button type="button" className={styles.panelBtn} disabled={busy} onClick={() => update({ sold: false })}>
+                  {t('lists.panel.unmarkSold')}
                 </button>
               )}
               <button

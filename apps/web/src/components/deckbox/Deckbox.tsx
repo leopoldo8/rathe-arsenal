@@ -105,11 +105,11 @@ export function Deckbox(props: IDeckboxProps): React.ReactElement {
       params={{ deckId: String(props.deckId) }}
       search={{ edit: undefined }}
       className={deckClass}
-      aria-label={t('home.deckboxOpenAriaLabel', { deckName: props.deckName })}
       onKeyDown={handleKeyDown}
       data-variant="deck"
       data-testid="deckbox"
     >
+      <span className="sr-only">{t('home.deckboxOpenAriaLabel', { deckName: props.deckName })}</span>
       <DeckboxScenes {...props} />
     </Link>
   );

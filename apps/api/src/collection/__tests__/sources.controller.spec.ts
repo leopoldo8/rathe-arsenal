@@ -78,7 +78,7 @@ describe('SourcesController', () => {
   describe('list', () => {
     it('returns all csv sources for the user', async () => {
       // Arrange
-      const sources = [buildSource(), buildSource({ id: 'src-2' })];
+      const sources = [buildSource(), buildSource({ id: 'src-2' })].map((source) => ({ ...source, copies: 3 }));
       sourcesService.list.mockResolvedValue(sources);
 
       // Act
@@ -93,6 +93,25 @@ describe('SourcesController', () => {
   // ---------------------------------------------------------------------------
   // PATCH /api/collection/sources/:id
   // ---------------------------------------------------------------------------
+
+  describe('list labels', () => {
+    it('names the manual source in the language of the request and leaves other names alone', async () => {
+      // Arrange
+      sourcesService.list.mockResolvedValue([
+        { ...buildSource({ id: 'manual-id', kind: 'manual', label: 'Manual entries' }), copies: 4 },
+        { ...buildSource({ label: 'colecao-lucas.csv' }), copies: 612 },
+      ]);
+
+      // Act
+      const portuguese = await controller.list(mockCurrentUser, 'pt-BR');
+      const english = await controller.list(mockCurrentUser, 'en-US');
+
+      // Assert
+      expect(portuguese.map((source) => source.label)).toEqual(['Entradas à mão', 'colecao-lucas.csv']);
+      expect(english.map((source) => source.label)).toEqual(['Hand entries', 'colecao-lucas.csv']);
+      expect(portuguese.map((source) => source.copies)).toEqual([4, 612]);
+    });
+  });
 
   describe('patch', () => {
     it('toggles active via service', async () => {

@@ -15,6 +15,7 @@ import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { TDeckShareIntent } from '../database/entities/share-link.entity';
+import { EmailConfirmedGuard } from '../auth/guards/email-confirmed.guard';
 import { OwnsTrackedDeckGuard } from '../auth/guards/owns-tracked-deck.guard';
 import { DeckShareService } from './deck-share.service';
 import { IDeckShareState, ILinkState } from './dtos/share-state.dto';
@@ -38,7 +39,8 @@ export class DeckShareController {
   }
 
   @Post()
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(EmailConfirmedGuard)
   @Throttle({ default: { limit: SHARE_TOGGLE_LIMIT, ttl: MINUTE_MS } })
   async enable(
     @Param('deckId', ParseIntPipe) deckId: number,

@@ -13,6 +13,9 @@ vi.mock('@tanstack/react-router', async () => (await import('../../chat/__tests_
 import { callsTo, mockApiFetch, mockNavigate, navigatedTo, renderWithClient, serveApi, summary } from '../../chat/__tests__/chat-test-utils';
 import type { IChatConversationSummary } from '../../../api/chat';
 import { DeckTutorTile } from '../recommendations/DeckTutorTile';
+import { blitzDraft, verdictOf } from './rulesChecklistTestData';
+
+const RHINAR_NAME = 'Rhinar, Reckless Rampage';
 
 function serveTile(conversations: IChatConversationSummary[]): void {
   serveApi({
@@ -37,7 +40,7 @@ describe('DeckTutorTile', () => {
     expect(screen.getAllByTestId('tile-question').map((button) => button.textContent)).toEqual([
       'Como outros jogam o Katsu nos torneios?',
       'Que carta deste deck vale trocar?',
-      'O que mais falta para ficar pronto?',
+      'O que ainda impede este deck de ficar pronto?',
     ]);
     const start = screen.getByRole('button', { name: 'Conversar sobre este deck' });
     expect(start.querySelector('[data-testid="tutor-mark"]')).not.toBeNull();
@@ -70,11 +73,11 @@ describe('DeckTutorTile', () => {
     serveTile([]);
     const view = renderWithClient(<DeckTutorTile deckId={7} heroName="Katsu" />);
 
-    await user.click(screen.getByRole('button', { name: 'O que mais falta para ficar pronto?' }));
+    await user.click(screen.getByRole('button', { name: 'O que ainda impede este deck de ficar pronto?' }));
 
     await waitFor(() => expect(navigatedTo()).toBe('/chat/c-1'));
     expect(callsTo('POST /chat/conversations')).toEqual([{ trackedDeckId: 7 }]);
-    expect(callsTo('POST /chat/conversations/c-1/messages')).toEqual([{ text: 'O que mais falta para ficar pronto?' }]);
+    expect(callsTo('POST /chat/conversations/c-1/messages')).toEqual([{ text: 'O que ainda impede este deck de ficar pronto?' }]);
     view.unmount();
 
     mockApiFetch.mockClear();
@@ -84,5 +87,52 @@ describe('DeckTutorTile', () => {
     await user.click(screen.getByRole('button', { name: 'Conversar sobre este deck' }));
     expect(navigatedTo()).toBe('/chat?deck=7');
     expect(mockApiFetch.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST')).toHaveLength(0);
+  });
+
+  it("the first question follows the deck's state", () => {
+    const cases: Array<[string, Parameters<typeof blitzDraft>[0], string]> = [
+      ['a rule problem', { deckCards: 31, packHuntCopies: 2 }, 'Como deixo este deck válido no Blitz?'],
+      ['short of cards only', { deckCards: 31, packHuntCopies: 1 }, 'Quais cartas coloco para chegar a 40?'],
+      ['neither', { deckCards: 40, packHuntCopies: 1 }, `Como outros jogam o ${RHINAR_NAME} nos torneios?`],
+    ];
+    for (const [, options, first] of cases) {
+      serveTile([]);
+      const draft = blitzDraft(options);
+      const view = renderWithClient(<DeckTutorTile deckId={7} heroName={RHINAR_NAME} legality={verdictOf(draft)} format="Blitz" />);
+
+      expect(screen.getAllByTestId('tile-question')[0]).toHaveTextContent(first);
+      view.unmount();
+    }
+  });
+
+  it("the tile's other two questions", () => {
+    serveTile([]);
+    renderWithClient(<DeckTutorTile deckId={7} heroName="Katsu" />);
+
+    const questions = screen.getAllByTestId('tile-question').map((button) => button.textContent);
+    expect(questions.slice(1)).toEqual(['Que carta deste deck vale trocar?', 'O que ainda impede este deck de ficar pronto?']);
+    expect(questions).not.toContain('O que mais falta para ficar pronto?');
+  });
+
+  it('the tile follows b2-deck-ask-phone', () => {
+    serveTile([]);
+    const draft = blitzDraft({ deckCards: 31, packHuntCopies: 2 });
+    renderWithClient(<DeckTutorTile deckId={7} heroName={RHINAR_NAME} legality={verdictOf(draft)} format="Blitz" />);
+
+    const tile = screen.getByTestId('tutor-tile');
+    const ordered = [
+      screen.getByText('Pergunte ao Tutor'),
+      ...screen.getAllByTestId('tile-question'),
+      screen.getByRole('button', { name: 'Conversar sobre este deck' }),
+    ];
+    expect(ordered.map((node) => node.textContent)).toEqual([
+      'Pergunte ao Tutor',
+      'Como deixo este deck válido no Blitz?',
+      'Que carta deste deck vale trocar?',
+      'O que ainda impede este deck de ficar pronto?',
+      'Conversar sobre este deck',
+    ]);
+    ordered.slice(1).forEach((node, index) => expect(ordered[index]!.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy());
+    expect(tile).toContainElement(ordered[0]!);
   });
 });

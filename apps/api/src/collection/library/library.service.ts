@@ -6,6 +6,8 @@ import { StoreStockEntity } from '../../database/entities/store-stock.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionReadService } from '../collection-read.service';
+import { TLocale } from '../../common/i18n/resolve-locale';
+import { sourceLabelFor } from '../sources/source-label.util';
 import {
   ILibraryCard,
   ILibraryCardContribution,
@@ -25,6 +27,10 @@ function pitchBucket(pitch: number | null): TPitchBucket {
   if (pitch === 2) return 'yellow';
   if (pitch === 3) return 'blue';
   return 'colorless';
+}
+
+function versionSortKey(entry: ILibraryCardContribution): string {
+  return [entry.printingCode, entry.edition, entry.finish, entry.condition].join('|');
 }
 
 /**
@@ -49,7 +55,7 @@ export class LibraryService {
     private readonly csvSourceRepo: Repository<CsvSourceEntity>,
   ) {}
 
-  async load(userId: string): Promise<ILibraryResponse> {
+  async load(userId: string, locale: TLocale = 'pt-BR'): Promise<ILibraryResponse> {
     // Step 1: Load owned quantities from all active sources.
     const ownedMap = await this.collectionReadService.loadOwned(userId);
 
@@ -63,7 +69,7 @@ export class LibraryService {
     // Step 1b: Per-card contribution breakdown — drives the hover stepper
     // on /library and disambiguates which source to decrement when a card
     // is split across two or more.
-    const contributionsByCard = await this.loadContributionsByCard(userId);
+    const contributionsByCard = await this.loadContributionsByCard(userId, locale);
 
     // Step 2: Batch price query — MIN(priceCents) per cardIdentifier.
     // Only rows with quantity > 0 and priceCents non-null contribute.
@@ -196,6 +202,7 @@ export class LibraryService {
    */
   private async loadContributionsByCard(
     userId: string,
+    locale: TLocale,
   ): Promise<Map<string, ILibraryCardContribution[]>> {
     const result = new Map<string, ILibraryCardContribution[]>();
 
@@ -215,7 +222,7 @@ export class LibraryService {
 
     const rows = await this.collectionCardRepo.find({
       where: { userId, sourceId: In(activeSourceIds) },
-      select: ['cardIdentifier', 'sourceId', 'quantity'],
+      select: ['cardIdentifier', 'sourceId', 'quantity', 'printingCode', 'edition', 'finish', 'condition'],
     });
 
     for (const row of rows) {
@@ -225,9 +232,12 @@ export class LibraryService {
       const list = result.get(row.cardIdentifier);
       const entry: ILibraryCardContribution = {
         sourceId: row.sourceId,
-        sourceLabel:
-          meta.kind === 'manual' ? 'Manual entries' : meta.label || 'Untitled source',
+        sourceLabel: sourceLabelFor(meta, locale),
         kind: meta.kind,
+        printingCode: row.printingCode,
+        edition: row.edition,
+        finish: row.finish,
+        condition: row.condition,
         quantity: row.quantity,
       };
       if (list) {
@@ -243,7 +253,10 @@ export class LibraryService {
     for (const list of result.values()) {
       list.sort((a, b) => {
         if (a.kind !== b.kind) return a.kind === 'manual' ? -1 : 1;
-        return a.sourceLabel.localeCompare(b.sourceLabel);
+        return (
+          a.sourceLabel.localeCompare(b.sourceLabel) ||
+          versionSortKey(a).localeCompare(versionSortKey(b))
+        );
       });
     }
 

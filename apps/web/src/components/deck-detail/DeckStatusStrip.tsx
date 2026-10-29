@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useUseSuggestions } from '../../api/replacements';
 import { localizeApiError } from '../card-scanner/localize-api-error';
 import { Button } from '../ui/Button/Button';
 import type { IDeckSummary, TStripKind } from './deckDetailModel';
 import styles from './DeckStatusStrip.module.css';
-
-export const MISSING_PANEL_ID = 'deck-missing-panel';
 
 interface IDeckStatusStripProps {
   readonly deckId: number;
@@ -26,7 +25,16 @@ function useStripMessage(summary: IDeckSummary, offFormat: string | null): strin
   if (summary.kind === 'complete') {
     return offFormat ? t('deckDetail.stripCompleteOffFormat', { format: offFormat }) : t('deckDetail.stripComplete');
   }
-  const gap = `${t('deckDetail.stripMissingCards', { count: summary.missingCards })}.`;
+  const gap =
+    summary.missingInventory > 0
+      ? t('deckDetail.stripMissingCopies', {
+          count: summary.missingCards,
+          split: t('deckDetail.missingSplit', {
+            deck: summary.missingCards - summary.missingInventory,
+            inventory: summary.missingInventory,
+          }),
+        })
+      : `${t('deckDetail.stripMissingCards', { count: summary.missingCards })}.`;
   if (summary.kind === 'incomplete') return gap;
   return `${gap} ${t('deckDetail.stripCoverable', { count: summary.suggestionCount })}`;
 }
@@ -90,13 +98,21 @@ export function DeckStatusStrip({
         <div className={styles.actions}>
           {showUse && <UseSuggestionsButton deckId={deckId} count={summary.suggestionCount} />}
           {showShoppingLink && (
-            <a href={`#${MISSING_PANEL_ID}`} className={styles.action} data-testid="strip-view-shopping">
-              {t('deckDetail.seeShopping')}
-            </a>
+            <>
+              {summary.missingInventory > 0 && <span aria-hidden="true">{' · '}</span>}
+              <Link
+                to="/decks/$deckId/missing"
+                params={{ deckId: String(deckId) }}
+                className={styles.action}
+                data-testid="strip-view-shopping"
+              >
+                {t(summary.missingInventory > 0 ? 'deckDetail.seeWhatIsMissing' : 'deckDetail.seeShopping')}
+              </Link>
+            </>
           )}
           {showFabrary && (
             <a
-              href={`https://fabrary.com/decks/${fabraryUlid}`}
+              href={`https://fabrary.net/decks/${fabraryUlid}`}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.fabrary}

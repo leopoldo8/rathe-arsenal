@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CardArt } from '../card-art/CardArt';
+import { cardName } from '../../lib/card-name';
+import { CARD_GROUP_LABEL_KEY, groupCardsByKind, type TCardGroupId } from '../../lib/card-groups';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import { LibraryCardStepper } from './LibraryCardStepper';
+import { CardVersionsSheet } from '../collection-versions/CardVersionsSheet';
 import type { ILibraryCard } from '../../api/library';
 import type { TGroupBy } from './LibraryFilterRail';
 import styles from './LibraryGrid.module.css';
@@ -44,14 +47,14 @@ function pitchValue(pitch: number | null): 1 | 2 | 3 | null {
 }
 
 /**
- * Picks the display type for grouping + the cell glyph.
+ * Picks the display type for the cell glyph.
  *
  * The FAB types catalog collapses Attack Actions and Non-Attack Actions
  * into a single `"Action"` top-level type, with the distinction living
  * in `subtypes`. That collapses two very different cards (a swing vs a
  * resource modifier) into one bucket, which the player doesn't think of
- * as the same group. We split them back out here so the grouping +
- * type-glyph affordances reflect how the cards are actually used.
+ * as the same group. We split them back out here so the type glyph
+ * reflects how the card is actually used.
  */
 function primaryType(
   types: readonly string[],
@@ -81,22 +84,6 @@ function sortByName(cards: readonly ILibraryCard[]): ILibraryCard[] {
 }
 
 /**
- * Type groups that represent the arena (the play zone permanents the
- * player sets up at the start of the game) — listed last so the deck
- * cards (Actions, Reactions, etc.) appear first. The rule only kicks
- * in when grouping by type; for pitch/set the keys never match these
- * names so the comparator stays a no-op.
- */
-const ARENA_TYPE_GROUPS = new Set(['Equipment', 'Hero', 'Token', 'Weapon']);
-
-function compareGroupKeys(a: string, b: string): number {
-  const aArena = ARENA_TYPE_GROUPS.has(a);
-  const bArena = ARENA_TYPE_GROUPS.has(b);
-  if (aArena !== bArena) return aArena ? 1 : -1;
-  return a.localeCompare(b);
-}
-
-/**
  * Groups cards by the requested dimension and returns an ordered list of
  * [groupKey, cards[]] pairs. Immutable — never mutates the input array.
  */
@@ -108,13 +95,18 @@ function groupCards(
     return [['All cards', sortByName(cards)]];
   }
 
+  if (group === 'type') {
+    // The same rule as the deck page and the shared page, so one card reads under one heading everywhere.
+    return groupCardsByKind(cards, (card) => ({ type: card.types[0] ?? '' })).map(
+      ({ id, cards: members }): [string, readonly ILibraryCard[]] => [id, sortByName(members)],
+    );
+  }
+
   const groupMap = new Map<string, ILibraryCard[]>();
 
   for (const card of cards) {
     let key: string;
-    if (group === 'type') {
-      key = primaryType(card.types, card.subtypes);
-    } else if (group === 'pitch') {
+    if (group === 'pitch') {
       key = pitchLabel(card.pitch);
     } else {
       key = primarySet(card.sets);
@@ -133,10 +125,7 @@ function groupCards(
     groupMap.set(key, sortByName(list));
   }
 
-  // Sort group keys deterministically. Arena type groups (Equipment,
-  // Hero, Token, Weapon) get pushed to the end of the list so the deck
-  // cards — which the player scans far more often — read first.
-  return [...groupMap.entries()].sort(([a], [b]) => compareGroupKeys(a, b));
+  return [...groupMap.entries()].sort(([a], [b]) => a.localeCompare(b));
 }
 
 // ---------------------------------------------------------------------------
@@ -177,25 +166,28 @@ interface ILibraryCardCellProps {
   readonly card: ILibraryCard;
   readonly cardSize: number | undefined;
   readonly onOpenLightbox: (card: ILibraryCard) => void;
+  readonly onOpenVersions: (card: ILibraryCard) => void;
 }
 
 function LibraryCardCell({
   card,
   cardSize,
   onOpenLightbox,
+  onOpenVersions,
 }: ILibraryCardCellProps): React.ReactElement {
   const { t } = useTranslation();
   const typeStr = primaryType(card.types, card.subtypes);
+  const displayName = cardName(card.name, card.pitch, t);
   const handleClick = card.imageUrl ? () => onOpenLightbox(card) : undefined;
   return (
     <li
       className={styles.cell}
-      aria-label={t('library.cardCellAriaLabel', { name: card.name, qty: card.ownedQuantity })}
+      aria-label={t('library.cardCellAriaLabel', { name: displayName, qty: card.ownedQuantity })}
     >
       <LibraryCardStepper card={card} />
       <div className={styles.art}>
         <CardArt
-          name={card.name}
+          name={displayName}
           pitch={pitchValue(card.pitch)}
           cost={null}
           type={typeStr}
@@ -207,7 +199,9 @@ function LibraryCardCell({
         />
       </div>
       <div className={styles.meta}>
-        <span className={styles.name}>{card.name}</span>
+        <button type="button" className={styles.name} onClick={() => onOpenVersions(card)}>
+          {displayName}
+        </button>
         <span className={styles.qtyBadge} aria-label={t('library.ownedAriaLabel', { qty: card.ownedQuantity })}>
           ×{card.ownedQuantity}
         </span>
@@ -260,18 +254,17 @@ export function LibraryGrid({
     if (group === 'pitch') {
       return pitchGroupLabels[key] ?? key;
     }
-    // Localize the generic fallback type heading; real game type names
-    // (Equipment, Weapon, Action, …) stay as the data provides them.
-    if (key === 'Other') return t('library.typeOtherGroupLabel');
-    return key;
+    return t(CARD_GROUP_LABEL_KEY[key as TCardGroupId]);
   }
+
+  const [versionsCard, setVersionsCard] = useState<ILibraryCard | null>(null);
 
   function openLightbox(card: ILibraryCard): void {
     if (!card.imageUrl) return;
     setLightbox({
       imageUrl: card.imageUrl.large,
       sources: lightboxSourcesFor(card.imageUrl),
-      name: card.name,
+      name: cardName(card.name, card.pitch, t),
     });
   }
 
@@ -292,11 +285,15 @@ export function LibraryGrid({
                 card={card}
                 cardSize={cardSize}
                 onOpenLightbox={openLightbox}
+                onOpenVersions={setVersionsCard}
               />
             ))}
           </CardGrid>
         </section>
       ))}
+      {versionsCard && (
+        <CardVersionsSheet card={versionsCard} open onClose={() => setVersionsCard(null)} />
+      )}
       {lightbox && (
         <CardLightbox
           imageUrl={lightbox.imageUrl}

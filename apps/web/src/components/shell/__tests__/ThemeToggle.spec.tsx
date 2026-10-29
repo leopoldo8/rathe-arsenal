@@ -63,18 +63,19 @@ import { ThemeToggle } from '../ThemeToggle';
 function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
   return {
     user: { id: 'u1', email: 'hero@rathe.gg', role: 'user', chatAccess: false },
-    token: 'jwt-token',
     isLoading: false,
     setSettings: vi.fn(),
-    signUp: async () => ({}),
+    signUp: async () => undefined,
     signIn: async () => {},
     signOut: () => {},
-    verifyEmail: async () => {},
-    forgotPassword: async () => {},
-    resetPassword: async () => {},
+    verifyEmail: async () => ({ returnPath: null, email: '' }),
+    changeEmail: async () => undefined,
+    verifyCode: async () => ({ returnPath: null }),
+    redeemCode: async () => ({ returnPath: null }),
     deleteAccount: async () => {},
     setDisplayName: () => undefined,
     setWhatsappNumber: () => undefined,
+    setHasPassword: () => undefined,
     ...overrides,
   };
 }
@@ -121,11 +122,11 @@ describe('ThemeToggle — happy path', () => {
     expect(setSettings).toHaveBeenCalledWith({ theme: 'light' });
   });
 
-  it('fires PATCH with the new theme and current token', () => {
+  it('fires PATCH with the new theme', () => {
     patchMock.mockResolvedValue({ theme: 'light' });
-    renderToggle(makeAuthContext({ token: 'jwt-abc' }));
+    renderToggle(makeAuthContext());
     fireEvent.click(screen.getByTestId('theme-toggle-light'));
-    expect(patchMock).toHaveBeenCalledWith('light', 'jwt-abc');
+    expect(patchMock).toHaveBeenCalledWith('light');
   });
 
   it('does NOT show a toast on PATCH success', async () => {
@@ -187,8 +188,8 @@ describe('ThemeToggle — rapid interactions', () => {
     fireEvent.click(screen.getByTestId('theme-toggle-light'));
     fireEvent.click(screen.getByTestId('theme-toggle-dark'));
     expect(patchMock).toHaveBeenCalledTimes(2);
-    expect(patchMock).toHaveBeenNthCalledWith(1, 'light', 'jwt-token');
-    expect(patchMock).toHaveBeenNthCalledWith(2, 'dark', 'jwt-token');
+    expect(patchMock).toHaveBeenNthCalledWith(1, 'light');
+    expect(patchMock).toHaveBeenNthCalledWith(2, 'dark');
   });
 
   it('final dataset.theme reflects the last click even if earlier PATCHes are in-flight', () => {

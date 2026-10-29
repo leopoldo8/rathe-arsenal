@@ -55,6 +55,11 @@ export function useAddCardMutation() {
 export interface IDecrementCardVariables {
   readonly cardIdentifier: string;
   readonly sourceId: string;
+  /** The version of the row to take from; a part left out is "Não sei". */
+  readonly printingCode?: string;
+  readonly edition?: string;
+  readonly finish?: string;
+  readonly condition?: string;
   readonly quantity?: number;
 }
 
@@ -86,6 +91,10 @@ export function useDecrementCardMutation() {
         body: JSON.stringify({
           cardIdentifier: variables.cardIdentifier,
           sourceId: variables.sourceId,
+          ...(variables.printingCode ? { printingCode: variables.printingCode } : {}),
+          ...(variables.edition ? { edition: variables.edition } : {}),
+          ...(variables.finish ? { finish: variables.finish } : {}),
+          ...(variables.condition ? { condition: variables.condition } : {}),
           quantity: variables.quantity ?? 1,
         }),
       }),
@@ -100,6 +109,10 @@ export function useDecrementCardMutation() {
 export interface IAddCardsBatchItem {
   readonly cardIdentifier: string;
   readonly quantity: number;
+  /** The collector code a scan read, and the edition and finish the player answered. */
+  readonly printingCode?: string;
+  readonly edition?: string;
+  readonly finish?: string;
 }
 
 export interface IAddCardsBatchResult {

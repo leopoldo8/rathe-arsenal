@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ShoppingLine } from '../ShoppingLine';
 import { computeVariantFetchInterval, VARIANT_FETCH_POLL_TIMEOUT_MS } from '../../api/deck-detail';
@@ -9,16 +9,10 @@ import {
 import type { IDeckDetailResponse } from '../../api/deck-detail';
 
 /**
- * Unit 6 test suite: estimated badge, CTA, polling, and progress indicator.
+ * Estimated badge and the deck-detail refetch interval.
  *
- * Tests cover all 9 required scenarios from the plan:
- *  1. CTA renders when isEstimated === true
- *  2. Clicking CTA triggers mutation and shows progress indicator
  *  3. Estimated badge appears with listing-only data, disappears after all
  *     cards have variants
- *  4. CTA disabled during cooldown with "last checked" text
- *  5. Progress shows "Checking card 3 of 12..." during fetch
- *  6. Partial failure shows "8 of 12 updated" with retry button
  *  7. Polling stops when inProgress === false
  *  8. Polling stops when variantFetchProgress is absent (pod-restart simulation)
  *  9. Polling stops after 5-minute safety timeout
@@ -44,6 +38,7 @@ afterEach(() => {
 const BASE_LINE = {
   cardIdentifier: 'rhinar-brute-of-brokenbone',
   cardName: 'Rhinar, Brute of Brokenbone',
+  pitch: null,
   quantityNeeded: 2,
   quantityAvailable: 2,
   unitPriceCents: 4990,
@@ -55,6 +50,7 @@ const BASE_LINE = {
 const SECOND_LINE = {
   cardIdentifier: 'pummel',
   cardName: 'Pummel',
+  pitch: null,
   quantityNeeded: 1,
   quantityAvailable: 0,
   unitPriceCents: null,
@@ -111,70 +107,6 @@ function makeProgress(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Scenario 1: CTA renders when isEstimated === true
-// ---------------------------------------------------------------------------
-
-describe('Scenario 1: CTA renders when isEstimated is true', () => {
-  it('renders "Get exact prices" button when isEstimated is true and callback provided', () => {
-    const data = makePopulated({ isEstimated: true });
-    const onFetchVariants = vi.fn();
-
-    render(<ShoppingLine data={data} onFetchVariants={onFetchVariants} />);
-
-    expect(screen.getByRole('button', { name: /obter preços exatos/i })).toBeInTheDocument();
-  });
-
-  it('does not render "Get exact prices" CTA when isEstimated is false', () => {
-    const data = makePopulated({ isEstimated: false });
-    const onFetchVariants = vi.fn();
-
-    render(<ShoppingLine data={data} onFetchVariants={onFetchVariants} />);
-
-    expect(screen.queryByRole('button', { name: /obter preços exatos/i })).not.toBeInTheDocument();
-  });
-
-  it('does not render CTA when onFetchVariants callback is not provided', () => {
-    const data = makePopulated({ isEstimated: true });
-
-    render(<ShoppingLine data={data} />);
-
-    expect(screen.queryByRole('button', { name: /obter preços exatos/i })).not.toBeInTheDocument();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Scenario 2: Clicking CTA triggers mutation and shows progress indicator
-// ---------------------------------------------------------------------------
-
-describe('Scenario 2: clicking CTA triggers mutation and shows progress', () => {
-  it('calls onFetchVariants when the CTA button is clicked', () => {
-    const data = makePopulated({ isEstimated: true });
-    const onFetchVariants = vi.fn();
-
-    render(<ShoppingLine data={data} onFetchVariants={onFetchVariants} />);
-    fireEvent.click(screen.getByRole('button', { name: /obter preços exatos/i }));
-
-    expect(onFetchVariants).toHaveBeenCalledOnce();
-  });
-
-  it('shows progress indicator when variantFetchProgress.inProgress is true', () => {
-    const progress = makeProgress({ inProgress: true, completed: 0, total: 12 });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    // CTA should be replaced by progress indicator
-    expect(screen.queryByRole('button', { name: /obter preços exatos/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('status')).toBeInTheDocument();
-    expect(screen.getByText(/verificando carta/i)).toBeInTheDocument();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Scenario 3: Estimated badge appears and disappears
-// ---------------------------------------------------------------------------
-
 describe('Scenario 3: estimated badge lifecycle', () => {
   it('renders the "estimated" badge when isEstimated is true', () => {
     const data = makePopulated({ isEstimated: true });
@@ -183,6 +115,13 @@ describe('Scenario 3: estimated badge lifecycle', () => {
 
     expect(screen.getByTestId('estimated-badge')).toBeInTheDocument();
     expect(screen.getByTestId('estimated-badge')).toHaveTextContent('estimado');
+  });
+
+  it('explains the estimated price in visible text, with no native tooltip', () => {
+    render(<ShoppingLine data={makePopulated({ isEstimated: true })} />);
+
+    expect(screen.getByTestId('estimate-note')).toHaveTextContent('Preço estimado pelo anúncio da loja.');
+    expect(document.querySelector('[title]')).toBeNull();
   });
 
   it('renders a tilde prefix on the price when isEstimated is true', () => {
@@ -219,171 +158,6 @@ describe('Scenario 3: estimated badge lifecycle', () => {
     expect(screen.queryByTestId('estimated-badge')).not.toBeInTheDocument();
   });
 });
-
-// ---------------------------------------------------------------------------
-// Scenario 4: CTA disabled during cooldown
-// ---------------------------------------------------------------------------
-
-describe('Scenario 4: cooldown state replaces CTA with "up to date" message', () => {
-  it('shows "up to date" message when isCooldownActive is true', () => {
-    const data = makePopulated({ isEstimated: true });
-
-    render(
-      <ShoppingLine
-        data={data}
-        onFetchVariants={vi.fn()}
-        isCooldownActive={true}
-      />,
-    );
-
-    expect(screen.queryByRole('button', { name: /obter preços exatos/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/preços atualizados/i)).toBeInTheDocument();
-  });
-
-  it('renders CTA button when isCooldownActive is false', () => {
-    const data = makePopulated({ isEstimated: true });
-
-    render(
-      <ShoppingLine
-        data={data}
-        onFetchVariants={vi.fn()}
-        isCooldownActive={false}
-      />,
-    );
-
-    expect(screen.getByRole('button', { name: /obter preços exatos/i })).toBeInTheDocument();
-  });
-
-  it('button is disabled and shows "Starting..." when fetchMutationStatus is pending', () => {
-    const data = makePopulated({ isEstimated: true });
-
-    render(
-      <ShoppingLine
-        data={data}
-        onFetchVariants={vi.fn()}
-        fetchMutationStatus="pending"
-      />,
-    );
-
-    const btn = screen.getByRole('button', { name: /iniciando/i });
-    expect(btn).toBeDisabled();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Scenario 5: Progress shows "Checking card 3 of 12..."
-// ---------------------------------------------------------------------------
-
-describe('Scenario 5: progress indicator text', () => {
-  it('shows "Checking card 1 of 12..." when no cards have been processed yet', () => {
-    const progress = makeProgress({ completed: 0, failed: 0, total: 12, inProgress: true });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    expect(screen.getByText(/verificando carta 1 de 12/i)).toBeInTheDocument();
-  });
-
-  it('shows "Checking card 3 of 12..." when 2 cards have been processed', () => {
-    const progress = makeProgress({ completed: 2, failed: 0, total: 12, inProgress: true });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    expect(screen.getByText(/verificando carta 3 de 12/i)).toBeInTheDocument();
-  });
-
-  it('shows "Checking card 12 of 12..." when 11 cards have been processed', () => {
-    const progress = makeProgress({ completed: 10, failed: 1, total: 12, inProgress: true });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    expect(screen.getByText(/verificando carta 12 de 12/i)).toBeInTheDocument();
-  });
-
-  it('does not exceed total in the progress label', () => {
-    // Edge: all 12 processed, but inProgress is still true momentarily
-    const progress = makeProgress({ completed: 12, failed: 0, total: 12, inProgress: true });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    expect(screen.getByText(/verificando carta 12 de 12/i)).toBeInTheDocument();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Scenario 6: Partial failure shows "8 of 12 updated" with retry button
-// ---------------------------------------------------------------------------
-
-describe('Scenario 6: partial failure notice', () => {
-  it('shows partial failure notice when inProgress is false and failed > 0', () => {
-    const progress = makeProgress({
-      completed: 8,
-      failed: 4,
-      total: 12,
-      inProgress: false,
-    });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    expect(screen.getByText(/8 de 12 atualizadas/i)).toBeInTheDocument();
-    expect(screen.getByText(/4 falharam/i)).toBeInTheDocument();
-  });
-
-  it('renders "Retry failed" button in the partial failure notice', () => {
-    const progress = makeProgress({
-      completed: 8,
-      failed: 4,
-      total: 12,
-      inProgress: false,
-    });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    expect(screen.getByRole('button', { name: /tentar de novo as que falharam/i })).toBeInTheDocument();
-  });
-
-  it('calls onFetchVariants when "Retry failed" button is clicked', () => {
-    const progress = makeProgress({
-      completed: 8,
-      failed: 4,
-      total: 12,
-      inProgress: false,
-    });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-    const onFetchVariants = vi.fn();
-
-    render(<ShoppingLine data={data} onFetchVariants={onFetchVariants} />);
-    fireEvent.click(screen.getByRole('button', { name: /tentar de novo as que falharam/i }));
-
-    expect(onFetchVariants).toHaveBeenCalledOnce();
-  });
-
-  it('does not show partial failure notice when failed === 0', () => {
-    const progress = makeProgress({
-      completed: 12,
-      failed: 0,
-      total: 12,
-      inProgress: false,
-    });
-    const data = makePopulated({ isEstimated: false, variantFetchProgress: progress });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    expect(screen.queryByText(/tentar de novo as que falharam/i)).not.toBeInTheDocument();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Scenarios 7, 8, 9: computeVariantFetchInterval unit tests (polling logic)
-//
-// These test the pure function directly to verify the 4 stop conditions
-// without needing to mount a full component or simulate real time passage.
-// ---------------------------------------------------------------------------
 
 describe('computeVariantFetchInterval: polling stop conditions', () => {
   function makeDeckDetail(
@@ -564,82 +338,6 @@ describe('computeVariantFetchInterval: polling stop conditions', () => {
 // onPollingChange callback integration tests
 // ---------------------------------------------------------------------------
 
-describe('onPollingChange callback', () => {
-  it('calls onPollingChange with a timestamp when fetch becomes active', () => {
-    const progress = makeProgress({ inProgress: true });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-    const onPollingChange = vi.fn();
-
-    render(
-      <ShoppingLine
-        data={data}
-        onFetchVariants={vi.fn()}
-        onPollingChange={onPollingChange}
-      />,
-    );
-
-    expect(onPollingChange).toHaveBeenCalledWith(expect.any(Number));
-  });
-
-  it('calls onPollingChange with undefined when variantFetchProgress is absent', () => {
-    // makePopulated with isEstimated: true but no variantFetchProgress
-    const data = makePopulated({ isEstimated: true });
-    const onPollingChange = vi.fn();
-
-    render(
-      <ShoppingLine
-        data={data}
-        onFetchVariants={vi.fn()}
-        onPollingChange={onPollingChange}
-      />,
-    );
-
-    expect(onPollingChange).toHaveBeenCalledWith(undefined);
-  });
-
-  it('calls onPollingChange with undefined when inProgress is false', () => {
-    const progress = makeProgress({ inProgress: false });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-    const onPollingChange = vi.fn();
-
-    render(
-      <ShoppingLine
-        data={data}
-        onFetchVariants={vi.fn()}
-        onPollingChange={onPollingChange}
-      />,
-    );
-
-    expect(onPollingChange).toHaveBeenCalledWith(undefined);
-  });
-
-  it('calls onPollingChange with undefined after the 5-minute safety timeout fires', () => {
-    const progress = makeProgress({ inProgress: true });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-    const onPollingChange = vi.fn();
-
-    render(
-      <ShoppingLine
-        data={data}
-        onFetchVariants={vi.fn()}
-        onPollingChange={onPollingChange}
-      />,
-    );
-
-    // Advance fake timers past the 5-minute timeout
-    act(() => {
-      vi.advanceTimersByTime(VARIANT_FETCH_POLL_TIMEOUT_MS + 1_000);
-    });
-
-    // After the timeout, polling stopped, so onPollingChange is called with undefined
-    expect(onPollingChange).toHaveBeenCalledWith(undefined);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Backward compatibility: existing states still render correctly
-// ---------------------------------------------------------------------------
-
 describe('backward compatibility: existing 6 states unaffected', () => {
   it('null (Path A) still renders success empty state', () => {
     render(<ShoppingLine data={null} />);
@@ -660,7 +358,7 @@ describe('backward compatibility: existing 6 states unaffected', () => {
     // makePopulated with no overrides omits isEstimated (older API response)
     const data = makePopulated();
 
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
+    render(<ShoppingLine data={data} />);
 
     expect(screen.queryByTestId('estimated-badge')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /obter preços exatos/i })).not.toBeInTheDocument();
@@ -671,87 +369,3 @@ describe('backward compatibility: existing 6 states unaffected', () => {
 // Per-card failure indicator (variantFetchProgress.cards)
 // ---------------------------------------------------------------------------
 
-describe('per-card failure indicator', () => {
-  it('renders a "failed" badge next to a card whose fetch status is failed', () => {
-    const progress = makeProgress({
-      inProgress: false,
-      completed: 1,
-      failed: 1,
-      total: 2,
-      cards: {
-        [BASE_LINE.cardIdentifier]: 'failed',
-        [SECOND_LINE.cardIdentifier]: 'done',
-      },
-    });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    const badges = screen.getAllByTestId('line-item-fetch-failed');
-    expect(badges).toHaveLength(1);
-    expect(badges[0]).toHaveTextContent(/falhou/i);
-    expect(badges[0]).toHaveAttribute(
-      'aria-label',
-      `Não foi possível buscar as versões de ${BASE_LINE.cardName}`,
-    );
-  });
-
-  it('does not render the "failed" badge for cards with done or pending status', () => {
-    const progress = makeProgress({
-      inProgress: true,
-      completed: 1,
-      failed: 0,
-      total: 2,
-      cards: {
-        [BASE_LINE.cardIdentifier]: 'done',
-        [SECOND_LINE.cardIdentifier]: 'pending',
-      },
-    });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    expect(screen.queryByTestId('line-item-fetch-failed')).not.toBeInTheDocument();
-  });
-
-  it('does not render any "failed" badge when variantFetchProgress is absent', () => {
-    const data = makePopulated({ isEstimated: true });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    expect(screen.queryByTestId('line-item-fetch-failed')).not.toBeInTheDocument();
-  });
-
-  it('does not render the badge when cards map is absent (older API response)', () => {
-    const progress = makeProgress({
-      inProgress: false,
-      completed: 2,
-      failed: 0,
-      total: 2,
-    });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    expect(screen.queryByTestId('line-item-fetch-failed')).not.toBeInTheDocument();
-  });
-
-  it('renders the badge on unavailable lines too, not just in-stock ones', () => {
-    const progress = makeProgress({
-      inProgress: false,
-      completed: 0,
-      failed: 2,
-      total: 2,
-      cards: {
-        [BASE_LINE.cardIdentifier]: 'failed',
-        [SECOND_LINE.cardIdentifier]: 'failed',
-      },
-    });
-    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
-
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
-
-    const badges = screen.getAllByTestId('line-item-fetch-failed');
-    expect(badges).toHaveLength(2);
-  });
-});

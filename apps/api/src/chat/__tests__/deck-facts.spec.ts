@@ -1,3 +1,4 @@
+import { catalog, getCopyLimit } from '@rathe-arsenal/engine';
 import { describeDeck } from '../deck-facts';
 
 const KATSU_ROWS = [
@@ -65,6 +66,51 @@ describe('deck facts', () => {
     });
 
     expect((facts['totals'] as { bySlot: unknown }).bySlot).toEqual({ weapon: 1, mainboard: 2 });
-    expect(facts['formatRules']).toEqual(expect.objectContaining({ exactMainboard: 40, maxCopies: 2 }));
+    expect(facts['formatRules']).toEqual(expect.objectContaining({ exactMainboard: 40, maxCopies: 1 }));
+  });
+
+  it('every card carries its copy limit from the engine', () => {
+    const facts = describeDeck({
+      heroIdentifier: 'rhinar-reckless-rampage',
+      format: 'Classic Constructed',
+      rows: [
+        { cardIdentifier: 'rhinar-reckless-rampage', quantity: 1, slot: 'hero' },
+        { cardIdentifier: 'romping-club', quantity: 1, slot: 'weapon' },
+        { cardIdentifier: 'pack-hunt-red', quantity: 3, slot: 'mainboard' },
+        { cardIdentifier: 'pack-hunt-blue', quantity: 3, slot: 'mainboard' },
+        { cardIdentifier: 'wounding-blow-red', quantity: 2, slot: 'mainboard' },
+      ],
+    });
+
+    const cards = facts['cards'] as Array<{ cardIdentifier: string; copyLimit: number }>;
+    expect(cards.find((card) => card.cardIdentifier === 'pack-hunt-red')?.copyLimit).toBe(3);
+    for (const card of cards) {
+      expect(card.copyLimit).toBe(getCopyLimit(catalog.getCard(card.cardIdentifier), 'Classic Constructed'));
+    }
+  });
+
+  it('carries the engine verdict, counting inventory copies in the pool and the limit', () => {
+    const facts = describeDeck({
+      heroIdentifier: 'rhinar-reckless-rampage',
+      format: 'Classic Constructed',
+      rows: [
+        { cardIdentifier: 'rhinar-reckless-rampage', quantity: 1, slot: 'hero' },
+        { cardIdentifier: 'pack-hunt-red', quantity: 3, inventoryQuantity: 1, slot: 'mainboard' },
+        { cardIdentifier: 'pack-hunt-yellow', quantity: 3, slot: 'mainboard' },
+      ],
+    });
+
+    const legality = facts['legality'] as { category: string; details: Array<{ code: string; params: Record<string, unknown> }> };
+    expect(legality.category).toBe('illegal');
+    const copyProblems = legality.details.filter((detail) => detail.code === 'too_many_copies');
+    expect(copyProblems).toHaveLength(1);
+    expect(copyProblems[0]!.params).toMatchObject({ cardIdentifier: 'pack-hunt-red', count: 4, limit: 3 });
+  });
+
+  it('gives no verdict or limits for a format the engine has no rules for', () => {
+    const facts = describeDeck({ heroIdentifier: 'rhinar-reckless-rampage', format: 'Draft', rows: [{ cardIdentifier: 'pack-hunt-red', quantity: 3, slot: 'mainboard' }] });
+
+    expect(facts['legality']).toBeUndefined();
+    expect((facts['cards'] as Array<Record<string, unknown>>)[0]!['copyLimit']).toBeUndefined();
   });
 });

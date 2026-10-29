@@ -16,11 +16,19 @@ export interface IDeckProposalPayload {
   readonly cards: readonly { readonly cardIdentifier: string; readonly quantity: number; readonly slot: string }[];
 }
 
+export type TSwapSide = 'deck' | 'inventory';
+
 export interface ISwapProposalPayload {
   readonly trackedDeckId: number;
   readonly originalCardIdentifier: string;
   readonly slot: string;
   readonly replacementCardIdentifier: string;
+  /** Copies the swap moves. Absent in a proposal stored before door 13: every copy the limit allows, from the deck. */
+  readonly quantity?: number;
+  readonly side?: TSwapSide;
+  /** The deck's missing copies before the move and after it, fixed when the proposal was validated (door 13). */
+  readonly missingBefore?: number;
+  readonly missingAfter?: number;
 }
 
 @Check('CHK_chat_proposal_kind_valid', `"kind" IN ('deck', 'swap')`)

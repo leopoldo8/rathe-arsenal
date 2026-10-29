@@ -6,6 +6,10 @@ import type { IDeckDetailResponse, IDeckDetailSnapshot } from '../../../api/deck
 import { setTestLocale } from '../../../test/i18n-test-utils';
 import { breakdown, entry, swap } from './deckDetailTestData';
 
+vi.mock('@tanstack/react-router', async (importOriginal) =>
+  (await import('../../../test/router-link-mock')).withLinkMock(await importOriginal<typeof import('@tanstack/react-router')>()),
+);
+vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 vi.mock('../../../auth/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@b.com', role: 'user', chatAccess: false } }) }));
 vi.mock('../../../lib/api-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/api-client')>();
@@ -63,24 +67,14 @@ describe('DeckDetailView without swaps', () => {
           deck={DECK}
           snapshot={SNAPSHOT}
           tags={[]}
-          shoppingData={null}
           onEdit={noop}
           onEditCards={noop}
-          onMarkOwned={noop}
-          isMarkingOwned={false}
-          pendingCard={null}
-          onFetchVariants={noop}
-          fetchMutationStatus="idle"
-          isCooldownActive={false}
-          onPollingChange={noop}
-          onShoppingRetry={noop}
         />
       </QueryClientProvider>,
     );
 
     expect(screen.getByTestId('deck-status-strip')).toHaveAttribute('data-kind', 'suggestions');
-    expect(screen.getByTestId('deck-missing-panel')).toBeInTheDocument();
-    expect(screen.getByTestId('missing-row-suggestion')).toHaveTextContent('Sub sub-a');
+    expect(screen.queryByTestId('deck-missing-panel')).toBeNull();
     expect(screen.queryByTestId('deck-swaps-panel')).toBeNull();
     expect(screen.queryByText(/trocas recusadas/i)).toBeNull();
     expect(screen.queryByText('Ver trocas')).toBeNull();

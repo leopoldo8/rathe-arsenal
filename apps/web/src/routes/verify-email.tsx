@@ -1,11 +1,14 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
-import { clearShareReturn, readShareReturn } from '../lib/share-return';
 import { localizeAuthError } from '../auth/localize-auth-error';
+import { AuthFetchError } from '../lib/auth-fetch';
+import type { IEmailConfirmation } from '../lib/account-api';
 import { AuthLayout } from '../components/auth-layout/AuthLayout';
+import { useResendConfirmation } from '../components/confirmation/useResendConfirmation';
+import { useToast } from '../components/ui/Toast/useToast';
 import styles from './auth-form.module.css';
 
 export const Route = createFileRoute('/verify-email')({
@@ -15,60 +18,91 @@ export const Route = createFileRoute('/verify-email')({
   }),
 });
 
-function VerifyEmailPage(): React.ReactElement {
+type TStatus =
+  | { readonly kind: 'verifying' }
+  | { readonly kind: 'confirmed'; readonly confirmation: IEmailConfirmation }
+  | { readonly kind: 'expired' }
+  | { readonly kind: 'failed'; readonly message: string };
+
+export function VerifyEmailPage(): React.ReactElement {
   const { t } = useTranslation();
   const { token } = Route.useSearch();
-  const { verifyEmail } = useAuth();
+  const { user, isLoading, verifyEmail } = useAuth();
+  const { show } = useToast();
   const navigate = useNavigate();
   const router = useRouter();
-  const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
-  const [errorMsg, setErrorMsg] = useState('');
-  // Read once at mount: StrictMode runs the effect twice and the first run clears the stored return.
-  const shareReturnRef = useRef(readShareReturn());
+  const resend = useResendConfirmation();
+  const [status, setStatus] = useState<TStatus>({ kind: 'verifying' });
+  const started = useRef(false);
 
   useEffect(() => {
-    if (!token) { setStatus('error'); setErrorMsg(t('auth.verifyNoToken')); return; }
+    // The session is asked for on load, so who is signed in is known only once that settles.
+    if (isLoading || started.current) return;
+    started.current = true;
+    if (!token) {
+      setStatus({ kind: 'failed', message: t('auth.verifyNoToken') });
+      return;
+    }
     verifyEmail(token)
-      .then(() => {
-        setStatus('success');
-        // A3: verified users land on /onboarding per R43, unless they signed up from a
-        // shared page: then they go back to it (SD-10), including across the email round trip.
-        const shareReturn = shareReturnRef.current;
-        clearShareReturn();
-        setTimeout(() => {
-          if (shareReturn) router.history.push(shareReturn.returnTo);
-          else void navigate({ to: '/onboarding' });
-        }, 1500);
+      .then((confirmation) => {
+        if (user?.email !== confirmation.email) {
+          setStatus({ kind: 'confirmed', confirmation });
+          return;
+        }
+        show({ kind: 'success', message: t('account.confirmedToast') });
+        if (confirmation.returnPath !== null) router.history.push(confirmation.returnPath);
+        else void navigate({ to: '/home', search: { tag: [] } });
       })
-      .catch((err: unknown) => { setStatus('error'); setErrorMsg(localizeAuthError(err, t)); });
+      .catch((err: unknown) => {
+        if (err instanceof AuthFetchError && err.status === 410) setStatus({ kind: 'expired' });
+        else setStatus({ kind: 'failed', message: localizeAuthError(err, t) });
+      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, isLoading]);
 
-  if (status === 'error') {
+  async function sendNewOne(): Promise<void> {
+    if (user !== null && (await resend.resend())) show({ kind: 'success', message: t('account.confirmationSent', { email: user.email }) });
+  }
+
+  if (status.kind === 'failed' || status.kind === 'expired') {
     return (
-      <AuthLayout
-        title={t('auth.verifyFailedTitle')}
-        tagline={t('auth.verifyFailedTagline')}
-        footer={<Link to="/sign-up" className={styles.footerLink}>{t('auth.signUpAgainLink')}</Link>}
-      >
+      <AuthLayout title={t('auth.verifyFailedTitle')} tagline={t('auth.verifyFailedTagline')}>
         <div role="alert" className={styles.errorBox}>
-          <p>{errorMsg || t('auth.verifyExpiredFallback')}</p>
+          <p>{status.kind === 'expired' ? t('account.linkExpired') : status.message}</p>
         </div>
+        {status.kind === 'expired' && user !== null && (
+          <button type="button" className={styles.submitBtn} onClick={() => void sendNewOne()}>
+            {t('account.sendNewOne')}
+          </button>
+        )}
+        {status.kind === 'expired' && user === null && (
+          <button type="button" className={styles.submitBtn} onClick={() => void navigate({ to: '/entrar' })}>
+            {t('account.signInTitle')}
+          </button>
+        )}
+        {resend.error !== null && (
+          <div role="alert" className={styles.errorBox}>
+            <p>{resend.error}</p>
+          </div>
+        )}
       </AuthLayout>
     );
   }
 
-  if (status === 'success') {
+  if (status.kind === 'confirmed') {
+    const { returnPath, email } = status.confirmation;
     return (
-      <AuthLayout
-        title={t('auth.verifySuccessTitle')}
-        subtitle={t('auth.verifySuccessSubtitle')}
-        tagline={t('auth.verifySuccessTagline')}
-        footer={<Link to="/onboarding" className={styles.footerLink}>{t('auth.continueToOnboarding')}</Link>}
-      >
+      <AuthLayout title={t('account.confirmedSignedOut')} tagline={t('auth.verifySuccessTagline')}>
         <div className={styles.successBanner} role="status">
-          <span>{t('auth.verifySuccessMsg')}</span>
+          <span>{t('account.confirmedSignedOut')}</span>
         </div>
+        <button
+          type="button"
+          className={styles.submitBtn}
+          onClick={() => void navigate({ to: '/entrar', search: { email, ...(returnPath !== null ? { next: returnPath } : {}) } })}
+        >
+          {t('account.signInTitle')}
+        </button>
       </AuthLayout>
     );
   }

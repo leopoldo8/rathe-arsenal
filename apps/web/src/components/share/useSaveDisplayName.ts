@@ -14,7 +14,7 @@ interface ISaveDisplayName {
 /** Saves the name shown on shared links, for the name step of a share dialog. */
 export function useSaveDisplayName(): ISaveDisplayName {
   const { t } = useTranslation();
-  const { token, setDisplayName } = useAuth();
+  const { setDisplayName } = useAuth();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +22,7 @@ export function useSaveDisplayName(): ISaveDisplayName {
     setSaving(true);
     setError(null);
     try {
-      const saved = await patchDisplayName(name, token);
+      const saved = await patchDisplayName(name);
       setDisplayName(saved.displayName);
       setSaving(false);
       return true;

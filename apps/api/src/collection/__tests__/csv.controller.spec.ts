@@ -104,7 +104,9 @@ describe('CsvController (e2e)', () => {
       next();
     });
 
-    await app.init();
+    // Listening on the loopback address keeps supertest off a wildcard port that another local
+    // process may already hold on 127.0.0.1, which answers requests meant for this app.
+    await app.listen(0, '127.0.0.1');
   });
 
   afterEach(async () => {

@@ -20,11 +20,12 @@ export type TDeckStatus = 'idea' | 'building' | 'ready' | 'active' | 'retired';
  * - `incomplete`: deck passes structural rules but is missing cards the engine
  *   cannot yet fully evaluate (e.g. hero not set).
  * - `illegal`: one or more format violations detected.
+ * - `unchecked`: the deck's format is outside the four the engine has rules for.
  *
  * `reasons` is non-empty when `category` is `illegal` or `incomplete`.
  */
 export interface IDeckLegality {
-  readonly category: 'legal' | 'incomplete' | 'illegal';
+  readonly category: 'legal' | 'incomplete' | 'illegal' | 'unchecked';
   readonly reasons: readonly string[];
   /** One code plus params per `reasons` entry, for localized display. */
   readonly details?: readonly ILegalityReasonDetail[];
@@ -32,7 +33,7 @@ export interface IDeckLegality {
 
 export interface ILegalityReasonDetail {
   readonly code: string;
-  readonly params: Readonly<Record<string, string | number | boolean>>;
+  readonly params: Readonly<Record<string, string | number | boolean | null | readonly string[]>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -56,6 +57,8 @@ export interface IPutDeckBody {
   readonly cards: readonly {
     readonly cardIdentifier: string;
     readonly quantity: number;
+    /** Copies carried outside the starting deck; 0 when left out. */
+    readonly inventoryQuantity?: number;
     readonly slot: 'mainboard' | 'equipment' | 'weapon' | 'hero';
   }[];
   readonly heroIdentifier: string | null;
@@ -177,6 +180,8 @@ export interface ITrackedDeckListItem {
   } | null;
   /** Shopping line data for this deck, if available. Added in Phase 1b. */
   readonly shoppingLine?: IShoppingLineResponse;
+  /** Copies in the starting deck's main section (inventory and loadout left out); the home card says "60 cartas" from it. */
+  readonly deckSize?: number;
   /** Clear upgrades the deck's recommendations panel would list; 0 for a retired deck. */
   readonly clearUpgradeCount: number;
 }
@@ -224,28 +229,6 @@ export interface ITrackedDeckListResponse {
   } | null;
 }
 
-export interface IImportDecksResponse {
-  readonly imported: ReadonlyArray<{
-    readonly trackedDeckId: number;
-    readonly name: string;
-    readonly hero: string;
-    readonly format: string;
-    readonly readinessSnapshot: {
-      readonly rawPercent: number;
-      readonly effectivePercent: number;
-    } | null;
-  }>;
-  readonly skipped: ReadonlyArray<{
-    readonly url: string;
-    readonly reason: string;
-  }>;
-  readonly errors: ReadonlyArray<{
-    readonly url: string;
-    readonly code: string;
-    readonly message: string;
-  }>;
-}
-
 export const DECKS_QUERY_KEY = ['decks'] as const;
 
 export function useDecksQuery() {
@@ -253,29 +236,6 @@ export function useDecksQuery() {
   return useQuery({
     queryKey: DECKS_QUERY_KEY,
     queryFn: () => apiFetch<ITrackedDeckListResponse>('/decks'),
-  });
-}
-
-/**
- * Imports a Fabrary deck and starts tracking it.
- *
- * `seedInventory` defaults to `false`: tracking a deck does NOT assume the
- * user owns its cards. Callers that want to seed the user's collection
- * with the deck's cards (e.g. a Library "track + own" path) must opt in
- * explicitly with `seedInventory: true`.
- */
-export function useImportDecksMutation() {
-  const apiFetch = useApiClient();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ urls, seedInventory = false }: { urls: string[]; seedInventory?: boolean }) =>
-      apiFetch<IImportDecksResponse>('/decks/import', {
-        method: 'POST',
-        body: JSON.stringify({ urls, seedInventory }),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });
-    },
   });
 }
 
@@ -287,6 +247,18 @@ export function useUntrackDeckMutation() {
       apiFetch<void>(`/decks/${deckId}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });
+    },
+  });
+}
+
+/** Copies a deck through POST /api/decks/:deckId/duplicate; the answer is the new deck's id. */
+export function useDuplicateDeckMutation(deckId: number) {
+  const apiFetch = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<{ readonly deckId: number }>(`/decks/${deckId}/duplicate`, { method: 'POST' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });
     },
   });
 }
@@ -350,6 +322,21 @@ export function usePutDeckMutation(deckId: number) {
       void queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: ['deck-detail', String(deckId)] });
       void queryClient.invalidateQueries({ queryKey: LIBRARY_QUERY_KEY });
+    },
+  });
+}
+
+/**
+ * Deletes a deck for good through DELETE /api/decks/:deckId/permanent. The editor uses it to drop a
+ * deck that was just created and never got a card, so it never reaches "Excluídos recentemente".
+ */
+export function useDiscardDeckMutation(deckId: number) {
+  const apiFetch = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<void>(`/decks/${deckId}/permanent`, { method: 'DELETE' }),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });
     },
   });
 }

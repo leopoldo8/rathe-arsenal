@@ -1,7 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Dialog from '@radix-ui/react-dialog';
-import { MAX_ROW_QUANTITY, MIN_ROW_QUANTITY, type IScanSession, type ITrayRow } from './scan-session';
+import {
+  asksEdition,
+  asksFoil,
+  MAX_ROW_QUANTITY,
+  MIN_ROW_QUANTITY,
+  type IScanSession,
+  type ITrayRow,
+} from './scan-session';
+import { EDITION_OPTIONS, editionLabel } from '../collection-versions/copy-version-labels';
+import type { TEdition } from '../../api/collection-versions';
 import { localizeApiError } from './localize-api-error';
 import { CardName, CardThumb } from './CardFace';
 import styles from './CardScanner.module.css';
@@ -16,6 +25,8 @@ interface IReviewSheetProps {
   readonly onQuantity: (rowKey: string, quantity: number) => void;
   readonly onRemove: (rowKey: string) => void;
   readonly onPick: (rowKey: string, cardIdentifier: string) => void;
+  readonly onEdition: (rowKey: string, edition: '' | TEdition) => void;
+  readonly onFoil: (rowKey: string, foil: 'yes' | 'no' | null) => void;
   readonly onConfirm: () => void;
 }
 
@@ -57,6 +68,8 @@ function ReviewRow({
   onQuantity,
   onRemove,
   onPick,
+  onEdition,
+  onFoil,
 }: IReviewSheetProps & { readonly row: ITrayRow }): React.ReactElement {
   const { t } = useTranslation();
   const name = row.picked?.name ?? row.candidates.map((card) => card.name).join(' / ');
@@ -80,6 +93,38 @@ function ReviewRow({
             >
               <CardThumb card={card} />
               <CardName card={card} />
+            </button>
+          ))}
+        </fieldset>
+      )}
+      {asksEdition(row) && (
+        <fieldset className={styles.facePicker}>
+          <legend className={styles.facePickerLegend}>{t('copyVersions.scanEditionQuestion')}</legend>
+          {EDITION_OPTIONS.filter((edition) => row.picked?.editions?.includes(edition)).map((edition) => (
+            <button
+              key={edition}
+              type="button"
+              className={styles.faceOption}
+              aria-pressed={row.edition === edition}
+              onClick={() => onEdition(row.key, row.edition === edition ? '' : edition)}
+            >
+              {editionLabel(edition, t)}
+            </button>
+          ))}
+        </fieldset>
+      )}
+      {asksFoil(row) && (
+        <fieldset className={styles.facePicker}>
+          <legend className={styles.facePickerLegend}>{t('copyVersions.scanFoilQuestion')}</legend>
+          {(['yes', 'no'] as const).map((answer) => (
+            <button
+              key={answer}
+              type="button"
+              className={styles.faceOption}
+              aria-pressed={row.foil === answer}
+              onClick={() => onFoil(row.key, row.foil === answer ? null : answer)}
+            >
+              {answer === 'yes' ? t('copyVersions.scanFoilYes') : t('copyVersions.scanFoilNo')}
             </button>
           ))}
         </fieldset>

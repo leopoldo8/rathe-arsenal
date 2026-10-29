@@ -297,7 +297,7 @@ describe('LegalityBadge — localized reasons', () => {
     renderBadge({
       category: 'incomplete',
       reasons: ['Deck has 42 mainboard cards but Classic Constructed requires at least 60.'],
-      details: [{ code: 'mainboard_too_small', params: { total: 42, required: 60, format: 'Classic Constructed' } }],
+      details: [{ code: 'mainboard_too_small', params: { card: null, count: 42, limit: 60, format: 'Classic Constructed' } }],
     });
 
     expect(screen.getByTestId('legality-badge')).toHaveTextContent('Incompleto · 42/60 cartas');
@@ -307,7 +307,12 @@ describe('LegalityBadge — localized reasons', () => {
     renderBadge({
       category: 'illegal',
       reasons: ['Hero "Kayo, Armed and Dangerous" is not legal in Classic Constructed. Choose a different hero or format.'],
-      details: [{ code: 'hero_not_legal', params: { hero: 'Kayo, Armed and Dangerous', format: 'Classic Constructed' } }],
+      details: [
+        {
+          code: 'hero_not_legal',
+          params: { hero: 'Kayo, Armed and Dangerous', format: 'Classic Constructed', allowedFormats: ['Blitz', 'Silver Age'] },
+        },
+      ],
     });
 
     fireEvent.click(screen.getByTestId('legality-badge'));
@@ -319,3 +324,15 @@ describe('LegalityBadge — localized reasons', () => {
     expect(popover).not.toHaveTextContent('Choose a different hero');
   });
 });
+
+describe('LegalityBadge — unchecked', () => {
+  it('an unchecked deck reads Formato não conferido', () => {
+    renderBadge({ category: 'unchecked', reasons: [] }, 'Open');
+
+    const badge = screen.getByTestId('legality-badge');
+    expect(badge).toHaveTextContent('Formato não conferido');
+    expect(badge.tagName).toBe('SPAN');
+    expect(badge).toHaveAttribute('data-legality', 'unchecked');
+  });
+});
+

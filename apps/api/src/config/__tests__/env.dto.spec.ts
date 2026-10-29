@@ -17,9 +17,40 @@ describe('validateEnv', () => {
     FABRARY_ALLOW_HOSTS: 'fabrary.net',
   };
 
+  it('the Turnstile secret is optional', () => {
+    expect(validateEnv(valid).TURNSTILE_SECRET_KEY).toBeUndefined();
+    expect(validateEnv({ ...valid, TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA' }).TURNSTILE_SECRET_KEY).toBe(
+      '1x0000000000000000000000000000000AA',
+    );
+  });
+
   it('GEMINI_API_KEY is optional', () => {
     expect(validateEnv(valid).GEMINI_API_KEY).toBeUndefined();
     expect(validateEnv({ ...valid, GEMINI_API_KEY: 'AIza-test' }).GEMINI_API_KEY).toBe('AIza-test');
+  });
+
+  it('GEMINI_CHAT_THINKING_LEVEL is declared and optional', () => {
+    expect(validateEnv(valid).GEMINI_CHAT_THINKING_LEVEL).toBeUndefined();
+    expect(validateEnv({ ...valid, GEMINI_CHAT_THINKING_LEVEL: 'low' }).GEMINI_CHAT_THINKING_LEVEL).toBe('low');
+    // A value the thinking-level parser does not know is ignored there, so the environment must not refuse it.
+    expect(() => validateEnv({ ...valid, GEMINI_CHAT_THINKING_LEVEL: 'extreme' })).not.toThrow();
+  });
+
+  describe('EXPOSE_DEV_SECRETS', () => {
+    it('is absent by default and kept as given otherwise', () => {
+      expect(validateEnv(valid).EXPOSE_DEV_SECRETS).toBeUndefined();
+      expect(validateEnv({ ...valid, EXPOSE_DEV_SECRETS: 'true' }).EXPOSE_DEV_SECRETS).toBe('true');
+    });
+
+    it('refuses to start in production when it is exactly "true"', () => {
+      expect(() => validateEnv({ ...valid, NODE_ENV: 'production', EXPOSE_DEV_SECRETS: 'true' })).toThrow(/EXPOSE_DEV_SECRETS/);
+    });
+
+    it('lets production start when it is unset or anything but "true"', () => {
+      expect(() => validateEnv({ ...valid, NODE_ENV: 'production' })).not.toThrow();
+      expect(() => validateEnv({ ...valid, NODE_ENV: 'production', EXPOSE_DEV_SECRETS: 'false' })).not.toThrow();
+      expect(() => validateEnv({ ...valid, NODE_ENV: 'production', EXPOSE_DEV_SECRETS: '1' })).not.toThrow();
+    });
   });
 
   it('parses a complete valid env (happy path)', () => {

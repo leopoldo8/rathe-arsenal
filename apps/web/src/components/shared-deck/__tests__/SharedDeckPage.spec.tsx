@@ -3,6 +3,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ISharedCard, ISharedDeckResponse } from '../../../api/shared-decks';
+import {
+  copySharedDeck,
+  disableDeckShare,
+  enableDeckShare,
+  getCoverage,
+  getDeckShare,
+  getMatches,
+  getSharedDeck,
+  patchContact,
+  patchDisplayName,
+  setDeckShareContact,
+} from '../../../api/shared-decks';
 import { SHARE_RETURN_STORAGE_KEY } from '../../../lib/share-return';
 import {
   apiError,
@@ -19,7 +31,9 @@ vi.mock('../../../lib/auth-fetch', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/auth-fetch')>();
   return {
     ...actual,
-    authFetch: (...args: Parameters<IFakeApi['authFetch']>) => apiRef.current!.authFetch(...args),
+    // With no fake API installed the real function runs, so a test can watch the requests it sends.
+    authFetch: (...args: Parameters<IFakeApi['authFetch']>) =>
+      apiRef.current === null ? actual.authFetch(...args) : apiRef.current.authFetch(...args),
   };
 });
 
@@ -48,6 +62,8 @@ vi.mock('@tanstack/react-router', () => ({
   ),
   useNavigate: () => navigateMock,
 }));
+
+vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 
 import { SharedDeckPage } from '../SharedDeckPage';
 
@@ -95,6 +111,7 @@ const DECK: ISharedDeckResponse = {
   missingCount: 0,
   contactWhatsapp: null,
   deckId: null,
+  legality: null,
 };
 
 const MISSING_TOKEN = 'mQ8rZ3nUp2bX5yKdFgHjLs';
@@ -106,9 +123,10 @@ const WANTED: ISharedDeckResponse = {
   cards: [],
   missing: MISSING,
   missingCount: 3,
+  legality: null,
 };
 
-function renderPage(_unused: undefined = undefined, auth = makeAuth({ user: null, token: null }), token = TOKEN) {
+function renderPage(_unused: undefined = undefined, auth = makeAuth({ user: null }), token = TOKEN) {
   renderWithProviders(<SharedDeckPage token={token} />, auth);
 }
 
@@ -144,24 +162,123 @@ describe('SharedDeckPage', () => {
       expect(screen.getByTestId('shared-group-hero')).toBeInTheDocument();
       expect(screen.getByTestId('shared-group-weapon')).toHaveTextContent('Romping Club');
       expect(screen.getByTestId('shared-group-equipment')).toHaveTextContent('Goliath Gauntlet');
-      expect(screen.getByTestId('shared-group-actions')).toHaveTextContent('Pack Hunt');
-      expect(screen.getByTestId('shared-group-reactions')).toHaveTextContent('Reckless Swing');
+      expect(screen.getByTestId('shared-group-action')).toHaveTextContent('Pack Hunt');
+      expect(screen.getByTestId('shared-group-attackReaction')).toHaveTextContent('Reckless Swing');
       const footer = screen.getByTestId('shared-deck-footer');
       expect(footer).toHaveTextContent('Legend Story Studios®');
       expect(footer.textContent?.match(/© Legend Story Studios/g)).toHaveLength(1);
     });
 
-    it('loads the deck without a Bearer token when anonymous', async () => {
+    it('the foot links the glossary', async () => {
       renderPage();
-      await screen.findByRole('heading', { level: 1 });
-      expect(api.calls).toEqual([{ key: `GET /shared/decks/${TOKEN}`, body: undefined, authToken: null }]);
+
+      await screen.findByTestId('shared-deck-list');
+      expect(within(screen.getByTestId('shared-deck-footer')).getByRole('link', { name: 'O que querem dizer estas palavras?' })).toHaveAttribute(
+        'href',
+        '/termos',
+      );
     });
 
-    it('sends the Bearer token when the visitor is logged in', async () => {
+    it('the format chip carries a question mark that explains the format and names the sharer', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      const header = await screen.findByTestId('shared-deck-header');
+      const chip = within(header).getByText('Classic Constructed');
+      const question = within(header).getByRole('button', { name: 'O que é Classic Constructed?' });
+      expect(chip.nextElementSibling, 'the question mark comes right after the chip').toContainElement(question);
+      expect(within(header).getAllByRole('button', { name: /^O que é/ }), 'one question mark, at the first appearance').toHaveLength(1);
+
+      await user.click(question);
+
+      const sheet = await screen.findByRole('dialog', { name: 'Classic Constructed' });
+      expect(Array.from(sheet.querySelectorAll('h2, p, a, button')).map((node) => node.textContent)).toEqual([
+        'Classic Constructed',
+        expect.stringMatching(/^Formato de torneio com o herói adulto/),
+        'Este deck do Dudu_Pelotas é de Classic Constructed.',
+        'Ver todos os termos',
+        'Fechar',
+      ]);
+    });
+
+    it('headings follow the shared grouping', async () => {
+      renderPage();
+
+      await screen.findByTestId('shared-deck-list');
+      const headings = within(screen.getByTestId('shared-deck-list'))
+        .getAllByRole('heading', { level: 2 })
+        .map((heading) => heading.firstChild?.textContent);
+      expect(headings).toEqual(['Ações', 'Reações de ataque', 'Herói', 'Arma', 'Equipamentos']);
+    });
+
+    it('shows the verdict block the answer carries', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => ({
+        ...DECK,
+        format: 'Blitz',
+        legality: { category: 'legal', heroYoung: true, details: [], otherFormats: [] },
+      }));
+      renderPage();
+
+      expect(await screen.findByText('Blitz · pode jogar')).toBeInTheDocument();
+    });
+
+    it('a visitor can copy the list', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      const copy = await screen.findByRole('button', { name: 'Copiar lista' });
+      expect(screen.getByText('Copiar lista: texto para o grupo ou para o Fabrary')).toBeInTheDocument();
+      await user.click(copy);
+
+      expect(screen.getByRole('tab', { name: 'Para o grupo' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Para Fabrary ou Talishar' })).toBeInTheDocument();
+      expect(screen.queryByTestId('copy-list-preview')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('tab', { name: 'Para o grupo' }));
+      const preview = screen.getByTestId('copy-list-preview').textContent ?? '';
+      expect(preview).toContain('Rhinar Rampage · Classic Constructed');
+      expect(preview).toContain('1x Rhinar, Reckless Rampage');
+      expect(preview).toContain('3x Reckless Swing (Vermelho)');
+      expect(preview).toContain('Deck (5 cartas)');
+      expect(api.calls.filter((call) => call.key.startsWith('POST'))).toEqual([]);
+    });
+
+    it('loads the deck with one request when anonymous', async () => {
+      renderPage();
+      await screen.findByRole('heading', { level: 1 });
+      expect(api.calls).toEqual([{ key: `GET /shared/decks/${TOKEN}`, body: undefined }]);
+    });
+
+    it('loads the deck with the same request when the visitor is logged in', async () => {
       api.handlers.set(`GET /shared/decks/${TOKEN}/coverage`, () => ({ ownedCopies: 1, totalCopies: 8, percent: 13 }));
       renderPage(undefined, makeAuth());
       await screen.findByRole('heading', { level: 1 });
-      expect(api.calls[0]).toEqual({ key: `GET /shared/decks/${TOKEN}`, body: undefined, authToken: 'jwt' });
+      expect(api.calls[0]).toEqual({ key: `GET /shared/decks/${TOKEN}`, body: undefined });
+    });
+
+    it('shared requests carry no Authorization header', async () => {
+      apiRef.current = null;
+      const fetchMock = vi.fn().mockImplementation(
+        async () => new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await getSharedDeck(TOKEN);
+      await getCoverage(TOKEN);
+      await copySharedDeck(TOKEN);
+      await getMatches(TOKEN);
+      await getDeckShare(7);
+      await enableDeckShare(7, 'deck');
+      await setDeckShareContact(7, 'deck', true);
+      await disableDeckShare(7, 'deck');
+      await patchContact(null);
+      await patchDisplayName('Dudu_Pelotas');
+
+      expect(fetchMock).toHaveBeenCalledTimes(10);
+      for (const call of fetchMock.mock.calls) {
+        const init = call[1] as RequestInit | undefined;
+        expect(new Headers(init?.headers).has('Authorization')).toBe(false);
+      }
+      vi.unstubAllGlobals();
     });
 
     it('records one open only: focusing the window does not reload the deck', async () => {
@@ -225,6 +342,23 @@ describe('SharedDeckPage', () => {
       expect(screen.queryByTestId('shared-invite')).not.toBeInTheDocument();
     });
 
+    it('tells a visitor with no cards how to put them in, instead of showing 0%', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}/coverage`, () => ({
+        ownedCopies: 0,
+        totalCopies: 8,
+        percent: 0,
+        collectionEmpty: true,
+      }));
+      renderPage(undefined, makeAuth());
+
+      const panel = await screen.findByTestId('shared-coverage-empty');
+
+      expect(within(panel).getByText('Você ainda não tem cartas no Rathe Arsenal. Para comparar, coloque as suas cartas:')).toBeInTheDocument();
+      expect(within(panel).getByRole('link', { name: 'Colar uma lista' })).toHaveAttribute('href', '/add-cards');
+      expect(within(panel).getByRole('link', { name: 'Enviar uma planilha (.csv)' })).toHaveAttribute('href', '/add-cards/csv');
+      expect(screen.queryByTestId('shared-coverage')).not.toBeInTheDocument();
+    });
+
     it('copies the deck and opens the new one', async () => {
       api.handlers.set(`POST /shared/decks/${TOKEN}/copy`, () => ({ deckId: 42 }));
       renderPage(undefined, makeAuth());
@@ -238,7 +372,7 @@ describe('SharedDeckPage', () => {
           search: { edit: undefined },
         }),
       );
-      expect(api.calls.find((call) => call.key.startsWith('POST'))?.authToken).toBe('jwt');
+      expect(api.calls.some((call) => call.key.startsWith('POST'))).toBe(true);
     });
 
     it('shows the localized error when the link died before copying', async () => {
@@ -338,14 +472,24 @@ describe('SharedDeckPage', () => {
     it('shows the "looking for" header and only the missing cards, with no deck comparison', async () => {
       renderPage(undefined, undefined, MISSING_TOKEN);
 
-      expect(await screen.findByText('Procuro cartas')).toBeInTheDocument();
-      expect(screen.getByRole('heading', { level: 1, name: 'Rhinar Rampage' })).toBeInTheDocument();
-      expect(screen.getByText('Faltam 3 cartas')).toBeInTheDocument();
+      expect(await screen.findByText('Lista de cartas')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: 'Cartas que Dudu_Pelotas procura' })).toBeInTheDocument();
+      expect(screen.getByText('Rhinar Rampage')).toBeInTheDocument();
       const cards = screen.getAllByTestId('shared-card');
       expect(cards).toHaveLength(2);
       expect(screen.queryByTestId('shared-invite')).not.toBeInTheDocument();
       expect(screen.queryByTestId('shared-deck-list')).not.toBeInTheDocument();
       expect(screen.queryByText('Reckless Swing')).not.toBeInTheDocument();
+    });
+
+    it('the missing tiles name the pitch', async () => {
+      renderPage(undefined, undefined, MISSING_TOKEN);
+
+      const tiles = await screen.findAllByTestId('shared-card');
+
+      expect(within(tiles[0]!).getByRole('img', { name: 'Goliath Gauntlet' })).toBeInTheDocument();
+      expect(within(tiles[1]!).getByRole('img', { name: 'Pack Hunt (Vermelho)' })).toBeInTheDocument();
+      expect(within(tiles[1]!).getAllByText('Pack Hunt (Vermelho)').length).toBeGreaterThan(0);
     });
 
     it('copies the list as text with the address', async () => {
@@ -361,42 +505,40 @@ describe('SharedDeckPage', () => {
       expect(await screen.findByRole('button', { name: 'Copiado' })).toBeInTheDocument();
     });
 
-    it('offers WhatsApp as the main action with the missing-cards message', async () => {
+    it('offers each card to the sharer on WhatsApp instead of a contact bar', async () => {
       api.handlers.set(wantedKey, () => ({ ...WANTED, contactWhatsapp: '5553999990000' }));
       renderPage(undefined, undefined, MISSING_TOKEN);
 
-      const pill = await screen.findByTestId('shared-contact-pill');
-      expect(pill.getAttribute('href')).toContain(
-        encodeURIComponent('Oi! Vi que você procura cartas para o deck Rhinar Rampage.'),
-      );
+      expect(await screen.findAllByRole('button', { name: /^Oferecer / })).toHaveLength(2);
+      expect(screen.queryByTestId('shared-contact-pill')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('shared-contact-bar')).not.toBeInTheDocument();
     });
 
-    it('invites an anonymous visitor to sign up and makes no matches request', async () => {
+    it('asks nothing of an anonymous visitor but the page itself', async () => {
       renderPage(undefined, undefined, MISSING_TOKEN);
-      expect(await screen.findByTestId('shared-signup-prompt')).toHaveTextContent('Crie uma conta para ver quais você já tem.');
-      expect(api.calls.some((call) => call.key.includes('/matches'))).toBe(false);
+      await screen.findByText('Lista de cartas');
+      expect(screen.queryByTestId('shared-signup-prompt')).not.toBeInTheDocument();
+      expect(api.calls.map((call) => call.key)).toEqual([wantedKey]);
     });
 
     it('shows "você tem N" on the cards a logged-in visitor owns', async () => {
-      api.handlers.set(`GET /shared/decks/${MISSING_TOKEN}/matches`, () => ({
-        cards: [
-          { cardIdentifier: 'gauntlet', owned: 0 },
-          { cardIdentifier: 'pack-hunt-red', owned: 2 },
-        ],
+      api.handlers.set(wantedKey, () => ({
+        ...WANTED,
+        missing: MISSING.map((entry) => ({ ...entry, owned: entry.cardIdentifier === 'pack-hunt-red' ? 2 : 0 })),
       }));
       renderPage(undefined, makeAuth(), MISSING_TOKEN);
 
       const owned = await screen.findByTestId('shared-owned');
-      expect(owned).toHaveTextContent('você tem 2');
+      expect(owned).toHaveTextContent('Você tem 2');
       expect(screen.getAllByTestId('shared-owned')).toHaveLength(1);
       expect(screen.queryByTestId('shared-signup-prompt')).not.toBeInTheDocument();
-      expect(api.calls.some((call) => call.key.includes('/coverage') || call.key.includes('/copy'))).toBe(false);
+      expect(api.calls.some((call) => call.key.includes('/coverage') || call.key.includes('/copy') || call.key.includes('/matches'))).toBe(false);
     });
 
     it('does not ask the owner for matches', async () => {
       api.handlers.set(wantedKey, () => ({ ...WANTED, isOwner: true, deckId: 7 }));
       renderPage(undefined, makeAuth(), MISSING_TOKEN);
-      await screen.findByText('Procuro cartas');
+      await screen.findByText('Lista de cartas');
       expect(api.calls.some((call) => call.key.includes('/matches'))).toBe(false);
     });
 
@@ -445,5 +587,55 @@ describe('SharedDeckPage', () => {
     renderPage();
     // The query retries a non-404 failure once (about a second later) before giving up.
     expect(await screen.findByRole('button', { name: 'Tentar de novo' }, { timeout: 4000 })).toBeInTheDocument();
+  });
+
+  describe('a deck with substitutions', () => {
+    const REPLACED: ISharedDeckResponse = {
+      ...DECK,
+      cards: [
+        ...DECK.cards,
+        card({
+          cardIdentifier: 'runner-runner-red',
+          name: 'Runner Runner',
+          pitch: 1,
+          quantity: 3,
+          replaces: { cardIdentifier: 'swing-big-red', name: 'Swing Big', pitch: 1 },
+        }),
+      ],
+    };
+
+    it('a replaced row names the card it replaces', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => REPLACED);
+      renderPage();
+
+      const cards = await screen.findAllByTestId('shared-card');
+      const replaced = cards.find((cell) => within(cell).queryByText('no lugar de Swing Big') !== null);
+      expect(replaced).toBeDefined();
+      expect(within(replaced!).getAllByText('Runner Runner (Vermelho)').length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/no lugar de/)).toHaveLength(1);
+    });
+
+    it('a deck with none marks nothing', async () => {
+      renderPage();
+
+      await screen.findAllByTestId('shared-card');
+      expect(screen.queryByText(/no lugar de/)).not.toBeInTheDocument();
+    });
+
+    it('asks which list before saving, then sends the pick', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => REPLACED);
+      api.handlers.set(`GET /shared/decks/${TOKEN}/coverage`, () => ({ ownedCopies: 6, totalCopies: 8, percent: 75, collectionEmpty: false }));
+      api.handlers.set(`POST /shared/decks/${TOKEN}/copy`, () => ({ deckId: 42 }));
+      renderPage(undefined, makeAuth());
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Salvar nos meus decks' }));
+      expect(await screen.findByRole('heading', { name: 'Qual lista você quer salvar?' })).toBeInTheDocument();
+      expect(api.calls.some((call) => call.key.startsWith('POST'))).toBe(false);
+      await userEvent.click(screen.getByRole('radio', { name: /Como o Dudu_Pelotas montou \(com Runner Runner\)/ }));
+      await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+
+      await waitFor(() => expect(navigateMock).toHaveBeenCalled());
+      expect(api.calls.find((call) => call.key.startsWith('POST'))?.body).toEqual({ variant: 'as_built' });
+    });
   });
 });

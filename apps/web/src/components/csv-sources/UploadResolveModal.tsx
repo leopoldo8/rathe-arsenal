@@ -29,6 +29,8 @@ export type TResolveModalVariant =
 interface IUploadResolveModalProps {
   readonly open: boolean;
   readonly response: TResolveModalVariant;
+  /** The file was sent from one import's menu: the window is drawn as `r6-update-import-a-phone`. */
+  readonly targeted?: boolean;
   readonly onClose: () => void;
   /** Called with the action to re-fire the upload with. */
   readonly onAction: (
@@ -52,14 +54,32 @@ function SkipReasonLabel({ reason }: { reason: ISkippedCsvRow['reason'] }): Reac
   return <>{labels[reason]}</>;
 }
 
-function DeltaTable({ delta }: { delta: ICsvDelta }): React.ReactElement {
+function DeltaTable({ delta, plain = false }: { delta: ICsvDelta; plain?: boolean }): React.ReactElement {
   const { t } = useTranslation();
-  const rows = [
+  const allRows = [
     { label: t('csvSources.deltaNewCards'), count: delta.added.length, sign: '+', cls: styles.deltaAdded },
     { label: t('csvSources.deltaIncreased'), count: delta.increased.length, sign: '+', cls: styles.deltaAdded },
     { label: t('csvSources.deltaDecreased'), count: delta.decreased.length, sign: '-', cls: styles.deltaRemoved },
     { label: t('csvSources.deltaRemoved'), count: delta.removed.length, sign: '-', cls: styles.deltaRemoved },
-  ].filter((r) => r.count > 0);
+  ];
+
+  // The window sent from one import draws all four rows, even a count of 0, as plain numbers.
+  if (plain) {
+    return (
+      <table className={`${styles.deltaTable} ${styles.deltaPlain}`} aria-label={t('csvSources.deltaChangeSummaryAriaLabel')}>
+        <tbody>
+          {allRows.map((row) => (
+            <tr key={row.label}>
+              <td className={styles.deltaLabel}>{row.label}</td>
+              <td className={styles.deltaCount}>{row.count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  const rows = allRows.filter((r) => r.count > 0);
 
   if (rows.length === 0) {
     return <p className={styles.deltaEmpty}>{t('csvSources.deltaNoChanges')}</p>;
@@ -183,6 +203,37 @@ function ExactMatchVariant({
 // Variant: partial-overlap
 // ---------------------------------------------------------------------------
 
+function TargetedUpdateVariant({
+  response,
+  onClose,
+  onAction,
+}: {
+  response: IPartialOverlapUploadResponse;
+  onClose: () => void;
+  onAction: IUploadResolveModalProps['onAction'];
+}): React.ReactElement {
+  const { t } = useTranslation();
+  return (
+    <>
+      <Dialog.Title className={styles.title}>{t('csvSources.partialOverlapTitle')}</Dialog.Title>
+
+      <DeltaTable delta={response.delta} plain />
+
+      <div className={styles.footerStack}>
+        <button type="button" className={styles.btnPrimarySolid} onClick={() => onAction('update', response.existingSourceId)}>
+          {t('csvSources.updateExistingButton')}
+        </button>
+        <button type="button" className={styles.btnSecondaryWide} onClick={() => onAction('replace', response.existingSourceId)}>
+          {t('csvSources.replaceWithNewButton')}
+        </button>
+        <button type="button" className={styles.btnTertiaryWide} onClick={onClose}>
+          {t('csvSources.cancelButton3')}
+        </button>
+      </div>
+    </>
+  );
+}
+
 function PartialOverlapVariant({
   response,
   onClose,
@@ -256,6 +307,7 @@ function PartialOverlapVariant({
 export function UploadResolveModal({
   open,
   response,
+  targeted = false,
   onClose,
   onAction,
 }: IUploadResolveModalProps): React.ReactElement {
@@ -277,6 +329,12 @@ export function UploadResolveModal({
           ) : kind === 'exact-match' ? (
             <ExactMatchVariant
               response={response as IExactMatchUploadResponse}
+              onClose={onClose}
+              onAction={onAction}
+            />
+          ) : targeted ? (
+            <TargetedUpdateVariant
+              response={response as IPartialOverlapUploadResponse}
               onClose={onClose}
               onAction={onAction}
             />

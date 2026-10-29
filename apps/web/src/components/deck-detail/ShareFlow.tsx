@@ -2,15 +2,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DISPLAY_NAME_REQUIRED,
+  EMAIL_NOT_CONFIRMED,
   isShareErrorCode,
   useDeckShareQuery,
   useEnableDeckShareMutation,
   type TShareIntent,
 } from '../../api/shared-decks';
 import { useAuth } from '../../auth/useAuth';
+import { ConfirmEmailPanel } from '../confirmation/ConfirmEmailPanel';
 import { ShareDialogHeader } from '../share/ShareDialogHeader';
 import { useSaveDisplayName } from '../share/useSaveDisplayName';
 import { DisplayNameForm } from './DisplayNameForm';
+import { GroupAskStep } from './GroupAskStep';
+import { QuoteLinkStep } from './QuoteLinkStep';
 import { ShareIntentStep } from './ShareIntentStep';
 import { ShareLinkStep } from './ShareLinkStep';
 import styles from '../share/ShareSteps.module.css';
@@ -18,6 +22,7 @@ import styles from '../share/ShareSteps.module.css';
 type TStep =
   | { readonly kind: 'name'; readonly then: TShareIntent | null }
   | { readonly kind: 'intent' }
+  | { readonly kind: 'unconfirmed' }
   | { readonly kind: 'link'; readonly intent: TShareIntent };
 
 interface IShareFlowProps {
@@ -50,6 +55,7 @@ export function ShareFlow({ deckId, deckName, missingCount, initialIntent, onClo
     enable.mutate(intent, {
       onError: (error) => {
         if (isShareErrorCode(error, DISPLAY_NAME_REQUIRED)) setStep({ kind: 'name', then: intent });
+        if (isShareErrorCode(error, EMAIL_NOT_CONFIRMED)) setStep({ kind: 'unconfirmed' });
       },
     });
   }
@@ -67,6 +73,8 @@ export function ShareFlow({ deckId, deckName, missingCount, initialIntent, onClo
     if (step.kind === 'name' && step.then !== null) activate(step.then);
     else setStep({ kind: 'intent' });
   }
+
+  if (step.kind === 'unconfirmed') return <ConfirmEmailPanel onClose={onClose} />;
 
   const title =
     step.kind === 'name'
@@ -92,9 +100,13 @@ export function ShareFlow({ deckId, deckName, missingCount, initialIntent, onClo
           />
         )}
         {step.kind === 'intent' && (
-          <ShareIntentStep links={shareQuery.data} missingCount={missingCount} onChoose={activate} />
+          <ShareIntentStep missingCount={missingCount} onChoose={activate} />
         )}
-        {step.kind === 'link' && link !== null && (
+        {step.kind === 'link' && link !== null && link.intent === 'missing' && (
+          <GroupAskStep key={link.token} deckId={deckId} deckName={deckName} link={link} onTurnedOff={onClose} />
+        )}
+        {step.kind === 'link' && link !== null && link.intent === 'quote' && <QuoteLinkStep key={link.token} link={link} />}
+        {step.kind === 'link' && link !== null && link.intent === 'deck' && (
           <ShareLinkStep
             key={link.token}
             deckId={deckId}

@@ -3,6 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { FetchGuardService, IGuardedFetchResult } from '../common/fetch-guard/fetch-guard.service';
 import { EScraperFetchProvider } from '../config/env.dto';
 import { EScraperErrorCode, ScraperError } from './errors/scraper.errors';
+import { CreditBudgetService } from './credit-budget.service';
+import { readStoreAnswersConfig } from './store-answers.config';
+
+export type TFirecrawlCallKind = 'detail' | 'listing';
 
 const FIRECRAWL_ENDPOINT = 'https://api.firecrawl.dev/v2/scrape';
 const FIRECRAWL_HOST = 'api.firecrawl.dev';
@@ -59,6 +63,7 @@ export class FirecrawlClientService {
   constructor(
     private readonly config: ConfigService,
     private readonly fetchGuard: FetchGuardService,
+    private readonly credits: CreditBudgetService,
   ) {
     this.apiKey = this.config.get<string>('FIRECRAWL_API_KEY') || undefined;
     this.provider =
@@ -91,19 +96,27 @@ export class FirecrawlClientService {
    * Fetches `url` through Firecrawl and returns the post-JS rendered HTML.
    * Throws ScraperError(FIRECRAWL_REQUEST_FAILED) on any transport/shape error.
    */
-  async scrapeHtml(url: string): Promise<string> {
+  async scrapeHtml(url: string, kind: TFirecrawlCallKind = 'detail'): Promise<string> {
     for (let attempt = 1; ; attempt++) {
       await this.waitForRequestSlot();
       const result = await this.requestScrape(url);
 
       if (result.status !== HTTP_TOO_MANY_REQUESTS || attempt >= FIRECRAWL_MAX_ATTEMPTS) {
-        return this.extractHtml(result);
+        const html = this.extractHtml(result);
+        await this.countCall(kind);
+        return html;
       }
 
       const waitMs = parseRetryAfterMs(result.headers['retry-after']) ?? FIRECRAWL_RATE_LIMIT_FALLBACK_WAIT_MS;
       this.logger.warn({ event: 'firecrawl.rate_limited', url, attempt, waitMs });
       this.deferAllRequestsFor(waitMs);
     }
+  }
+
+  private async countCall(kind: TFirecrawlCallKind): Promise<void> {
+    if (this.provider !== EScraperFetchProvider.Firecrawl) return;
+    const { creditsPerDetail, creditsPerListingPage } = readStoreAnswersConfig(this.config);
+    await this.credits.record(kind === 'detail' ? creditsPerDetail : creditsPerListingPage);
   }
 
   private deferAllRequestsFor(waitMs: number): void {

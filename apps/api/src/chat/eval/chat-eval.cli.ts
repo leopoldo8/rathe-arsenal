@@ -7,7 +7,7 @@ import { parseThinkingLevel, TGeminiFetch } from '../../recommendations/gemini-c
 import { ChatRunnerService } from '../chat-runner.service';
 import { ChatTurnQueueService } from '../chat-turn-queue.service';
 import { ChatService } from '../chat.service';
-import { EVAL_DECKS, EVAL_SCENARIOS, IEvalScenario, IEvalSwap, TEvalDeckKey } from './chat-eval-scenarios';
+import { EVAL_DECKS, EVAL_SCENARIOS, IEvalScenario, IEvalSwap, IEvalToolResult, TEvalDeckKey } from './chat-eval-scenarios';
 
 export const EVAL_USER_EMAIL = 'tutor-eval@rathe-arsenal.invalid';
 const UNUSABLE_PASSWORD_HASH = '!'.repeat(60);
@@ -38,10 +38,11 @@ export interface IEvalRun {
   readonly calls: readonly IModelCallTrace[];
   readonly text: string | null;
   readonly swaps: readonly IEvalSwap[];
+  readonly toolResults: readonly IEvalToolResult[];
   readonly check: { readonly failure: string | null } | null;
 }
 
-interface IEvalOptions {
+export interface IEvalOptions {
   readonly runs: number;
   readonly concurrency: number;
   readonly only: readonly string[];
@@ -52,9 +53,17 @@ interface IEvalOptions {
   readonly maxUsd: number;
 }
 
-const DEFAULT_MAX_USD = 3;
+export const DEFAULT_MAX_USD = 3;
 
-function readOptions(argv: readonly string[]): IEvalOptions {
+function readMaxUsd(raw: string | undefined): number {
+  if (raw === undefined) return DEFAULT_MAX_USD;
+  const value = Number(raw);
+  // `spent >= NaN` is never true, so a cap that does not parse would silently remove the cap.
+  if (raw.trim() === '' || !Number.isFinite(value) || value <= 0) throw new Error(`--max-usd must be a positive number, got "${raw}"`);
+  return value;
+}
+
+export function readOptions(argv: readonly string[]): IEvalOptions {
   const value = (flag: string): string | undefined => {
     const index = argv.indexOf(flag);
     return index >= 0 ? argv[index + 1] : undefined;
@@ -67,7 +76,7 @@ function readOptions(argv: readonly string[]): IEvalOptions {
     out: value('--out') ?? 'chat-eval-report',
     extra: value('--scenarios') ? (JSON.parse(readFileSync(value('--scenarios')!, 'utf8')) as IEvalScenario[]) : [],
     model: value('--model'),
-    maxUsd: Number(value('--max-usd') ?? DEFAULT_MAX_USD),
+    maxUsd: readMaxUsd(value('--max-usd')),
   };
 }
 
@@ -94,8 +103,9 @@ async function ensureEvalDecks(app: INestApplicationContext, dataSource: DataSou
   const known = await tracked();
   const toImport = EVAL_DECKS.filter((deck) => !known.has(ulidOf(deck.url))).map((deck) => deck.url);
   if (toImport.length > 0) {
-    const result = await app.get(DecksImportService).run({ urls: toImport, seedInventory: true }, { userId });
-    if (result.errors.length > 0) throw new Error(`eval deck import failed: ${JSON.stringify(result.errors)}`);
+    for (const url of toImport) {
+      await app.get(DecksImportService).run({ text: url, ownsCards: true }, { userId });
+    }
   }
   const byUlid = await tracked();
   return new Map(EVAL_DECKS.map((deck) => [deck.key, byUlid.get(ulidOf(deck.url))!]));
@@ -149,7 +159,7 @@ interface ISentTurn {
   readonly sentAt: number;
 }
 
-interface IDriveOptions {
+export interface IDriveOptions {
   readonly apiKey: string;
   readonly openRouterModel: string | undefined;
   readonly workers: number;
@@ -164,7 +174,7 @@ async function spentOn(dataSource: DataSource, messageIds: readonly string[]): P
   return spent;
 }
 
-async function driveTurns(app: INestApplicationContext, userId: string, options: IDriveOptions): Promise<Map<string, IModelCallTrace[]>> {
+export async function driveTurns(app: INestApplicationContext, userId: string, options: IDriveOptions): Promise<Map<string, IModelCallTrace[]>> {
   const dataSource = app.get(DataSource);
   const queue = app.get(ChatTurnQueueService);
   const runner = app.get(ChatRunnerService);
@@ -211,11 +221,19 @@ async function observeTurns(dataSource: DataSource, userId: string, messageIds: 
   }
 }
 
+/** What each tool answered during a turn, from the stored model content (the function responses the model was shown). */
+export function toolResultsOf(contents: unknown): IEvalToolResult[] {
+  if (!Array.isArray(contents)) return [];
+  return contents.flatMap((content: { parts?: Array<{ functionResponse?: { name: string; response: Record<string, unknown> } }> }) =>
+    (content.parts ?? []).flatMap((part) => (part.functionResponse ? [{ name: part.functionResponse.name, result: part.functionResponse.response }] : [])),
+  );
+}
+
 async function readRun(dataSource: DataSource, sent: ISentTurn, calls: readonly IModelCallTrace[]): Promise<IEvalRun> {
   const [message] = (await dataSource.query(
-    `SELECT status, error, text, EXTRACT(EPOCH FROM ("finishedAt" - "startedAt")) * 1000 AS ms FROM chat_message WHERE id = $1`,
+    `SELECT status, error, text, "modelContent", EXTRACT(EPOCH FROM ("finishedAt" - "startedAt")) * 1000 AS ms FROM chat_message WHERE id = $1`,
     [sent.messageId],
-  )) as Array<{ status: string; error: string | null; text: string | null; ms: number | null }>;
+  )) as Array<{ status: string; error: string | null; text: string | null; modelContent: unknown; ms: number | null }>;
   const [usage] = (await dataSource.query(
     `SELECT max(model) AS model, COALESCE(sum("costUsd"), 0)::float8 AS cost, COALESCE(sum("inputTokens"), 0)::int AS input,
             COALESCE(sum("cachedInputTokens"), 0)::int AS cached, COALESCE(sum("outputTokens"), 0)::int AS output
@@ -224,12 +242,17 @@ async function readRun(dataSource: DataSource, sent: ISentTurn, calls: readonly 
   )) as Array<{ model: string | null; cost: number; input: number; cached: number; output: number }>;
   const swaps = (
     (await dataSource.query(`SELECT payload FROM chat_proposal WHERE "messageId" = $1 AND kind = 'swap' ORDER BY "createdAt"`, [sent.messageId])) as Array<{
-      payload: { originalCardIdentifier: string; replacementCardIdentifier: string };
+      payload: { originalCardIdentifier: string; replacementCardIdentifier: string; quantity?: number };
     }>
-  ).map(({ payload }) => ({ original: payload.originalCardIdentifier, replacement: payload.replacementCardIdentifier }));
+  ).map(({ payload }) => ({
+    original: payload.originalCardIdentifier,
+    replacement: payload.replacementCardIdentifier,
+    ...(payload.quantity === undefined ? {} : { quantity: payload.quantity }),
+  }));
+  const toolResults = toolResultsOf(message!.modelContent ?? []);
   const done = message!.status === 'done';
   const check = sent.scenario.check
-    ? { failure: done ? sent.scenario.check({ text: message!.text ?? '', toolCalls: calls.flatMap((call) => call.toolCalls), swaps }) : 'turn not done' }
+    ? { failure: done ? sent.scenario.check({ text: message!.text ?? '', toolCalls: calls.flatMap((call) => call.toolCalls), swaps, toolResults }) : 'turn not done' }
     : null;
   return {
     scenario: sent.scenario.id,
@@ -246,6 +269,7 @@ async function readRun(dataSource: DataSource, sent: ISentTurn, calls: readonly 
     calls,
     text: message!.text,
     swaps,
+    toolResults,
     check,
   };
 }
@@ -289,7 +313,13 @@ export function renderReport(runs: readonly IEvalRun[]): string {
  * real model turns through the real runner and tools; Gemini with GEMINI_API_KEY, or the OpenRouter model with OPENROUTER_API_KEY.
  */
 async function main(): Promise<void> {
-  const options = readOptions(process.argv.slice(2));
+  let options: IEvalOptions;
+  try {
+    options = readOptions(process.argv.slice(2));
+  } catch (error) {
+    console.error((error as Error).message);
+    process.exit(1);
+  }
   const keyName = options.model ? 'OPENROUTER_API_KEY' : 'GEMINI_API_KEY';
   const apiKey = process.env[keyName]?.trim();
   if (options.drive && !apiKey) {

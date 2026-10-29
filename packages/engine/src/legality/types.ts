@@ -10,8 +10,33 @@ export type TSupportedFormat =
   | 'Living Legend'
   | 'Silver Age';
 
-/** Three-state legality verdict per Key Technical Decisions. */
-export type TLegalityCategory = 'legal' | 'incomplete' | 'illegal';
+/** Verdict of a deck check; `unchecked` is a format the engine has no rules for. */
+export type TLegalityCategory = 'legal' | 'incomplete' | 'illegal' | 'unchecked';
+
+/**
+ * The fields of a catalog card the legality rules read, so a client that holds only these
+ * (the browser does not load the whole catalog) can run the same check as the server.
+ * `ICatalogCard` satisfies it.
+ */
+export interface ILegalityCard {
+  readonly cardIdentifier: string;
+  readonly name: string;
+  readonly pitch: number | null;
+  readonly keywords: readonly string[];
+  readonly legalFormats: readonly string[];
+  readonly bannedFormats?: readonly string[];
+  readonly restrictedFormats?: readonly string[];
+  readonly legalHeroes: readonly string[];
+  readonly legalOverrides?: readonly { readonly format: string; readonly heroes: readonly string[] }[];
+  readonly specializations?: readonly string[];
+  readonly hero?: string;
+  readonly young: boolean;
+}
+
+/** Where `computeDeckLegality` looks cards up. `ICatalog` satisfies it. */
+export interface ILegalityCatalog {
+  readonly indices: { readonly byIdentifier: ReadonlyMap<string, ILegalityCard> };
+}
 
 /**
  * Structural rules for a single supported format.
@@ -42,12 +67,6 @@ export interface IFormatRules {
    * Blitz and Silver Age require a young hero; CC and LL require non-young.
    */
   readonly requiresYoungHero: boolean;
-  /**
-   * When non-null, only cards whose rarity is in this set are allowed.
-   * Used for Silver Age which restricts to Common, Rare, and Basic.
-   * Null means no rarity restriction beyond the copy-limit rules.
-   */
-  readonly allowedRarities: ReadonlySet<string> | null;
   /** Canonical LSS source URL for this format's rules. */
   readonly source: string;
 }
@@ -62,8 +81,11 @@ export interface ILegalityDeck {
 
 export interface ILegalityDeckCard {
   readonly cardIdentifier: string;
+  /** Copies in this slot of the deck. */
   readonly quantity: number;
   readonly slot: string;
+  /** Copies carried in the inventory, outside the starting deck. Counts in the pool and the copy limit. */
+  readonly inventoryQuantity?: number;
 }
 
 /** Result returned by `computeDeckLegality`. */
@@ -82,31 +104,40 @@ export interface IDeckLegalityResult {
 
 export type TLegalityReasonDetail =
   | { readonly code: 'hero_unrecognized'; readonly params: Record<string, never> }
-  | { readonly code: 'hero_not_legal'; readonly params: { readonly hero: string; readonly format: string } }
+  | {
+      readonly code: 'hero_not_legal';
+      readonly params: {
+        readonly hero: string;
+        readonly format: string;
+        /** The supported formats where the hero is allowed, in the engine's format order. */
+        readonly allowedFormats: readonly string[];
+      };
+    }
   | { readonly code: 'young_hero_required'; readonly params: { readonly hero: string; readonly format: string } }
   | { readonly code: 'adult_hero_required'; readonly params: { readonly hero: string; readonly format: string } }
   | {
-      readonly code: 'card_pool_too_large';
-      readonly params: { readonly total: number; readonly max: number; readonly format: string };
-    }
-  | {
-      readonly code: 'mainboard_not_exact' | 'mainboard_too_small';
-      readonly params: { readonly total: number; readonly required: number; readonly format: string };
+      readonly code: 'card_pool_too_large' | 'mainboard_not_exact' | 'mainboard_too_small';
+      readonly params: { readonly card: null; readonly count: number; readonly limit: number; readonly format: string };
     }
   | {
       readonly code: 'too_many_copies';
       readonly params: {
         readonly card: string;
+        readonly cardIdentifier: string;
+        readonly pitch: number | null;
         readonly count: number;
-        readonly max: number;
+        readonly limit: number;
         readonly format: string;
         readonly legendary: boolean;
+        readonly restricted: boolean;
       };
     }
-  | { readonly code: 'card_unknown'; readonly params: { readonly card: string } }
-  | { readonly code: 'card_banned' | 'card_not_in_format'; readonly params: { readonly card: string; readonly format: string } }
-  | { readonly code: 'card_not_for_hero'; readonly params: { readonly card: string; readonly hero: string } }
+  | { readonly code: 'card_unknown'; readonly params: { readonly card: string; readonly cardIdentifier: string } }
   | {
-      readonly code: 'rarity_not_allowed';
-      readonly params: { readonly card: string; readonly rarity: string; readonly format: string; readonly allowed: string };
+      readonly code: 'card_banned' | 'card_not_in_format';
+      readonly params: { readonly card: string; readonly cardIdentifier: string; readonly format: string };
+    }
+  | {
+      readonly code: 'card_not_for_hero';
+      readonly params: { readonly card: string; readonly cardIdentifier: string; readonly hero: string };
     };

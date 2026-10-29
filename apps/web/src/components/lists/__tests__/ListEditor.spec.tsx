@@ -24,6 +24,14 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigateMock,
 }));
 
+// The sold sheet reads the collection and the spare view of the card it sells.
+vi.mock('../../../api/library', () => ({
+  useLibraryQuery: () => ({ data: { cards: [] } }),
+}));
+vi.mock('../../../api/spare', () => ({
+  useSpareQuery: () => ({ data: { why: {} } }),
+}));
+
 vi.mock('../../../api/catalog', () => ({
   useSearchCardsQuery: (query: string) => ({
     data: query.length >= 2 ? { results: searchRef.results } : undefined,
@@ -54,8 +62,8 @@ function serveLineWrites(): void {
     return replaceLine(1, { ...(rest as Partial<IListLine>), ...(sold === undefined ? {} : { sold: sold as boolean }) });
   });
   api.handlers.set('GET /lists/7/printings/pummel-red', () => [
-    { printing: 'WTR206.R', label: 'WTR206 · Normal', suggestion: null },
-    { printing: 'WTR206.R.F', label: 'WTR206 · Rainbow Foil', suggestion: null },
+    { printing: 'WTR206.R', printingCode: 'WTR206', edition: '', finish: 'none', label: 'WTR206 · Normal', suggestion: null },
+    { printing: 'WTR206.R.F', printingCode: 'WTR206', edition: '', finish: 'rainbow', label: 'WTR206 · Rainbow Foil', suggestion: null },
   ]);
 }
 
@@ -68,7 +76,7 @@ beforeEach(() => {
 });
 
 const SELL_LINES = [
-  makeLine({ id: 1, quantity: 2, condition: 'NM', priceCents: 600, printing: 'WTR206.R', printingLabel: 'WTR206 · Normal' }),
+  makeLine({ id: 1, quantity: 2, condition: 'NM', priceCents: 600, printingCode: 'WTR206', finish: 'none', printing: 'WTR206.R', printingLabel: 'WTR206 · Normal' }),
   makeLine({ id: 2, cardIdentifier: 'snatch-red', name: 'Snatch', quantity: 1 }),
   makeLine({ id: 3, cardIdentifier: 'remembrance', name: 'Remembrance', pitch: null, quantity: 1, sold: true, priceCents: 5500 }),
 ];
@@ -137,7 +145,7 @@ describe('ListEditor', () => {
         { quantity: 3 },
         { condition: 'LP' },
         { priceCents: 650 },
-        { printing: 'WTR206.R.F' },
+        { printingCode: 'WTR206', edition: '', finish: 'rainbow' },
       ]);
     });
     await waitFor(() => expect(within(panel).getByLabelText('Preço cada (opcional)')).toHaveValue('R$ 6,50'));
@@ -160,20 +168,38 @@ describe('ListEditor', () => {
     expect(api.calls.some((call) => call.key.startsWith('PATCH'))).toBe(false);
   });
 
-  it('marks a card sold and brings it back', async () => {
+  it('every sale goes through the sold sheet, and a sold card comes back from the panel', async () => {
     serve(makeList({ lines: SELL_LINES }));
     serveLineWrites();
+    api.handlers.set('POST /lists/7/lines/1/sold', () => {
+      replaceLine(1, { sold: true });
+      return { ...current, soldLineId: 1, removed: [] };
+    });
     const user = userEvent.setup();
     renderWithProviders(<ListEditor listId="7" />);
 
+    // The panel of a line on sale has no button that marks it sold without the question about the collection.
     await user.click(await screen.findByRole('button', { name: /Editar Pummel/ }));
     const panel = await screen.findByTestId('line-panel');
-    await user.click(within(panel).getByRole('button', { name: 'Marcar como vendida' }));
-    expect(await within(panel).findByRole('button', { name: 'Voltar para à venda' })).toBeInTheDocument();
-    expect(api.calls.filter((call) => call.key === 'PATCH /lists/7/lines/1').map((call) => call.body)).toEqual([{ sold: true }]);
-    await user.click(within(panel).getByRole('button', { name: 'Voltar para à venda' }));
-    await waitFor(() => expect(within(panel).getByRole('button', { name: 'Marcar como vendida' })).toBeInTheDocument());
-    expect(api.calls.filter((call) => call.key === 'PATCH /lists/7/lines/1').at(-1)?.body).toEqual({ sold: false });
+    expect(within(panel).queryByRole('button', { name: 'Marcar como vendida' })).toBeNull();
+    expect(within(panel).queryByRole('button', { name: 'Voltar para à venda' })).toBeNull();
+    await user.keyboard('{Escape}');
+
+    // The sale starts from "Vendida" on the line and asks first how many, then about the collection.
+    await user.click(screen.getByRole('button', { name: /^Marcar Pummel.* como vendida$/ }));
+    expect(await screen.findByRole('heading', { name: 'Quantas você vendeu?' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '2' }));
+    await user.click(await screen.findByRole('button', { name: 'Não, só marcar como vendida' }));
+    await waitFor(() =>
+      expect(api.calls.find((call) => call.key === 'POST /lists/7/lines/1/sold')?.body).toEqual({ quantity: 2, removeFromCollection: false }),
+    );
+    expect(api.calls.some((call) => call.key === 'PATCH /lists/7/lines/1' && (call.body as { sold?: boolean }).sold === true)).toBe(false);
+
+    // A sold line is brought back on sale from its panel.
+    await user.click(await screen.findByRole('button', { name: /Editar Pummel/ }));
+    const soldPanel = await screen.findByTestId('line-panel');
+    await user.click(await within(soldPanel).findByRole('button', { name: 'Voltar para à venda' }));
+    await waitFor(() => expect(api.calls.filter((call) => call.key === 'PATCH /lists/7/lines/1').at(-1)?.body).toEqual({ sold: false }));
   });
 
   it('removes a card and closes the panel', async () => {
@@ -217,6 +243,43 @@ describe('ListEditor', () => {
     await waitFor(() => expect(api.calls.find((call) => call.key === 'POST /lists/7/lines')?.body).toEqual({ cardIdentifier: 'sink-below-yellow', quantity: 2 }));
     expect(await screen.findByText('Adicionada: Sink Below (Amarelo)')).toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByTestId('list-line')).toHaveLength(1));
+  });
+
+  it('a sell line over the collection says how many you have and is allowed', async () => {
+    serve(makeList({ lines: [] }));
+    searchRef.results = [
+      { cardIdentifier: 'snatch-red', name: 'Snatch', pitch: 1, classes: [], types: ['Attack Reaction'], ownedQuantity: 1, imageUrl: null, legalFormats: [], legalHeroes: [], bannedFormats: [] },
+    ];
+    api.handlers.set('POST /lists/7/lines', ({ body }) => {
+      current = { ...current, lines: [makeLine({ id: 9, cardIdentifier: 'snatch-red', name: 'Snatch', quantity: (body as { quantity: number }).quantity, owned: 1 })] };
+      return current;
+    });
+    api.handlers.set('GET /lists/7/printings/snatch-red', () => []);
+    const user = userEvent.setup();
+    renderWithProviders(<ListEditor listId="7" />);
+
+    await user.click(await screen.findByRole('button', { name: 'Adicionar carta do catálogo' }));
+    await user.type(await screen.findByLabelText('Buscar carta'), 'snatch');
+    await user.click(await screen.findByRole('button', { name: /Escolher Snatch/ }));
+    const picked = await screen.findByTestId('add-card-picked');
+    await user.click(within(picked).getByRole('button', { name: 'Aumentar quantidade' }));
+    await user.click(within(picked).getByRole('button', { name: 'Aumentar quantidade' }));
+    await user.click(within(picked).getByRole('button', { name: 'Adicionar' }));
+
+    // Three copies on the line against one in the collection: the line saves and says so, in the muted text style.
+    await waitFor(() => expect(api.calls.find((call) => call.key === 'POST /lists/7/lines')?.body).toEqual({ cardIdentifier: 'snatch-red', quantity: 3 }));
+    const note = await screen.findByTestId('line-owned-note');
+    expect(note).toHaveTextContent('Você tem 1 na coleção');
+    expect(note.className).toMatch(/ownedNote/);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('says nothing about the collection when it holds as many copies as the line lists', async () => {
+    serve(makeList({ lines: [makeLine({ id: 1, quantity: 2, owned: 2 }), makeLine({ id: 2, cardIdentifier: 'snatch-red', name: 'Snatch', quantity: 1, owned: 0, sold: true })] }));
+    renderWithProviders(<ListEditor listId="7" />);
+
+    await screen.findAllByTestId('list-line');
+    expect(screen.queryByTestId('line-owned-note')).not.toBeInTheDocument();
   });
 
   it('merges an existing card: the server answers with the summed line and the grid keeps one tile', async () => {

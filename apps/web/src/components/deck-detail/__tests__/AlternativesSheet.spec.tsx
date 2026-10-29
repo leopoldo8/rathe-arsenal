@@ -9,12 +9,14 @@ import type { IAlternativeCard, IAlternativeGroup, IAlternativesResponse } from 
 import { setTestLocale } from '../../../test/i18n-test-utils';
 
 const mockApiFetch = vi.fn();
+vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 vi.mock('../../../lib/api-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/api-client')>();
   return { ...actual, useApiClient: () => mockApiFetch };
 });
 
 import { AlternativesSheet } from '../AlternativesSheet';
+import { ReplacementControls } from '../ReplacementMark';
 
 const DECK_ID = 7;
 const TARGET = { cardIdentifier: 'emissary-of-tides-red', name: 'Emissary of Tides', slot: 'mainboard' };
@@ -31,7 +33,10 @@ function card(overrides: Partial<IAlternativeCard> = {}): IAlternativeCard {
     rationale: {
       tier: 1,
       pitch: 'red',
-      sharedClasses: ['Generic'],
+      pitchRelation: { relation: 'same', pitch: 'red' },
+      originalClasses: ['Generic'],
+      candidateGeneric: true,
+      sharedClasses: [],
       powerDelta: 0,
       defenseDelta: 0,
       sharedKeywords: [],
@@ -58,7 +63,13 @@ const TWO_GROUPS = response([
       cardIdentifier: 'brandish-blue',
       name: 'Brandish',
       pitch: 3,
-      rationale: { ...card().rationale, tier: 2, pitch: 'red', relaxed: 'pitch' },
+      rationale: {
+        ...card().rationale,
+        tier: 2,
+        pitch: 'red',
+        pitchRelation: { relation: 'different', original: 'red', candidate: 'blue' },
+        relaxed: 'pitch',
+      },
     }),
   ]),
 ]);
@@ -103,12 +114,41 @@ describe('AlternativesSheet', () => {
     const first = within(groups[0]!).getByTestId('alternative-card');
     expect(first).toHaveTextContent('Coax a Commotion');
     expect(first.querySelector('img')).toHaveAttribute('src', 'https://img.test/coax.webp');
-    expect(within(first).getByTestId('alternative-rationale')).toHaveTextContent('Mesmo pitch (vermelho)');
+    expect(within(first).getByTestId('alternative-rationale')).toHaveTextContent('mesmo pitch (vermelho)');
     expect(within(groups[1]!).getByTestId('alternative-rationale')).toHaveTextContent(
-      'O pitch é diferente do da original.',
+      'pitch diferente: azul em vez de vermelho',
     );
     expect(within(first).getByRole('img', { name: 'pitch Vermelho' })).toBeInTheDocument();
     expect(within(within(groups[1]!).getByTestId('alternative-card')).getByRole('img', { name: 'pitch Azul' })).toBeInTheDocument();
+  });
+
+  it('a Generic original reads one honest reason', async () => {
+    mockApiFetch.mockResolvedValue(
+      response([
+        group('generic', [
+          card({
+            cardIdentifier: 'brandish-blue',
+            name: 'Brandish',
+            pitch: 3,
+            rationale: {
+              ...card().rationale,
+              tier: 2,
+              pitchRelation: { relation: 'different', original: 'red', candidate: 'blue' },
+              relaxed: 'class',
+            },
+          }),
+        ]),
+      ]),
+    );
+
+    renderSheet();
+
+    const reason = (await screen.findByTestId('alternative-rationale')).textContent ?? '';
+    expect(reason.match(/pitch diferente/g)).toHaveLength(1);
+    expect(reason).toContain('carta genérica');
+    expect(reason).not.toContain('O pitch é diferente');
+    expect(reason).not.toContain('fora da classe da original');
+    expect(reason).not.toContain('mesma classe (Generic)');
   });
 
   it('marks owned and free copies', async () => {
@@ -218,11 +258,11 @@ describe('AlternativesSheet', () => {
       renderSheet();
       await screen.findByTestId('alternatives-group-other_pitch');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Ver Coax a Commotion antes de escolher' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Ver Coax a Commotion (Vermelho) antes de escolher' }));
 
       const view = screen.getByTestId('alternative-preview-view');
-      expect(within(view).getByRole('img', { name: 'Coax a Commotion' })).toHaveAttribute('src', 'https://img.test/coax-l.webp');
-      expect(view).toHaveTextContent('Coax a Commotion');
+      expect(within(view).getByRole('img', { name: 'Coax a Commotion (Vermelho)' })).toHaveAttribute('src', 'https://img.test/coax-l.webp');
+      expect(view).toHaveTextContent('Coax a Commotion (Vermelho)');
       expect(screen.queryByTestId('alternatives-group-very_close')).toBeNull();
       expect(mockApiFetch.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === 'POST')).toBe(false);
       expect(onClose).not.toHaveBeenCalled();
@@ -241,7 +281,7 @@ describe('AlternativesSheet', () => {
       renderSheet();
       await screen.findByTestId('alternatives-group-other_pitch');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Ver Brandish antes de escolher' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Ver Brandish (Azul) antes de escolher' }));
       await userEvent.click(screen.getByTestId('alternative-preview-pick'));
 
       await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
@@ -264,7 +304,7 @@ describe('AlternativesSheet', () => {
       const invalidate = vi.spyOn(client, 'invalidateQueries');
       await screen.findByTestId('alternatives-group-other_pitch');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Usar Brandish no lugar' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Usar Brandish (Azul) no lugar' }));
 
       await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
       const post = mockApiFetch.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'POST')!;
@@ -281,7 +321,7 @@ describe('AlternativesSheet', () => {
       onClose.mockReset();
       await userEvent.type(screen.getByRole('searchbox'), 'si');
       await screen.findByTestId('alternatives-group-search');
-      await userEvent.click(screen.getByRole('button', { name: 'Usar Sink Below no lugar' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Usar Sink Below (Vermelho) no lugar' }));
       await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
       const searchPost = mockApiFetch.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST')[1]!;
       expect(JSON.parse((searchPost[1] as RequestInit).body as string).pickedFrom).toBe('search');
@@ -300,13 +340,37 @@ describe('AlternativesSheet', () => {
       const invalidate = vi.spyOn(client, 'invalidateQueries');
       await screen.findByTestId('alternatives-group-very_close');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Usar Coax a Commotion no lugar' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Usar Coax a Commotion (Vermelho) no lugar' }));
 
       expect(await screen.findByTestId('alternatives-pick-error')).toHaveTextContent(message);
       expect(onClose).not.toHaveBeenCalled();
       const keys = invalidate.mock.calls.map(([filters]) => JSON.stringify(filters?.queryKey));
       expect(keys).toContain(JSON.stringify(['deck-detail', String(DECK_ID)]));
     });
+  });
+
+  it('the swap toast names the pitch', () => {
+    client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <ReplacementControls
+          deckId={DECK_ID}
+          replacement={{
+            id: 'r1',
+            slot: 'mainboard',
+            originalCardIdentifier: 'pack-hunt-red',
+            originalName: 'Pack Hunt',
+            originalPitch: 1,
+            replacementCardIdentifier: 'coax-a-commotion-red',
+            quantity: 1,
+            originalOwned: false,
+          }}
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Desfazer a troca de Pack Hunt (Vermelho)' })).toBeInTheDocument();
+    expect(screen.getByTestId('replacement-mark')).toHaveTextContent('no lugar de Pack Hunt (Vermelho)');
   });
 
   it('has copy for every new key in both locales', () => {

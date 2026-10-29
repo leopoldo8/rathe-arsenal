@@ -3,15 +3,22 @@ import { ConfigService } from '@nestjs/config';
 import { createMock } from '@golevelup/ts-jest';
 import { FetchGuardService } from '../../common/fetch-guard/fetch-guard.service';
 import { FirecrawlClientService } from '../firecrawl-client.service';
+import { CreditBudgetService } from '../credit-budget.service';
 import { EScraperErrorCode, ScraperError } from '../errors/scraper.errors';
 
 interface IEnv {
   SCRAPER_FETCH_PROVIDER?: string;
   FIRECRAWL_API_KEY?: string;
   FIRECRAWL_REQUESTS_PER_MINUTE?: number;
+  FIRECRAWL_CREDITS_PER_DETAIL?: number;
+  FIRECRAWL_CREDITS_PER_LISTING_PAGE?: number;
 }
 
-async function buildService(env: IEnv, fetchGuard = createMock<FetchGuardService>()): Promise<{
+async function buildService(
+  env: IEnv,
+  fetchGuard = createMock<FetchGuardService>(),
+  credits: Pick<CreditBudgetService, 'record'> = createMock<CreditBudgetService>(),
+): Promise<{
   service: FirecrawlClientService;
   fetchGuard: ReturnType<typeof createMock<FetchGuardService>>;
 }> {
@@ -22,6 +29,7 @@ async function buildService(env: IEnv, fetchGuard = createMock<FetchGuardService
       FirecrawlClientService,
       { provide: ConfigService, useValue: config },
       { provide: FetchGuardService, useValue: fetchGuard },
+      { provide: CreditBudgetService, useValue: credits },
     ],
   }).compile();
   return { service: moduleRef.get(FirecrawlClientService), fetchGuard };
@@ -266,6 +274,65 @@ describe('FirecrawlClientService', () => {
       await jest.advanceTimersByTimeAsync(120_000);
       await assertion;
       expect(fetchGuard.guardedFetch).toHaveBeenCalledTimes(3);
+    });
+  });
+  describe('credits', () => {
+    const enabledEnv: IEnv = { SCRAPER_FETCH_PROVIDER: 'firecrawl', FIRECRAWL_API_KEY: 'fc-secret' };
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    async function creditsAfter(env: IEnv, run: (service: FirecrawlClientService) => Promise<unknown>): Promise<number[]> {
+      const fetchGuard = createMock<FetchGuardService>();
+      fetchGuard.guardedFetch.mockResolvedValue(HTML_OK as never);
+      const credits = { record: jest.fn().mockResolvedValue(undefined) };
+      const { service } = await buildService(env, fetchGuard, credits);
+      await run(service);
+      return credits.record.mock.calls.map((call) => call[0] as number);
+    }
+
+    it('counts credits per call kind and nothing for the direct provider', async () => {
+      expect(await creditsAfter(enabledEnv, (service) => service.scrapeHtml('https://x.test/p', 'detail'))).toEqual([5]);
+      expect(await creditsAfter(enabledEnv, (service) => service.scrapeHtml('https://x.test/p'))).toEqual([5]);
+      expect(await creditsAfter(enabledEnv, (service) => service.scrapeHtml('https://x.test/list', 'listing'))).toEqual([1]);
+      expect(
+        await creditsAfter({ ...enabledEnv, FIRECRAWL_CREDITS_PER_DETAIL: 7 }, (service) => service.scrapeHtml('https://x.test/p', 'detail')),
+      ).toEqual([7]);
+      expect(
+        await creditsAfter({ ...enabledEnv, FIRECRAWL_CREDITS_PER_LISTING_PAGE: 2 }, (service) => service.scrapeHtml('https://x.test/l', 'listing')),
+      ).toEqual([2]);
+      expect(
+        await creditsAfter({ SCRAPER_FETCH_PROVIDER: 'direct', FIRECRAWL_API_KEY: 'fc-secret' }, (service) =>
+          service.scrapeHtml('https://x.test/p', 'detail'),
+        ),
+      ).toEqual([]);
+    });
+
+    it('writes the call to the month it was made in', async () => {
+      jest.useFakeTimers({ now: new Date('2026-11-01T00:00:00Z') });
+      const fetchGuard = createMock<FetchGuardService>();
+      fetchGuard.guardedFetch.mockResolvedValue(HTML_OK as never);
+      const repo = { query: jest.fn().mockResolvedValue(undefined) };
+      const config = createMock<ConfigService>();
+      (config.get as jest.Mock).mockImplementation((key: string) => (enabledEnv as Record<string, unknown>)[key]);
+      const credits = new CreditBudgetService(repo as never, config);
+      const { service } = await buildService(enabledEnv, fetchGuard, credits);
+
+      await service.scrapeHtml('https://x.test/p', 'detail');
+
+      expect(repo.query).toHaveBeenCalledWith(expect.any(String), ['2026-11', 5]);
+    });
+
+    it('counts nothing for a call Firecrawl refused', async () => {
+      const fetchGuard = createMock<FetchGuardService>();
+      fetchGuard.guardedFetch.mockResolvedValue({ status: 500, headers: {}, body: new Uint8Array() } as never);
+      const credits = { record: jest.fn().mockResolvedValue(undefined) };
+      const { service } = await buildService(enabledEnv, fetchGuard, credits);
+
+      await expect(service.scrapeHtml('https://x.test/p', 'detail')).rejects.toBeInstanceOf(ScraperError);
+
+      expect(credits.record).not.toHaveBeenCalled();
     });
   });
 });

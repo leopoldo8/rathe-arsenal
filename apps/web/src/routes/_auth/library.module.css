@@ -310,3 +310,10 @@
     justify-content: center;
   }
 }
+
+.collectionSummary {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+}

@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StatusGroups } from '../StatusGroups';
 import { ITrackedDeckListItem, TDeckStatus } from '../../../api/decks';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastProvider } from '../../ui/Toast/ToastProvider';
 
 // ---------------------------------------------------------------------------
@@ -68,17 +69,13 @@ function makeDeck(
 function renderGroups(
   decks: readonly ITrackedDeckListItem[],
   isAllRetired = decks.length > 0 && decks.every((d) => d.status === 'retired'),
-  onUntrack = vi.fn(),
 ) {
   return render(
-    <ToastProvider>
-      <StatusGroups
-        decks={decks}
-        onUntrack={onUntrack}
-        untrackingDeckId={null}
-        isAllRetired={isAllRetired}
-      />
-    </ToastProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <ToastProvider>
+        <StatusGroups decks={decks} isAllRetired={isAllRetired} />
+      </ToastProvider>
+    </QueryClientProvider>,
   );
 }
 

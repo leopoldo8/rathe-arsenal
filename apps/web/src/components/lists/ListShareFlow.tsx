@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ICardList } from '../../api/lists';
-import { DISPLAY_NAME_REQUIRED, isShareErrorCode } from '../../api/shared-decks';
+import { DISPLAY_NAME_REQUIRED, EMAIL_NOT_CONFIRMED, isShareErrorCode } from '../../api/shared-decks';
 import {
   sharedListImageDownloadPath,
   useDisableListShareMutation,
@@ -11,6 +11,7 @@ import {
   type IListLinkState,
 } from '../../api/shared-lists';
 import { useAuth } from '../../auth/useAuth';
+import { ConfirmEmailPanel } from '../confirmation/ConfirmEmailPanel';
 import { DisplayNameForm } from '../deck-detail/DisplayNameForm';
 import { ShareAddressRow } from '../share/ShareAddressRow';
 import { ShareContactRow } from '../share/ShareContactRow';
@@ -38,6 +39,7 @@ export function ListShareFlow({ list, onClose }: IListShareFlowProps): React.Rea
   const enable = useEnableListShareMutation(list.id);
   const displayName = useSaveDisplayName();
   const [needsName, setNeedsName] = useState(!user?.displayName);
+  const [unconfirmed, setUnconfirmed] = useState(false);
   const requested = useRef(false);
   const link = shareQuery.data ?? null;
 
@@ -50,6 +52,7 @@ export function ListShareFlow({ list, onClose }: IListShareFlowProps): React.Rea
           requested.current = false;
           setNeedsName(true);
         }
+        if (isShareErrorCode(error, EMAIL_NOT_CONFIRMED)) setUnconfirmed(true);
       },
     });
   }
@@ -64,6 +67,8 @@ export function ListShareFlow({ list, onClose }: IListShareFlowProps): React.Rea
   async function handleSaveName(name: string): Promise<void> {
     if (await displayName.save(name)) setNeedsName(false);
   }
+
+  if (unconfirmed) return <ConfirmEmailPanel onClose={onClose} />;
 
   const title = needsName ? t('sharing.dialog.name.title') : t('lists.share.title');
   const failed = link === null && enable.isError && !isShareErrorCode(enable.error, DISPLAY_NAME_REQUIRED);
@@ -114,19 +119,27 @@ function ListLinkStep({ list, link, onTurnedOff }: IListLinkStepProps): React.Re
   const disable = useDisableListShareMutation(list.id);
   const setContact = useSetListShareContactMutation(list.id);
 
+  const { user } = useAuth();
   const translate = makeTranslate(t);
   const url = versionedListUrl(list, link.url, translate);
+  const contact = (
+    <ShareContactRow
+      testId="list-share-contact"
+      showContact={link.showContact}
+      updating={setContact.isPending}
+      warnWithoutNumber
+      onToggle={(next, onFailed) => setContact.mutate(next, { onError: onFailed })}
+    />
+  );
+  // Without a number the page cannot be answered: that warning leads, before the address and the send button.
+  const warnFirst = user?.whatsappNumber == null;
 
   return (
     <>
+      {warnFirst && contact}
       <ShareAddressRow url={url} />
       <ShareWhatsappButton message={buildListShareMessage(list, url, translate)} />
-      <ShareContactRow
-        testId="list-share-contact"
-        showContact={link.showContact}
-        updating={setContact.isPending}
-        onToggle={(next, onFailed) => setContact.mutate(next, { onError: onFailed })}
-      />
+      {!warnFirst && contact}
       <ShareLinkFooter
         downloadHref={sharedListImageDownloadPath(link.token)}
         downloadLabel={t('lists.share.downloadImage')}

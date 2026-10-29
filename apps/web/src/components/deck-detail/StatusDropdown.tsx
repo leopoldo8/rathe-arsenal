@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import type { TDeckStatus } from '../../api/decks';
 import { usePatchDeckMutation } from '../../api/decks';
 import { useToast } from '../ui/Toast/useToast';
+import { GlossaryQuestion } from '../glossary/GlossaryTerm';
+import { GlossarySheet } from '../glossary/GlossarySheet';
 import { StatusBullet } from './StatusBullet';
 import { STATUS_KEY_MAP } from './status-labels';
 import styles from './StatusDropdown.module.css';
@@ -22,6 +24,9 @@ interface IStatusDropdownProps {
   readonly deckId: number;
   /** Current status value shown in the trigger. */
   readonly currentStatus: TDeckStatus;
+  /** The deck's name and size, for the line "Seu deck ... continua salvo" the "Aposentado" sheet adds. */
+  readonly deckName?: string | undefined;
+  readonly cardCount?: number | undefined;
 }
 
 /**
@@ -38,10 +43,14 @@ interface IStatusDropdownProps {
 export function StatusDropdown({
   deckId,
   currentStatus,
+  deckName,
+  cardCount,
 }: IStatusDropdownProps): React.ReactElement {
   const { t } = useTranslation();
   const { show: showToast } = useToast();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const questionRef = useRef<HTMLElement | null>(null);
+  const [retiredSheetOpen, setRetiredSheetOpen] = useState(false);
 
   // Local optimistic state so the trigger updates immediately before the
   // server confirms — reverted to `previousStatus` on mutation error.
@@ -83,6 +92,7 @@ export function StatusDropdown({
   const currentLabel = t(STATUS_KEY_MAP[localStatus]);
 
   return (
+    <>
     <Select.Root
       value={localStatus}
       onValueChange={handleValueChange}
@@ -123,15 +133,42 @@ export function StatusDropdown({
         <Select.Content className={styles.content} position="popper" sideOffset={4}>
           <Select.Viewport className={styles.viewport}>
             {ALL_STATUSES.map((status) => (
-              <Select.Item key={status} value={status} className={styles.item}>
-                <Select.ItemText>
-                  <StatusBullet status={status} />
-                </Select.ItemText>
-              </Select.Item>
+              <div key={status} className={styles.row}>
+                <Select.Item value={status} className={styles.item}>
+                  <Select.ItemText>
+                    <StatusBullet status={status} />
+                  </Select.ItemText>
+                </Select.Item>
+                {status === 'retired' && (
+                  // A sibling of the option, never inside it: tapping the "?" must not pick the stage.
+                  <span
+                    className={styles.help}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onPointerUp={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                  >
+                    <GlossaryQuestion
+                      term="retired"
+                      onOpen={(anchor) => {
+                        questionRef.current = anchor;
+                        setRetiredSheetOpen(true);
+                      }}
+                    />
+                  </span>
+                )}
+              </div>
             ))}
           </Select.Viewport>
         </Select.Content>
       </Select.Portal>
     </Select.Root>
+    <GlossarySheet
+      term="retired"
+      own={deckName === undefined || cardCount === undefined ? undefined : { kind: 'stage', deckName, cards: cardCount }}
+      open={retiredSheetOpen}
+      onOpenChange={setRetiredSheetOpen}
+      anchorRef={questionRef}
+    />
+    </>
   );
 }

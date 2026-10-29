@@ -44,7 +44,9 @@ export function DeckDetailLayout({
         <aside className={styles.sidebar} aria-label={t('decks.deckDetailsSidebarAria')}>
           {sidebar}
         </aside>
-        <main className={styles.canvas}>{canvas}</main>
+        <section className={styles.canvas} aria-label={t('decks.deckCanvasAria')}>
+          {canvas}
+        </section>
       </div>
     </div>
   );

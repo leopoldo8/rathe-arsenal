@@ -35,7 +35,7 @@ describe('recommendation queue (e2e)', () => {
     await fixture.close();
   });
 
-  async function freshDeck(): Promise<{ jwt: string; deckId: number }> {
+  async function freshDeck(): Promise<{ sessionToken: string; deckId: number }> {
     const scenario = await fixture.scenario();
     await fixture.clearRuns(scenario.deckId);
     return scenario;
@@ -46,9 +46,9 @@ describe('recommendation queue (e2e)', () => {
   }
 
   it('a composition save leaves one pending auto run due in 5 minutes', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
 
-    await fixture.put(`/api/decks/${deckId}`, jwt).send(composition(3)).expect(200);
+    await fixture.put(`/api/decks/${deckId}`, sessionToken).send(composition(3)).expect(200);
 
     const runs = await fixture.runs(deckId);
     expect(runs).toHaveLength(1);
@@ -59,12 +59,12 @@ describe('recommendation queue (e2e)', () => {
   });
 
   it('a second change pushes the pending auto run back', async () => {
-    const { jwt, deckId } = await freshDeck();
-    await fixture.put(`/api/decks/${deckId}`, jwt).send(composition(3)).expect(200);
+    const { sessionToken, deckId } = await freshDeck();
+    await fixture.put(`/api/decks/${deckId}`, sessionToken).send(composition(3)).expect(200);
     const [first] = await fixture.runs(deckId);
     await fixture.dataSource.query(`UPDATE recommendation_run SET "runAfter" = "runAfter" - interval '10 seconds' WHERE id = $1`, [first!.id]);
 
-    await fixture.put(`/api/decks/${deckId}`, jwt).send(composition(2)).expect(200);
+    await fixture.put(`/api/decks/${deckId}`, sessionToken).send(composition(2)).expect(200);
 
     const runs = await fixture.runs(deckId);
     expect(runs).toHaveLength(1);
@@ -75,11 +75,11 @@ describe('recommendation queue (e2e)', () => {
   });
 
   it('a change leaves a pending manual run alone', async () => {
-    const { jwt, deckId } = await freshDeck();
-    await fixture.post(`/api/decks/${deckId}/recommendations/runs`, jwt).expect(202);
+    const { sessionToken, deckId } = await freshDeck();
+    await fixture.post(`/api/decks/${deckId}/recommendations/runs`, sessionToken).expect(202);
     const [manual] = await fixture.runs(deckId);
 
-    await fixture.put(`/api/decks/${deckId}`, jwt).send(composition(3)).expect(200);
+    await fixture.put(`/api/decks/${deckId}`, sessionToken).send(composition(3)).expect(200);
 
     const runs = await fixture.runs(deckId);
     expect(runs).toHaveLength(1);
@@ -90,46 +90,46 @@ describe('recommendation queue (e2e)', () => {
   it('every deck-list writer enqueues an auto run', async () => {
     const writers: ReadonlyArray<[string, () => Promise<number[]>]> = [
       ['composition save', async () => {
-        const { jwt, deckId } = await freshDeck();
-        await fixture.put(`/api/decks/${deckId}`, jwt).send(composition(3)).expect(200);
+        const { sessionToken, deckId } = await freshDeck();
+        await fixture.put(`/api/decks/${deckId}`, sessionToken).send(composition(3)).expect(200);
         return [deckId];
       }],
       ['deck import', async () => {
-        const { jwt } = await fixture.signUp('import');
-        const deckIds = await fixture.importDecks(jwt, 2);
+        const { sessionToken } = await fixture.signUp('import');
+        const deckIds = await fixture.importDecks(sessionToken, 2);
         expect(deckIds).toHaveLength(2);
         return deckIds;
       }],
       ['pick', async () => {
-        const { jwt, deckId } = await freshDeck();
+        const { sessionToken, deckId } = await freshDeck();
         await fixture
-          .post(`/api/decks/${deckId}/replacements`, jwt)
+          .post(`/api/decks/${deckId}/replacements`, sessionToken)
           .send({ originalCardIdentifier: EMISSARY, slot: 'mainboard', replacementCardIdentifier: COAX, pickedFrom: 'search' })
           .expect(201);
         return [deckId];
       }],
       ['revert', async () => {
-        const { jwt, deckId } = await freshDeck();
+        const { sessionToken, deckId } = await freshDeck();
         const picked = await fixture
-          .post(`/api/decks/${deckId}/replacements`, jwt)
+          .post(`/api/decks/${deckId}/replacements`, sessionToken)
           .send({ originalCardIdentifier: EMISSARY, slot: 'mainboard', replacementCardIdentifier: COAX, pickedFrom: 'search' })
           .expect(201);
         await fixture.clearRuns(deckId);
-        await fixture.post(`/api/replacements/${picked.body.replacement.id}/revert`, jwt).expect(200);
+        await fixture.post(`/api/replacements/${picked.body.replacement.id}/revert`, sessionToken).expect(200);
         return [deckId];
       }],
       ['adopt', async () => {
-        const { jwt, deckId } = await freshDeck();
+        const { sessionToken, deckId } = await freshDeck();
         const { ids: seeded } = await fixture.seedDoneRun(deckId, [{ card: ADRENALINE, cut: FLEX }]);
         await fixture
-          .post(`/api/decks/${deckId}/recommendations/${seeded[0]}/adopt`, jwt)
+          .post(`/api/decks/${deckId}/recommendations/${seeded[0]}/adopt`, sessionToken)
           .send({ cutCardIdentifier: FLEX, cutSlot: 'mainboard' })
           .expect(201);
         return [deckId];
       }],
       ['format PATCH', async () => {
-        const { jwt, deckId } = await freshDeck();
-        await fixture.patch(`/api/decks/${deckId}`, jwt).send({ format: 'Blitz' }).expect(200);
+        const { sessionToken, deckId } = await freshDeck();
+        await fixture.patch(`/api/decks/${deckId}`, sessionToken).send({ format: 'Blitz' }).expect(200);
         return [deckId];
       }],
     ];
@@ -144,25 +144,25 @@ describe('recommendation queue (e2e)', () => {
   });
 
   it('non-writers enqueue nothing', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     const picked = await fixture
-      .post(`/api/decks/${deckId}/replacements`, jwt)
+      .post(`/api/decks/${deckId}/replacements`, sessionToken)
       .send({ originalCardIdentifier: EMISSARY, slot: 'mainboard', replacementCardIdentifier: COAX, pickedFrom: 'search' })
       .expect(201);
     await fixture.clearRuns(deckId);
 
     const nonWriters: ReadonlyArray<[string, () => Promise<void>]> = [
       ['keep', async () => {
-        await fixture.post(`/api/replacements/${picked.body.replacement.id}/keep`, jwt).expect(200);
+        await fixture.post(`/api/replacements/${picked.body.replacement.id}/keep`, sessionToken).expect(200);
       }],
       ['mark-owned', async () => {
-        await fixture.own(jwt, [{ cardIdentifier: FLEX, quantity: 2 }]);
+        await fixture.own(sessionToken, [{ cardIdentifier: FLEX, quantity: 2 }]);
       }],
       ['name-only PATCH', async () => {
-        await fixture.patch(`/api/decks/${deckId}`, jwt).send({ name: 'Renamed' }).expect(200);
+        await fixture.patch(`/api/decks/${deckId}`, sessionToken).send({ name: 'Renamed' }).expect(200);
       }],
       ['same-format PATCH', async () => {
-        await fixture.patch(`/api/decks/${deckId}`, jwt).send({ format: 'Classic Constructed' }).expect(200);
+        await fixture.patch(`/api/decks/${deckId}`, sessionToken).send({ format: 'Classic Constructed' }).expect(200);
       }],
     ];
     for (const [label, act] of nonWriters) {
@@ -171,7 +171,7 @@ describe('recommendation queue (e2e)', () => {
     }
 
     const scratch = await fixture
-      .post('/api/decks', jwt)
+      .post('/api/decks', sessionToken)
       .send({ heroIdentifier: KATSU, format: 'Classic Constructed' })
       .expect(201);
     expect({ label: 'scratch create', runs: (await fixture.runs(scratch.body.id)).length }).toEqual({
@@ -181,10 +181,10 @@ describe('recommendation queue (e2e)', () => {
   });
 
   it('a change while a run is running queues an auto run behind it', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     const runningId = await fixture.seedRun(deckId, 'running', { claimedMinutesAgo: 0 });
 
-    await fixture.put(`/api/decks/${deckId}`, jwt).send(composition(3)).expect(200);
+    await fixture.put(`/api/decks/${deckId}`, sessionToken).send(composition(3)).expect(200);
 
     const runs = await fixture.runs(deckId);
     expect(runs.map((run) => [run.status, run.trigger])).toEqual([
@@ -195,19 +195,19 @@ describe('recommendation queue (e2e)', () => {
   });
 
   it('a retired deck gets no automatic run', async () => {
-    const { jwt, deckId } = await freshDeck();
-    await fixture.patch(`/api/decks/${deckId}`, jwt).send({ status: 'retired' }).expect(200);
+    const { sessionToken, deckId } = await freshDeck();
+    await fixture.patch(`/api/decks/${deckId}`, sessionToken).send({ status: 'retired' }).expect(200);
 
-    await fixture.put(`/api/decks/${deckId}`, jwt).send(composition(3)).expect(200);
+    await fixture.put(`/api/decks/${deckId}`, sessionToken).send(composition(3)).expect(200);
 
     expect(await fixture.runs(deckId)).toHaveLength(0);
   });
 
   it('concurrent changes leave one pending run', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
 
     const responses = await Promise.all(
-      Array.from({ length: 8 }, (_, index) => fixture.put(`/api/decks/${deckId}`, jwt).send(composition(1 + (index % 3)))),
+      Array.from({ length: 8 }, (_, index) => fixture.put(`/api/decks/${deckId}`, sessionToken).send(composition(1 + (index % 3)))),
     );
 
     expect(responses.map((response) => response.status)).toEqual(Array(8).fill(200));
@@ -216,9 +216,9 @@ describe('recommendation queue (e2e)', () => {
   });
 
   it('Generate creates a manual run due now', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
 
-    const response = await fixture.post(`/api/decks/${deckId}/recommendations/runs`, jwt).expect(202);
+    const response = await fixture.post(`/api/decks/${deckId}/recommendations/runs`, sessionToken).expect(202);
 
     const runs = await fixture.runs(deckId);
     expect(runs).toHaveLength(1);
@@ -234,11 +234,11 @@ describe('recommendation queue (e2e)', () => {
   });
 
   it('Generate promotes the pending auto run', async () => {
-    const { jwt, deckId } = await freshDeck();
-    await fixture.put(`/api/decks/${deckId}`, jwt).send(composition(3)).expect(200);
+    const { sessionToken, deckId } = await freshDeck();
+    await fixture.put(`/api/decks/${deckId}`, sessionToken).send(composition(3)).expect(200);
     const [auto] = await fixture.runs(deckId);
 
-    const response = await fixture.post(`/api/decks/${deckId}/recommendations/runs`, jwt).expect(202);
+    const response = await fixture.post(`/api/decks/${deckId}/recommendations/runs`, sessionToken).expect(202);
 
     expect(response.body.run).toEqual(expect.objectContaining({ id: auto!.id, trigger: 'manual', status: 'pending' }));
     const runs = await fixture.runs(deckId);
@@ -247,10 +247,10 @@ describe('recommendation queue (e2e)', () => {
   });
 
   it('Generate returns the running run', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     const runningId = await fixture.seedRun(deckId, 'running', { claimedMinutesAgo: 0 });
 
-    const response = await fixture.post(`/api/decks/${deckId}/recommendations/runs`, jwt).expect(202);
+    const response = await fixture.post(`/api/decks/${deckId}/recommendations/runs`, sessionToken).expect(202);
 
     expect(response.body.run).toEqual(expect.objectContaining({ id: runningId, status: 'running' }));
     expect(await fixture.runs(deckId)).toHaveLength(1);
@@ -260,18 +260,18 @@ describe('recommendation queue (e2e)', () => {
     const { deckId } = await freshDeck();
     const stranger = await fixture.signUp('stranger');
 
-    await fixture.post(`/api/decks/${deckId}/recommendations/runs`, stranger.jwt).expect(404);
-    await fixture.post(`/api/decks/2147483000/recommendations/runs`, stranger.jwt).expect(404);
-    await fixture.post(`/api/decks/abc/recommendations/runs`, stranger.jwt).expect(400);
+    await fixture.post(`/api/decks/${deckId}/recommendations/runs`, stranger.sessionToken).expect(404);
+    await fixture.post(`/api/decks/2147483000/recommendations/runs`, stranger.sessionToken).expect(404);
+    await fixture.post(`/api/decks/abc/recommendations/runs`, stranger.sessionToken).expect(400);
     await fixture.post(`/api/decks/${deckId}/recommendations/runs`, '').expect(401);
     expect(await fixture.runs(deckId)).toHaveLength(0);
   });
 
   it('logs the enqueue', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     const log = jest.spyOn(Logger.prototype, 'log');
     try {
-      await fixture.put(`/api/decks/${deckId}`, jwt).send(composition(3)).expect(200);
+      await fixture.put(`/api/decks/${deckId}`, sessionToken).send(composition(3)).expect(200);
 
       expect(log).toHaveBeenCalledWith(
         expect.objectContaining({ event: 'recommendations.enqueued', trackedDeckId: deckId, trigger: 'auto' }),

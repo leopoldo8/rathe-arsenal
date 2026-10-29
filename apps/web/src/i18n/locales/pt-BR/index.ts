@@ -3,13 +3,17 @@ import { shell } from './shell';
 import { home } from './home';
 import { onboarding } from './onboarding';
 import { auth } from './auth';
+import { account } from './account';
 import { apiErrors } from './apiErrors';
 import { library } from './library';
 import { csvSources } from './csvSources';
+import { copyVersions } from './copyVersions';
+import { collectionReader } from './collectionReader';
+import { products } from './products';
+import { fabraryImport } from './fabraryImport';
 import { decks } from './decks';
 import { deckDetail } from './deckDetail';
 import { deckEdit } from './deckEdit';
-import { variantQueue } from './variantQueue';
 import { settings } from './settings';
 import { ui } from './ui';
 import { about } from './about';
@@ -20,6 +24,10 @@ import { recommendations } from './recommendations';
 import { chat } from './chat';
 import { sharing } from './sharing';
 import { lists } from './lists';
+import { missingList } from './missingList';
+import { spare } from './spare';
+import { cardGroups } from './cardGroups';
+import { glossary } from './glossary';
 
 export const ptBR = {
   common,
@@ -27,13 +35,17 @@ export const ptBR = {
   home,
   onboarding,
   auth,
+  account,
   apiErrors,
   library,
   csvSources,
+  copyVersions,
+  collectionReader,
+  products,
+  fabraryImport,
   decks,
   deckDetail,
   deckEdit,
-  variantQueue,
   settings,
   ui,
   about,
@@ -44,6 +56,10 @@ export const ptBR = {
   chat,
   sharing,
   lists,
+  missingList,
+  spare,
+  cardGroups,
+  glossary,
 } as const;
 
 /**

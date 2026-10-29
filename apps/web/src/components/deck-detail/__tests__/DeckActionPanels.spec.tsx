@@ -12,6 +12,7 @@ const replacement: IDeckReplacement = {
   slot: 'mainboard',
   originalCardIdentifier: 'emissary-of-tides-red',
   originalName: 'Emissary of Tides',
+  originalPitch: null,
   replacementCardIdentifier: 'coax-a-commotion-red',
   quantity: 2,
   originalOwned: false,
@@ -33,10 +34,6 @@ describe('DeckActionPanels', () => {
         onMarkOwned={vi.fn()}
         isMarkingOwned={false}
         pendingCard={null}
-        onFetchVariants={vi.fn()}
-        fetchMutationStatus="idle"
-        isCooldownActive={false}
-        onPollingChange={vi.fn()}
         onShoppingRetry={vi.fn()}
         replacements={[replacement]}
         onOpenAlternatives={onOpenAlternatives}

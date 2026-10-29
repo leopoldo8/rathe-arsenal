@@ -15,8 +15,8 @@ import { DecksService } from './decks.service';
 import { TestDeckController } from './test/test-deck.controller';
 import { TestDeckService } from './test/test-deck.service';
 import { ReSolveController } from './re-solve/re-solve.controller';
-import { VariantFetchController } from './variant-fetch.controller';
-import { VariantJobsController } from './variant-jobs.controller';
+import { DeckMissingController } from './deck-missing.controller';
+import { DeckMissingService } from './deck-missing.service';
 import { AuthModule } from '../auth/auth.module';
 import { StoresModule } from '../stores/stores.module';
 import { DecisionsController } from './decisions/decisions.controller';
@@ -47,18 +47,19 @@ import { RecommendationsCoreModule } from '../recommendations/recommendations-co
     TestDeckController,
     ReSolveController,
     DecisionsController,
-    VariantFetchController,
-    VariantJobsController,
+    DeckMissingController,
   ],
   providers: [
     DecksImportService,
     DecksService,
     TestDeckService,
+    DeckMissingService,
     // Shared U5/U6 validator — registered here so NestJS DI resolves it when
     // useContainer is configured. Falls back to static catalog singleton at
     // runtime until useContainer(app.select(AppModule), { fallbackOnErrors: true })
     // is added to main.ts (tracked as a gap for U6 to resolve).
     HeroIdentifierExistsInCatalog,
   ],
+  exports: [DeckMissingService],
 })
 export class DecksModule {}

@@ -18,23 +18,19 @@ export interface IVariantJobCard {
 }
 
 /**
- * A queued request to fetch detail-page variants for a deck's missing cards.
- * Rows are the queue AND the source of progress truth. A single continuous
- * worker claims `pending` rows via `FOR UPDATE SKIP LOCKED`.
+ * A queued product-page lookup for one card, shared by every user and deck.
+ * Rows are the queue AND the record of when a card was last looked up. A single
+ * continuous worker claims `pending` rows via `FOR UPDATE SKIP LOCKED`.
  */
 @Entity({ name: 'variant_fetch_job' })
 @Index(['status', 'enqueuedAt'])
-@Index(['userId', 'status'])
-@Index(['deckId', 'status'])
+@Index('IDX_variant_fetch_job_pending_card', ['cardIdentifier'], { unique: true, where: `"status" = 'pending'` })
 export class VariantFetchJobEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid' })
-  userId!: string;
-
-  @Column({ type: 'int' })
-  deckId!: number;
+  @Column({ type: 'varchar', length: 150 })
+  cardIdentifier!: string;
 
   @Column({ type: 'int' })
   storeId!: number;

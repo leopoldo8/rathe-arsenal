@@ -3,12 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/useAuth';
 import { isShareLinkUnavailable, useSharedDeckQuery } from '../../api/shared-decks';
 import { SharedContactButton } from './SharedContactButton';
+import { SharedCopyList } from './SharedCopyList';
 import { SharedComparison } from './SharedComparison';
 import { SharedDeckFooter } from './SharedDeckFooter';
 import { SharedDeckGallery } from './SharedDeckGallery';
 import { SharedDeckHeader } from './SharedDeckHeader';
+import { SharedLegalityBlock } from './SharedLegalityBlock';
 import { SharedDeckUnavailable } from './SharedDeckUnavailable';
-import { SharedMissingGallery } from './SharedMissingGallery';
+import { SharedMissingPage } from './SharedMissingPage';
+import { SharedQuotePage } from './SharedQuotePage';
 import { SharedTopBar } from './SharedTopBar';
 import styles from './SharedDeckPage.module.css';
 
@@ -39,15 +42,16 @@ export function SharedDeckPage({ token }: ISharedDeckPageProps): React.ReactElem
     );
   }
 
+  if (deck?.intent === 'quote') return <SharedQuotePage token={token} quote={deck} />;
+  if (deck?.intent === 'missing') return <SharedMissingPage deck={deck} />;
+
   const contactWhatsapp = deck?.contactWhatsapp ?? null;
   const contactProps =
     deck !== undefined && contactWhatsapp !== null
       ? {
           whatsapp: contactWhatsapp,
           sharerName: deck.sharerName,
-          message: t(deck.intent === 'missing' ? 'sharing.contact.messageMissing' : 'sharing.contact.message', {
-            deck: deck.name,
-          }),
+          message: t('sharing.contact.message', { deck: deck.name }),
         }
       : null;
 
@@ -75,17 +79,23 @@ export function SharedDeckPage({ token }: ISharedDeckPageProps): React.ReactElem
                 deck={deck}
                 contact={
                   contactProps === null ? undefined : (
-                    <SharedContactButton {...contactProps} variant="pill" primary={deck.intent === 'missing'} />
+                    <SharedContactButton {...contactProps} variant="pill" />
                   )
                 }
               />
               {deck.intent === 'deck' && <SharedComparison deck={deck} />}
             </div>
-            {deck.intent === 'deck' ? <SharedDeckGallery cards={deck.cards} /> : <SharedMissingGallery deck={deck} />}
+            {deck.intent === 'deck' && deck.legality !== null && (
+              <SharedLegalityBlock format={deck.format} legality={deck.legality} />
+            )}
+            {deck.intent === 'deck' && <SharedCopyList deck={deck} />}
+            {deck.intent === 'deck' && <SharedDeckGallery cards={deck.cards} />}
           </div>
         )}
       </main>
-      <SharedDeckFooter />
+      <SharedDeckFooter
+        {...(deck === undefined ? {} : { glossaryBackLabel: t('glossary.page.backToSharedDeck', { name: deck.sharerName }) })}
+      />
       {contactProps !== null && <SharedContactButton {...contactProps} variant="bar" />}
     </div>
   );

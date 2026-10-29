@@ -68,6 +68,11 @@ export class EnvDto {
   APP_BASE_URL!: string;
 
   @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  TURNSTILE_SECRET_KEY?: string;
+
+  @IsOptional()
   @IsUrl({ require_tld: false, require_protocol: true })
   AWS_APPSYNC_ENDPOINT: string =
     'https://42xrd23ihbd47fjvsrt27ufpfe.appsync-api.us-east-2.amazonaws.com/graphql';
@@ -166,6 +171,11 @@ export class EnvDto {
   @IsString()
   GEMINI_API_KEY?: string;
 
+  /** How hard the model thinks on a chat turn: `low`, `medium` or `high`; any other value is ignored by the reader and the model's default applies. */
+  @IsOptional()
+  @IsString()
+  GEMINI_CHAT_THINKING_LEVEL?: string;
+
   /** An OpenRouter model id such as `anthropic/claude-haiku-5.5`; set, chat turns go to it with OPENROUTER_API_KEY instead of Gemini. */
   @IsOptional()
   @IsString()
@@ -190,6 +200,46 @@ export class EnvDto {
   @IsInt()
   @Min(1)
   FIRECRAWL_REQUESTS_PER_MINUTE?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  STORE_PRICE_VALID_DAYS?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  STORE_AVAILABILITY_PASS_DAYS?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  FIRECRAWL_MONTHLY_CREDIT_BUDGET?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  FIRECRAWL_CREDITS_PER_PASS?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  FIRECRAWL_CREDITS_PER_DETAIL?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  FIRECRAWL_CREDITS_PER_LISTING_PAGE?: number;
+
+  /**
+   * Opt-in, exactly the string `true`: sign-up answers with `_devVerificationLink` and the password
+   * code request with `_devCode`, so tests with no inbox can finish the flow. Unset by default, because
+   * any deploy that returned them would let a stolen session change the password without the e-mail.
+   * The API refuses to start with it `true` in production (see validateEnv).
+   */
+  @IsOptional()
+  @IsString()
+  EXPOSE_DEV_SECRETS?: string;
 
   /**
    * Sentry DSN for api error reporting. Optional — when absent, initApiSentry
@@ -229,6 +279,9 @@ export function validateEnv(raw: Record<string, unknown>): EnvDto {
       .map((e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`)
       .join('\n  ');
     throw new Error(`Invalid environment configuration:\n  ${formatted}`);
+  }
+  if (dto.EXPOSE_DEV_SECRETS === 'true' && dto.NODE_ENV === ENodeEnv.Production) {
+    throw new Error('Invalid environment configuration:\n  EXPOSE_DEV_SECRETS: must not be "true" when NODE_ENV is production');
   }
   return dto;
 }

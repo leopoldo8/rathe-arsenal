@@ -2,6 +2,15 @@ export const onboarding = {
   // OnboardingWizard
   wizardAriaLabel: 'Primeiros passos',
 
+  // FirstRunChooser (r3-first-run-phone)
+  firstRunTitle: 'Como você quer começar?',
+  firstRunProduct: 'Comprei um deck pronto',
+  firstRunProductHint: 'Armory Deck, Blitz Deck ou Silver Age, na caixa',
+  firstRunPaste: 'Tem um link ou uma lista? Colar aqui',
+  firstRunCsv: 'Enviar uma planilha (.csv)',
+  firstRunScan: 'Fotografar ou digitar as cartas',
+  firstRunSkip: 'Pular por agora',
+
   // StepIndicator — nav + items
   stepNavAriaLabel: 'Passo {{current}} de {{total}}',
   stepItemAriaLabel: 'Passo {{number}} de {{total}}: {{label}}, {{state}}',
@@ -20,18 +29,14 @@ export const onboarding = {
   step1Placeholder: 'https://fabrary.net/decks/…',
   step1FormatError: 'Esse não é um link de deck do Fabrary (ex.: https://fabrary.net/decks/…).',
   step1TimeoutError: 'O Fabrary demorou demais para responder. Tente de novo em instantes.',
-  step1PrivateDeckError: 'Esse deck é privado no Fabrary. Deixe ele público ou use outro link.',
-  step1NotFabError: 'Esse link não parece ser de um deck de Flesh and Blood.',
-  step1AlreadyTrackedError: 'Esse deck já está no seu arsenal: {{reason}}',
-  step1GenericError: 'Não foi possível importar o deck. Tente de novo.',
   skipForNow: 'Pular',
   continueButton: 'Continuar',
 
   // Step 2 — Confirm Library
   step2Eyebrow: 'Passo 2 de 3',
   step2Heading: 'Confira o deck',
-  step2BodySingle: 'Encontramos seu deck. Confira se está certo antes de calcularmos as trocas.',
-  step2BodyMultiple: 'Encontramos {{count}} decks. Confira se estão certos antes de calcularmos as trocas.',
+  step2BodySingle: 'Encontramos seu deck. Confira se está certo antes de calcularmos as substituições.',
+  step2BodyMultiple: 'Encontramos {{count}} decks. Confira se estão certos antes de calcularmos as substituições.',
   importedDecksLabel: 'Decks importados',
   backButton: 'Voltar',
   readinessPercent: '{{percent}}% pronto',
@@ -58,6 +63,6 @@ export const onboarding = {
   // CongratsAllPlayable
   congratsEyebrow: 'Passo 3 de 3',
   congratsHeading: 'Seu deck está completo!',
-  congratsBody: 'Sua coleção já cobre todas as cartas do deck, sem nenhuma troca. Veja o resumo no seu arsenal.',
+  congratsBody: 'Sua coleção já cobre todas as cartas do deck, sem nenhuma substituição. Veja o resumo no seu arsenal.',
   goToMyDecks: 'Ir para meus decks',
 } as const;

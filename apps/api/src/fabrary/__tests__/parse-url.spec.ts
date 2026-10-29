@@ -1,4 +1,4 @@
-import { parseFabraryUrl } from '../parse-url';
+import { findFabraryDeckId, parseFabraryUrl } from '../parse-url';
 import { EFabraryErrorCode, FabraryImportError } from '../errors';
 
 describe('parseFabraryUrl', () => {
@@ -112,5 +112,35 @@ describe('parseFabraryUrl', () => {
     } catch (error) {
       expect((error as FabraryImportError).code).toBe(EFabraryErrorCode.INVALID_URL);
     }
+  });
+});
+
+describe('findFabraryDeckId', () => {
+  const ID = '01KNQ1FHZ77B3FHT33DJY3RDX3';
+  const OTHER = '01KNQ1FHZ77B3FHT33DJY3RDX4';
+
+  it.each([
+    ['a link with scheme', `https://fabrary.net/decks/${ID}`, ID],
+    ['a link with no scheme', `fabrary.net/decks/${ID}`, ID],
+    ['a link with www and a trailing slash', `www.fabrary.net/decks/${ID}/`, ID],
+    ['a http link on fabrary.com', `http://www.fabrary.com/decks/${ID}`, ID],
+    ['a fabrary.com link with no scheme', `fabrary.com/decks/${ID}`, ID],
+    ['a link with words around it', `olha esse deck www.fabrary.net/decks/${ID}/ valeu`, ID],
+    ['a WhatsApp text with two links', `Oi!\nhttps://fabrary.net/decks/${ID}\ve este https://fabrary.net/decks/${OTHER}`, ID],
+    ['a lower-case id', `https://fabrary.net/decks/${ID.toLowerCase()}`, ID],
+  ])('finds the first Fabrary deck link inside any text: %s', (_label, text, expected) => {
+    // Act
+    const result = findFabraryDeckId(text);
+
+    // Assert
+    expect(result).toBe(expected);
+  });
+
+  it('finds the first Fabrary deck link inside any text: nothing when no link is there', () => {
+    // Arrange
+    const texts = ['3x Snatch (Red)', 'https://example.com/decks/' + ID, 'fabrary.net/decks/short', ''];
+
+    // Act and Assert
+    for (const text of texts) expect(findFabraryDeckId(text)).toBeNull();
   });
 });

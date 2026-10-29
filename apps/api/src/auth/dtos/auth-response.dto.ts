@@ -5,6 +5,10 @@ export interface IAuthUser {
   email: string;
   role: EUserRole;
   chatAccess: boolean;
+  /** True once the address is confirmed; until then the account cannot create share links. */
+  emailConfirmed: boolean;
+  /** False for an account that signs in with an e-mailed code only. */
+  hasPassword: boolean;
 }
 
 /**
@@ -26,18 +30,28 @@ export interface IAuthSettings {
  * or malformed rows). This prevents a 500 from leaking internally.
  */
 export interface IAuthResponse {
-  jwt: string;
   user: IAuthUser;
   settings: IAuthSettings;
 }
 
-/**
- * Sign-up and resend-verification endpoints return the same generic response
- * regardless of whether the email already exists / is already verified. This
- * prevents account-existence enumeration (A4/A6). The `_devVerificationLink`
- * field is only populated in development to ease local testing.
- */
-export interface IGenericAuthAcceptedResponse {
-  message: string;
+/** What an address takes next, from `POST /api/auth/start`. */
+export interface IStartResponse {
+  next: 'new' | 'password' | 'code';
+}
+
+/** Sign-up answers like a sign-in; the dev link only exists in development. */
+export interface ISignUpResponse extends IAuthResponse {
   _devVerificationLink?: string;
+}
+
+/** A sign-in by code or button also names the page the account was made from, when it kept one. */
+export interface ICodeSignInResponse extends IAuthResponse {
+  returnPath: string | null;
+}
+
+/** What confirming an address answers; `email` lets a visitor who is not signed in be offered the code sign-in for it. */
+export interface IVerifyEmailResponse {
+  verified: true;
+  returnPath: string | null;
+  email: string;
 }

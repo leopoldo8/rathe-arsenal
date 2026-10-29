@@ -3,6 +3,7 @@ import { getDataSourceToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../app.module';
 import { SourcesService } from '../sources/sources.service';
+import { configureHttpApp } from '../../http/configure-http-app';
 
 const CONCURRENT_CALLS = 30;
 const MANUAL_INDEX = 'IDX_csv_source_user_manual_uq';
@@ -27,6 +28,7 @@ describe('manual source under concurrency (E2E)', () => {
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     const app = moduleRef.createNestApplication();
+    configureHttpApp(app);
     await app.init();
     close = () => app.close();
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());

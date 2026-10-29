@@ -48,6 +48,23 @@ function makeStats(overrides: Partial<ILibraryStats> = {}): ILibraryStats {
 // Tests
 // ---------------------------------------------------------------------------
 
+describe('LibraryStatsBar — estimated price', () => {
+  it('the estimated price is explained in visible text', () => {
+    const { container } = render(<LibraryStatsBar stats={makeStats()} />);
+
+    expect(screen.getByTestId('price-estimate-note')).toHaveTextContent(
+      'Preços estimados a partir das lojas parceiras. Podem estar defasados se a atualização não rodar por alguns dias.',
+    );
+    expect(container.querySelector('[title]')).toBeNull();
+  });
+
+  it('the estimated price is explained in visible text: the pitch dots carry the question mark of Vermelho, Amarelo, Azul', () => {
+    render(<LibraryStatsBar stats={makeStats()} />);
+
+    expect(screen.getByRole('button', { name: 'O que é Vermelho, Amarelo, Azul?' })).toBeInTheDocument();
+  });
+});
+
 describe('LibraryStatsBar — happy path: counts and pills', () => {
   it('renders uniqueCount', () => {
     render(<LibraryStatsBar stats={makeStats({ uniqueCount: 42 })} />);
