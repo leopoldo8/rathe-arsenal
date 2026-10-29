@@ -48,6 +48,11 @@ jobs:
       - name: Unit tests (api)
         run: pnpm --filter @rathe-arsenal/api test
 
+      - name: Typecheck and unit tests (smoke runner)
+        run: |
+          pnpm smoke:typecheck
+          pnpm smoke:test
+
   # Theme persistence E2E and Plan B E2E require a real PostgreSQL database.
   # Runs on every PR using the ephemeral postgres service container.
   e2e:
