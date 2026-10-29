@@ -53,7 +53,7 @@ Count what happens during real scans, with no image and no card content beyond t
 - device class: camera label pattern, whether continuous focus and zoom were granted.
 
 Effort: medium.
-There is no product telemetry today, only opt-in Sentry for errors.
+There is no scanner telemetry today, only opt-in Sentry for errors (the `share_event` table covers sharing, not scans).
 Needs an owner decision on where events go (a small API endpoint and table, or an existing service) and a privacy note.
 This matches the telemetry-first rule in `docs/validation-philosophy.md`.
 

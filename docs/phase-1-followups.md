@@ -58,7 +58,7 @@ Estimated: 1-2 hours to bootstrap the harness; the first component backfill batc
 
 ### U7-R1. Re-solve double engine pass on every reject click
 
-**Status update (2026-10-29):** MOOT in the UI. Nothing in `apps/web/src` or `scripts/` calls `reject-substitute`, `reset-rejections` or `re-solve` any more, because swaps merged into card alternatives (AD-012, PR #143). The routes are still registered in `ReSolveController`, so the double pass remains in the API code.
+**Status update (2026-10-29):** MOOT in the UI. Nothing in `apps/web/src` or `scripts/` calls `reject-substitute`, `reset-rejections` or `re-solve` any more, because swaps merged into card alternatives (AD-012, PR #143). The three routes now answer 410 Gone (`ReSolveController` is a stub), and the service that ran the double pass no longer exists.
 
 **Phase 1a posture:** `ReSolveService.rejectSubstitute` and `reSolveDryRun` both run `computeAndStoreReadiness` (or `computeReadinessWithExclusions`) once with the exclusion set, then run `computeReadinessWithExclusions` a second time with an empty set to derive curve warnings. That is two full engine passes per click — catalog scan × per-deck inventory × substitution search, doubled.
 

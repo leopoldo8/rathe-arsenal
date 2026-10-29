@@ -28,7 +28,7 @@ Read these as a record of their date.
 
 | Folder | What it holds |
 |--------|---------------|
-| [`audit/`](audit/) | Quality audits: `uxui-2026-06-29`, `ai-slop-2026-10-03`, and `personas-2026-10-21` (the persona audit behind the persona-rethink release; the owner has not yet decided whether to commit it) |
+| [`audit/`](audit/) | Quality audits: `uxui-2026-06-29`, `ai-slop-2026-10-03`, and `personas-2026-10-21` (the persona audit behind the persona-rethink release, which is not in the repository: it was evidence for the persona-rethink spec, which was deleted) |
 | [`brainstorms/gates/`](brainstorms/gates/) | Retired gate documents; the engine gold-set CSV and the store consent artifacts that code cites live here |
 | [`ideation/`](ideation/) | Idea exploration before the first plan |
 | [`plans/`](plans/) | Only the deferred Phase 1c plan and its addendum |

@@ -43,7 +43,7 @@ packages/
   engine/     Legality, readiness and substitution engine (pure TS)
 scripts/      Dev and ops scripts (seed:fixture, screenshot, share:report, prices, purge, deploy notes)
 docs/         Living guides plus historical records (start at docs/README.md)
-.specs/       Spec-driven features and STATE.md, the decisions log and current handoff
+.specs/       STATE.md (decisions log and current handoff); a feature's spec lives here only while it is in flight
 .design/      Confirmed designs and mockups per feature
 ```
 

@@ -1,6 +1,6 @@
 # Slot icons
 
-Placeholder SVGs for the four deck slot types used by `SlotPicker`.
+Placeholder SVGs for the four deck slot types, used by `SlotPicker` and `DeckCanvas`.
 
 ## Source and license
 

@@ -226,7 +226,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Verdict at merge**: the verification stayed FAIL on the basis the owner accepted on 2026-10-27 (AD-027): the screen-arrangement checks missing for most journeys and a few uncovered cells carried from the design documents.
 - **Open, owner** (four screens kept as built, provisional until the owner confirms each):
   - Home deck list is grouped by stage, not the flat list the picked screen drew (decision D1).
-  - The GEM store is left out of the missing list after its site answered 403 (D4).
+  - The word "GEM" is kept out of the copy-list tab name, because whether GEM reads the text could not be confirmed (its site returned 403) (D4).
   - The Deck tab sits before Inventário (D5).
   - "Vendida" shows only on lines that are not sold yet, not on every line (D17).
 - **Open, other**:
