@@ -15,9 +15,17 @@ if (existsSync(target)) {
 }
 
 const example = readFileSync(path.join(root, '.env.example'), 'utf8');
+// The lookahead accepts CRLF line endings (a checkout with autocrlf) and leaves the \r in place.
+const EXPOSE_LINE = /^# EXPOSE_DEV_SECRETS=true(?=\r?$)/m;
+if (!EXPOSE_LINE.test(example)) {
+  console.warn(
+    'Warning: the line "# EXPOSE_DEV_SECRETS=true" was not found in .env.example, so the sign-in answers ' +
+      'stay off. Add EXPOSE_DEV_SECRETS=true to .env by hand.',
+  );
+}
 const env = example
   .replace(/^JWT_SECRET=.*$/m, `JWT_SECRET=${randomBytes(32).toString('hex')}`)
-  .replace(/^# EXPOSE_DEV_SECRETS=true$/m, 'EXPOSE_DEV_SECRETS=true');
+  .replace(EXPOSE_LINE, 'EXPOSE_DEV_SECRETS=true');
 
 writeFileSync(target, env);
 console.log('.env created for local development.');
