@@ -22,7 +22,7 @@
 
 ### A18. No Vitest bootstrap in `apps/web` — frontend unit tests are structurally unavailable
 
-**Status update (2026-10-29):** RESOLVED. `apps/web` runs Vitest (`"test": "vitest run"` in `apps/web/package.json`) and CI runs it ("Unit tests (web)" in `.github/workflows/ci.yml`), with many component tests under `apps/web/src/**/__tests__`. The backfill list below is moot for `PathCResult`, `PathCBanner` and `TestDeckResult`, which no longer exist in `apps/web/src`.
+**Status update (2026-10-28):** RESOLVED. `apps/web` runs Vitest (`"test": "vitest run"` in `apps/web/package.json`) and CI runs it ("Unit tests (web)" in `.github/workflows/ci.yml`), with many component tests under `apps/web/src/**/__tests__`. The backfill list below is moot for `PathCResult`, `PathCBanner` and `TestDeckResult`, which no longer exist in `apps/web/src`.
 
 **Status:** Harness resolved on 2026-04-11 (branch `chore/phase-1a-a18-vitest-bootstrap`). `apps/web` has `vitest.config.ts`, `src/test/setup.ts` (loading `@testing-library/jest-dom/vitest` + RTL cleanup), and tests running for `<EmptyHomeState>`, `<DeleteAccountModal>`, `<ShoppingLine>`, `<ShoppingLineVariants>`, `<ShoppingLineVariantBreakdown>`, plus `format-brl` and `format-relative-time` utilities. **Backfill still outstanding** for Phase 1a interactive surfaces: `<CardAutocomplete>`, the home state machine (`home.tsx`), `<PathCResult>` + `PathCBanner`, `<TestDeckResult>`, and the swap editor per-row reject flow. Renamed follow-up: "A18-backfill — Phase 1a component tests".
 
@@ -58,7 +58,7 @@ Estimated: 1-2 hours to bootstrap the harness; the first component backfill batc
 
 ### U7-R1. Re-solve double engine pass on every reject click
 
-**Status update (2026-10-29):** MOOT in the UI. Nothing in `apps/web/src` or `scripts/` calls `reject-substitute`, `reset-rejections` or `re-solve` any more, because swaps merged into card alternatives (AD-012, PR #143). The three routes now answer 410 Gone (`ReSolveController` is a stub), and the service that ran the double pass no longer exists.
+**Status update (2026-10-28):** MOOT in the UI. Nothing in `apps/web/src` or `scripts/` calls `reject-substitute`, `reset-rejections` or `re-solve` any more, because swaps merged into card alternatives (AD-012, PR #143). The three routes now answer 410 Gone (`ReSolveController` is a stub), and the service that ran the double pass no longer exists.
 
 **Phase 1a posture:** `ReSolveService.rejectSubstitute` and `reSolveDryRun` both run `computeAndStoreReadiness` (or `computeReadinessWithExclusions`) once with the exclusion set, then run `computeReadinessWithExclusions` a second time with an empty set to derive curve warnings. That is two full engine passes per click — catalog scan × per-deck inventory × substitution search, doubled.
 
@@ -81,7 +81,7 @@ Estimated: 1-2 hours to bootstrap the harness; the first component backfill batc
 
 ### U7-R2. Re-solve test coverage gaps against plan scenarios
 
-**Status update (2026-10-29):** MOOT in the UI, same reason as U7-R1.
+**Status update (2026-10-28):** MOOT in the UI, same reason as U7-R1.
 
 **Phase 1a posture:** `re-solve.service.spec.ts` covers happy path, cross-deck isolation, idempotency (sequential), and the curve-break case. The plan lists two additional scenarios that never landed as tests:
 - "Reject multiple substitutes in sequence — each rejection accounts for all previously rejected cards"
@@ -120,7 +120,7 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ### A2. No refresh tokens — single 7-day access JWT
 
-**Status update (2026-10-29):** MOOT. There is no JWT. The session is one opaque cookie (`ra_session`, 400 days) over a `user_session` row (`apps/api/src/auth/session-cookie.ts`).
+**Status update (2026-10-28):** MOOT. There is no JWT. The session is one opaque cookie (`ra_session`, 400 days) over a `user_session` row (`apps/api/src/auth/session-cookie.ts`).
 
 **Phase 0 posture:** sign-in issues a single JWT valid for 7 days. When it expires, the user re-signs-in. No `/auth/refresh` endpoint, no refresh-token storage, no token-rotation logic.
 
@@ -178,7 +178,7 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ### A7. JWT secret rotation invalidates all live sessions
 
-**Status update (2026-10-29):** MOOT. `JWT_SECRET` is now only the HMAC key of sign-in codes (`apps/api/src/auth/sign-in-code.service.ts`); rotating it invalidates pending codes, not sessions.
+**Status update (2026-10-28):** MOOT. `JWT_SECRET` is now only the HMAC key of sign-in codes (`apps/api/src/auth/sign-in-code.service.ts`); rotating it invalidates pending codes, not sessions.
 
 **Phase 0 posture:** `JWT_SECRET` rotation is a manual operational event documented in `scripts/deploy-railway.md`. Rotating it kicks every signed-in user immediately.
 
@@ -198,7 +198,7 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ### A9. No multi-factor authentication
 
-**Status update (2026-10-29):** still open. The posture sentence below is dated: sign-in is now by e-mailed code, with an optional password.
+**Status update (2026-10-28):** still open. The posture sentence below is dated: sign-in is now by e-mailed code, with an optional password.
 
 **Phase 0 posture:** email + password only.
 
@@ -210,7 +210,7 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ### A10. No social/OAuth providers (Google, Apple, GitHub, Discord)
 
-**Status update (2026-10-29):** still open. The posture sentence below is dated: sign-in is now by e-mailed code, with an optional password.
+**Status update (2026-10-28):** still open. The posture sentence below is dated: sign-in is now by e-mailed code, with an optional password.
 
 **Phase 0 posture:** none.
 
@@ -222,7 +222,7 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ### A11. No password policy beyond 10-character minimum
 
-**Status update (2026-10-29):** still open. The password is now optional (`SignUpDto.password?`); when given, the 10-character minimum still applies.
+**Status update (2026-10-28):** still open. The password is now optional (`SignUpDto.password?`); when given, the 10-character minimum still applies.
 
 **Phase 0 posture:** the sign-up DTO enforces `@MinLength(10)` and nothing else. No complexity rules, no breach-database lookup (e.g. HIBP API), no rotation prompts.
 
@@ -236,7 +236,7 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ### A12. No email change flow
 
-**Status update (2026-10-29):** RESOLVED. `PATCH /api/auth/me/email` exists (`apps/api/src/auth/auth.controller.ts`).
+**Status update (2026-10-28):** RESOLVED. `PATCH /api/auth/me/email` exists (`apps/api/src/auth/auth.controller.ts`).
 
 **Phase 0 posture:** the email a user signs up with is permanent. To change it, the user asks the operator to delete and recreate the account.
 
@@ -248,7 +248,7 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ### A13. JWT contents are minimal — only `sub` (userId)
 
-**Status update (2026-10-29):** MOOT. There is no JWT.
+**Status update (2026-10-28):** MOOT. There is no JWT.
 
 **Phase 0 posture:** the JWT carries `{ sub: userId, iat, exp }`. The strategy loads the user from DB on every request to get the email and verify the user still exists / is still verified.
 
@@ -300,13 +300,13 @@ path, no coordination), or (b) regenerate candidates with
 `gold-set-regression.spec.ts` block enforcing a tier 2 acceptance floor.
 No external labelers required at any step.
 
-**Where documented:** the Phase 1a plan (deleted 2026-10-29, in git history); validation cadence in `docs/validation-philosophy.md`.
+**Where documented:** the Phase 1a plan (deleted 2026-10-28, in git history); validation cadence in `docs/validation-philosophy.md`.
 
 ---
 
 ### A16. No CAPTCHA on sign-up (deferred from S6)
 
-**Status update (2026-10-29):** RESOLVED. Cloudflare Turnstile guards sign-up and code requests (`apps/api/src/auth/turnstile.service.ts`). It is active only where `TURNSTILE_SECRET_KEY` and `VITE_TURNSTILE_SITE_KEY` are set.
+**Status update (2026-10-28):** RESOLVED. Cloudflare Turnstile guards sign-up and code requests (`apps/api/src/auth/turnstile.service.ts`). It is active only where `TURNSTILE_SECRET_KEY` and `VITE_TURNSTILE_SITE_KEY` are set.
 
 **Phase 0 posture:** none. **Phase 1a posture:** still none. The full S1-S12 origin-doc posture lists "Sign-up has a CAPTCHA gate" as part of S6, which is required before public launch. Phase 1a ships rate limiting (5 sign-in/min, 3 sign-up/hour per IP) and email verification, but no CAPTCHA.
 
@@ -320,7 +320,7 @@ No external labelers required at any step.
 
 **When triggered, the work is:** add hCaptcha or Cloudflare Turnstile to the sign-up form, validate the token server-side in `AuthService.signUp()` before the existing-user check. ~1 hour of integration. The plan plan-1a documents this as a deliberate compensating control choice, not an oversight.
 
-**Where documented:** the Phase 1a plan's Scope Boundaries section (deleted 2026-10-29, in git history).
+**Where documented:** the Phase 1a plan's Scope Boundaries section (deleted 2026-10-28, in git history).
 
 ---
 
@@ -336,9 +336,9 @@ No external labelers required at any step.
 
 ## Non-auth Phase 0 deferrals
 
-**Status update (2026-10-29):** B2 (shopping line and store pipeline), B5 (tiers 2 and 3), B6 (swap editor, since merged into card alternatives, AD-012) and B8 (manual card search) shipped. B1 (Discover) and B3 (history chart) are not built (Phase 1c, deferred). The rest were not checked.
+**Status update (2026-10-28):** B2 (shopping line and store pipeline), B5 (tiers 2 and 3), B6 (swap editor, since merged into card alternatives, AD-012) and B8 (manual card search) shipped. B1 (Discover) and B3 (history chart) are not built (Phase 1c, deferred). The rest were not checked.
 
-These come from the original Phase 0 plan (deleted on 2026-10-29, in git history) and are reproduced here so the Phase 1 implementer has one place to look. The original plan is the canonical source.
+These come from the original Phase 0 plan (deleted on 2026-10-28, in git history) and are reproduced here so the Phase 1 implementer has one place to look. The original plan is the canonical source.
 
 - **B1.** No Discover surface (R11-R14)
 - **B2.** No shopping line / store data pipeline (R28-R33, including the Sbrauble vertical scraper)
@@ -360,7 +360,7 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 
 ### Outbound click telemetry uses a dedicated table, not a third-party analytics platform
 
-**Status update (2026-10-29):** NOT BUILT. Phase 1c is deferred; no `outbound_click_event` table or telemetry route exists in `apps/`, `packages/` or `scripts/`.
+**Status update (2026-10-28):** NOT BUILT. Phase 1c is deferred; no `outbound_click_event` table or telemetry route exists in `apps/`, `packages/` or `scripts/`.
 
 **Posture.** Phase 1c ships its own `outbound_click_event` table + `POST /api/telemetry/outbound-click` endpoint to make the secondary success metric measurable. No PostHog, Mixpanel, Plausible, or GA4 integration.
 
@@ -386,7 +386,7 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 
 ### P2-IP1. IP posture activation before any monetization surface ships
 
-**Status update (2026-10-29):** the audience is now the whole Brazilian market (owner decision, 2026-10-21), not the ~47-person Pelotas community named in this entry. The monetization triggers below are unchanged.
+**Status update (2026-10-28):** the audience is now the whole Brazilian market (owner decision, 2026-10-21), not the ~47-person Pelotas community named in this entry. The monetization triggers below are unchanged.
 
 **Posture.** Rathe Arsenal is built entirely on LSS-owned IP (card images, hero/card/keyword names, "Rathe" worldbuilding). The project has committed to **Option A — fan project with indirect monetization** (ads + Patreon, no paywall) on 2026-04-19. The LSS Fan Content Policy explicitly permits this for "platforms and services like card databases", so the posture is defensible. The full decision, operational rules, required disclaimer, triggers, and activation checklist live in `docs/research/ip-posture.md` — treat that file as the single source of truth, not this entry.
 
@@ -414,7 +414,7 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 
 ### Engine Pass 2 expands missing copies into per-copy `substituted` entries
 
-**Status update (2026-10-29):** still open in the engine (`packages/engine/src/readiness/compute.ts` Pass 2 still loops per missing copy and pushes one `substituted` entry each). The `/swaps` page named below is gone and AD-005 is superseded by AD-012; the entries now feed the card alternatives, which group copies by card.
+**Status update (2026-10-28):** still open in the engine (`packages/engine/src/readiness/compute.ts` Pass 2 still loops per missing copy and pushes one `substituted` entry each). The `/swaps` page named below is gone and AD-005 is superseded by AD-012; the entries now feed the card alternatives, which group copies by card.
 
 **Status:** Open. Worked around in the UI (2026-06-29, `feat/swap-copies-grouping`, AD-005) — not fixed at the root.
 
@@ -460,7 +460,7 @@ Shared deck links, share attribution, generated link-preview images and copying 
 
 ### SH6. Visual baselines are stale for the deck detail and Settings
 
-**Status update (2026-10-29):** still open; the visual suite is not a CI step, so nothing has refreshed the baselines.
+**Status update (2026-10-28):** still open; the visual suite is not a CI step, so nothing has refreshed the baselines.
 **Posture:** the deck detail gained the sharing card and Settings gained the display name and contact panels; the local Playwright visual suite (not run in CI) will report those screens as changed.
 **Trigger:** the next run of the visual suite. **Work:** review the diffs and update the baselines on purpose, as PR #151 did.
 

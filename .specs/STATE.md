@@ -2,7 +2,7 @@
 
 ## Decisions
 
-Specs cited below as "the X spec" were deleted on 2026-10-29 when their features finished; `git log --all -- .specs/features` finds them.
+Specs cited below as "the X spec" were deleted on 2026-10-28 when their features finished; `git log --all -- .specs/features` finds them.
 
 ### AD-001
 - **Decision**: Frontend i18n is owned by an `i18next` + `react-i18next` + `i18next-browser-languagedetector` stack; all user-facing UI strings go through `t()`/the locale catalogs — no hardcoded user-facing literals.
@@ -130,7 +130,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Trade-off**: Readers that sum per card must sum across versions; `''` has to be translated to "Não sei" at every display.
 - **Scope**: `apps/api` collection, lists, scanner, readiness load; `apps/web` collection and lists.
 - **Date**: 2026-10-23
-- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-29
+- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-28
 
 ### AD-017
 - **Decision**: A pick or a swap moves the quantity the caller gives (1 to the copies still needed, or the copies over the limit) from the side it names, `card_replacement.side` in `('deck', 'inventory')`; omitted, `decideAdoption` keeps today's behaviour. Supersedes AD-009's "moves the original's missing copies".
@@ -138,7 +138,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Trade-off**: The alternatives sheet, the recommendations rail and the Tutor share the path, so each passes its own quantity.
 - **Scope**: `apps/api` replacements, chat; `apps/web` missing list, chat proposals.
 - **Date**: 2026-10-23
-- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-29
+- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-28
 
 ### AD-018
 - **Decision**: A deck line carries an inventory quantity next to its deck quantity (`deck_card.inventoryQuantity`); legality counts copies per card across deck, inventory, weapons and equipment; readiness, the missing list, spare copies and the Tutor count the inventory, always said apart from the deck.
@@ -146,7 +146,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Trade-off**: Every reader of `deck_card` decides once whether it counts the inventory; old Fabrary imports have none.
 - **Scope**: `packages/engine`, `apps/api` decks, readiness, sharing, lists, chat; `apps/web` editor.
 - **Date**: 2026-10-23
-- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-29
+- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-28
 
 ### AD-019
 - **Decision**: Decks are soft-deleted (`tracked_deck.deletedAt`) and kept 30 days; every deck read skips deleted decks, `SharedDeckLookup.findLive` included (extends AD-015); the housekeeping step deletes them for good with today's cascades.
@@ -154,7 +154,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Trade-off**: Every new deck query must filter `"deletedAt" IS NULL`.
 - **Scope**: `apps/api` decks, sharing, readiness, chat, recommendations, worker.
 - **Date**: 2026-10-23
-- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-29
+- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-28
 
 ### AD-020
 - **Decision**: Scheduled work runs as steps of the worker's `runWorkerLoops` (`stores/variant-queue-worker.ts`), each claiming its work with a lock; the API runs no new timers.
@@ -162,7 +162,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Trade-off**: The worker process carries one more loop; a worker crash stops housekeeping until it restarts.
 - **Scope**: `apps/api` worker, `scripts/purge-deleted-users.ts` logic.
 - **Date**: 2026-10-23
-- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-29
+- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-28
 
 ### AD-021
 - **Decision**: Accounts: one e-mail field starts sign-up and sign-in and may reveal that an address has an account; e-mails are stored lowercased; a password is optional; six-digit sign-in codes (15 minutes, 5 tries, one live per address) with a button token; an unconfirmed account can do everything except create share links; the sign-up return page is stored on the user; Cloudflare Turnstile guards sign-up and code requests; the session lasts until sign-out and is held on the server, in an httpOnly cookie `ra_session` (`SameSite=Lax`, `Path=/api`), with writes from another origin refused (`403` `ORIGIN_REJECTED`); no response body carries the token (owner's pick, 2026-10-23).
@@ -170,7 +170,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Trade-off**: Every signed-in player signs in once more at deploy; reset links already sent stop working; mail delivery becomes the way in for code-only accounts.
 - **Scope**: `apps/api` auth, users, email, guards; `apps/web` auth pages, `AuthProvider`, the HTTP wrappers of AD-004, `api/shared-decks.ts`; the Playwright storage state, `scripts/fixture/fixture-seed.ts`, the API e2e tests and `docs/dev-fixtures.md`, which send the cookie instead of a Bearer token.
 - **Date**: 2026-10-23
-- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-29
+- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-28
 
 ### AD-022
 - **Decision**: Each needed card has one stored store state (`priced`, `store_lacks`, `not_on_site`, `looking_up`, `no_price`); prices stay valid `STORE_PRICE_VALID_DAYS`, availability comes from a pass every `STORE_AVAILABILITY_PASS_DAYS`; lookups are per card (`variant_fetch_job.cardIdentifier`, one pending per card) and every Firecrawl call is counted in `firecrawl_usage` against `FIRECRAWL_MONTHLY_CREDIT_BUDGET`, with the pass taking priority.
@@ -178,7 +178,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Trade-off**: Pending per-deck jobs are dropped at deploy; the free plan cannot price the release, so the owner moves to a paid plan when needed.
 - **Scope**: `apps/api` stores, decks, worker; `apps/web` missing list, admin settings.
 - **Date**: 2026-10-23
-- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-29
+- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-28
 
 ### AD-023
 - **Decision**: Deck share links gain the `quote` intent, which resolves only to the quote page and carries no store data; `share_event.kind` gains `offer`, `quote_sent` and `buy`; `referredVia` gains `quote`. Extends AD-015.
@@ -186,7 +186,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Trade-off**: A `quote` address handed out must keep resolving as a quote or answer 404.
 - **Scope**: `apps/api` sharing, auth sign-up; `apps/web` share sheet, quote page.
 - **Date**: 2026-10-23
-- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-29
+- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-28
 
 ### AD-024
 - **Decision**: Spare copies are computed on request by one function from the collection, the decks at stage `building`, `ready` or `active`, and `user.spareRule` (`within_format`, `any_deck`, `per_deck`, null until asked), holding foil copies before regular ones; nothing stores a spare count.
@@ -194,7 +194,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Trade-off**: Every surface that shows spare copies calls the same function; the Tutor's old deck-usage SQL goes.
 - **Scope**: `apps/api` collection, lists, sharing, chat.
 - **Date**: 2026-10-23
-- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-29
+- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-28
 
 ### AD-025
 - **Decision**: A rule date is printed only from a curated `RULE_CHANGES` entry in `packages/engine/src/legality/rules.ts` (format, effective date, summary key, official source URL).
@@ -202,7 +202,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Trade-off**: A rule change with no entry shows no date.
 - **Scope**: `packages/engine`, `apps/web` deck page, the Tutor.
 - **Date**: 2026-10-23
-- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-29
+- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-28
 
 ### AD-026
 - **Decision**: Wherever the same card name exists in another pitch, the name is written through one helper with the pitch as a word, in visible text and aria-labels; game words are explained from one i18n namespace shown by a "?" sheet and the public `/termos` page; a CI test fails on dashes and banned words in pt-BR values, and an axe scan in the Playwright run fails on serious and critical issues.
@@ -210,7 +210,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Trade-off**: A new screen that names a card or a game word must use the helper and the namespace; `@axe-core/playwright` is a new dev dependency.
 - **Scope**: `apps/web` every card-naming component, i18n, Playwright.
 - **Date**: 2026-10-23
-- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-29
+- **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-28
 
 ### AD-027
 - **Decision**: The persona-rethink spec is accepted with the FAIL basis of the verification documented, and a Verifier round 5 was authorized; the owner decided this on 2026-10-27 (option (a) of the formal gate).
@@ -218,11 +218,11 @@ Specs cited below as "the X spec" were deleted on 2026-10-29 when their features
 - **Trade-off**: Those gaps ship as recorded gaps; a change in any of them is caught only by the checks that exist.
 - **Scope**: persona-rethink.
 - **Date**: 2026-10-27
-- **Status**: done - round 5 and the later rounds ran, and the feature merged in PR #181 on 2026-10-29
+- **Status**: done - round 5 and the later rounds ran, and the feature merged in PR #181 on 2026-10-28
 
 ## Handoff
 
-- **Feature**: none in flight. persona-rethink merged to `main` in PR #181 on 2026-10-29, and CI is green on `main`. Its spec, plan and checks were deleted on 2026-10-29 once finished; `git log --all -- .specs/features` finds them.
+- **Feature**: none in flight. persona-rethink merged to `main` in PR #181 on 2026-10-28, and CI is green on `main`. Its spec, plan and checks were deleted on 2026-10-28 once finished; `git log --all -- .specs/features` finds them.
 - **Verdict at merge**: the verification stayed FAIL on the basis the owner accepted on 2026-10-27 (AD-027): the screen-arrangement checks missing for most journeys and a few uncovered cells carried from the design documents.
 - **Open, owner** (four screens kept as built, provisional until the owner confirms each):
   - Home deck list is grouped by stage, not the flat list the picked screen drew (decision D1).

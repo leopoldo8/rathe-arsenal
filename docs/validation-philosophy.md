@@ -150,7 +150,7 @@ Not never — just intentionally scoped:
 - Test fixtures for self-validation: `docs/dev-fixtures.md`
 - Telemetry posture for Phase 1c (deferred, never built): `docs/plans/2026-04-18-001-feat-phase-1c-discover-history-telemetry-plan-addendum.md`
 - Original v1 brainstorm (with retired Gate 2 language, kept for
-  historical context): deleted on 2026-10-29, found with
+  historical context): deleted on 2026-10-28, found with
   `git log --all -- docs/brainstorms`
 - Personal project guidelines (applies to this and other projects):
   `~/.claude-personal/CLAUDE.md`

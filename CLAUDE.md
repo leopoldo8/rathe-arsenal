@@ -32,11 +32,11 @@ this order before doing non-trivial work.
 ## Active vs retired
 
 - **In flight**: nothing. The last feature, persona-rethink, merged
-  in PR #181 on 2026-10-29 and CI is green on `main`. Open items are
+  in PR #181 on 2026-10-28 and CI is green on `main`. Open items are
   in the Handoff of `.specs/STATE.md`.
 - **Deferred**: `docs/plans/` holds only Phase 1c
   (`2026-04-18-001`) and its addendum, both `status: deferred`.
-  Plans and specs of finished features were deleted on 2026-10-29;
+  Plans and specs of finished features were deleted on 2026-10-28;
   `git log --all -- .specs/features docs/plans` finds them.
   Phase 1c's Discover, the three-mode home, the readiness
   history chart and outbound click telemetry were never built (no
@@ -55,7 +55,7 @@ this order before doing non-trivial work.
   - Sharing: decks (#156 to #167, 2026-10-18 and 19), then card lists
     and shared lists (#169 to #172, #174, #175, #179, #180), with TCGplayer
     price suggestions (#171, #172, #178).
-  - Persona rethink (#181, 2026-10-29): one-field sign-in with e-mailed
+  - Persona rethink (#181, 2026-10-28): one-field sign-in with e-mailed
     codes and a server-side session cookie, a reader for pasted lists
     and CSV, deck rules rebuilt and an inventory, the missing list with
     store states, the "Sobrando" spare-copies page and sell and trade

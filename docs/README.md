@@ -37,7 +37,7 @@ Read these as a record of their date.
 | [`roadmap/`](roadmap/) | Future work that is not scheduled: `card-scanner-ocr.md` |
 | [`design/v1/`](design/v1/) | The 2026-04 visual identity prototype and `path-abc-spec.md`, which predates the 2026-10 redesign |
 
-## Removed on 2026-10-29
+## Removed on 2026-10-28
 
 Finished specs and plans were deleted: everything under `.specs/features/`, `docs/superpowers/`, the finished plans in `docs/plans/`, and the requirement brainstorms.
 Git history keeps them: `git log --all -- .specs/features docs/plans docs/superpowers docs/brainstorms`.
