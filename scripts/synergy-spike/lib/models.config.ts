@@ -1,7 +1,7 @@
 /**
  * The four language-model candidates, all reached through OpenRouter.
  * Ids, prices and capability flags were read from https://openrouter.ai/api/v1/models
- * on 2026-10-04 (see implementation-notes.md); prices are USD per million tokens.
+ * on 2026-10-04; prices are USD per million tokens.
  * `reasoningEffort` is sent as `reasoning.effort` only where the owner asked for it.
  */
 export interface IModelConfig {
