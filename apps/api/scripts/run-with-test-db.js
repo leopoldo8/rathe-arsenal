@@ -8,16 +8,7 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { Client } = require('pg');
 const { config } = require('dotenv');
-
-const DEFAULT_DATABASE_URL = 'postgresql://postgres:dev@localhost:5432/rathe_arsenal';
-
-function testDatabaseUrl() {
-  if (process.env.TEST_DATABASE_URL) return process.env.TEST_DATABASE_URL;
-  const url = new URL(process.env.DATABASE_URL || DEFAULT_DATABASE_URL);
-  const name = decodeURIComponent(url.pathname.slice(1)) || 'rathe_arsenal';
-  url.pathname = '/' + encodeURIComponent(name.endsWith('_test') ? name : `${name}_test`);
-  return url.toString();
-}
+const { testDatabaseUrl, assertTestDatabaseIsSeparate } = require('./test-database');
 
 async function ensureDatabase(urlString) {
   const url = new URL(urlString);
@@ -58,7 +49,8 @@ async function main() {
   config({ path: path.resolve(__dirname, '..', '..', '..', '.env') });
   const [command, ...args] = process.argv.slice(2);
   if (!command) throw new Error('Usage: run-with-test-db.js <command> [args...]');
-  const databaseUrl = testDatabaseUrl();
+  assertTestDatabaseIsSeparate(process.env);
+  const databaseUrl = testDatabaseUrl(process.env);
   await ensureDatabase(databaseUrl);
   const child = spawn(command, args, {
     stdio: 'inherit',
