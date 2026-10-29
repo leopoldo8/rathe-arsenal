@@ -1,7 +1,9 @@
 # Railway Deployment
 
 Sign-in is by e-mail code.
-A session is an opaque token in the httpOnly `ra_session` cookie, backed by a `user_session` row (400 days).
+A session is an opaque token in the httpOnly `ra_session` cookie, backed by a `user_session` row.
+The row has no expiry of its own: it lasts until sign-out, a password change or account deletion revokes it.
+The cookie lasts 400 days and is sent again whenever the session is used more than a day after it was last seen.
 There is no JWT: a password is optional, and the six-digit code is the way in for accounts without one.
 
 The repository expects two Railway services in one project, plus one Postgres addon:
@@ -9,7 +11,7 @@ The repository expects two Railway services in one project, plus one Postgres ad
 - **Web service**: runs the NestJS app, which serves `/api/*` and the bundled React SPA from the root path.
 - **Worker service**: runs the same build with a different start command, `node --enable-source-maps dist/stores/variant-queue-worker.js` (from `apps/api`).
   It drains the job queues (store prices and availability, recommendations, Tutor answers, reference data) and runs housekeeping.
-  Nothing in the repository starts it: `railway.json` and the package scripts define no worker start command, so this command is set in the dashboard (PR #92, which introduced the worker, names it).
+  Nothing in the repository starts it: `railway.json` and the package scripts define no worker start command, so this command is set in the dashboard (PR #92, which introduced the worker, names `node dist/stores/variant-queue-worker.js`, without the source-maps flag).
   The dashboard must match this; the repository cannot confirm what is configured there.
 
 Both services boot the full application module, so both validate the same environment (see the table below): the required variables must be set on each.
@@ -50,23 +52,23 @@ The API refuses to start when a required variable is missing or invalid.
 | `EMAIL_FROM` | both | yes | `Rathe Arsenal <noreply@your-verified-domain>`, or `onboarding@resend.dev` for testing |
 | `APP_BASE_URL` | both | yes | Public base URL, used in e-mailed links and as the one origin allowed to write |
 | `EXPOSE_DEV_SECRETS` | none | no | Never set in staging or production. See the warning below |
-| `JWT_EXPIRES_IN` | web | no | Still validated, but nothing reads it: sessions last 400 days regardless |
+| `JWT_EXPIRES_IN` | none | no | Still validated if set, but nothing reads it: sessions are `user_session` rows with no expiry |
 | `TURNSTILE_SECRET_KEY` | web | no | Cloudflare Turnstile on sign-up and code requests; absent, the check is skipped |
 | `VITE_TURNSTILE_SITE_KEY` | web (build) | no | Site key for the widget; absent, no widget is shown |
 | `SENTRY_DSN` | both | no | Absent, API Sentry is off |
 | `VITE_SENTRY_DSN` | web (build) | no | Absent, web Sentry is off |
 | `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | web (build) | no | Source-map upload at build; the build succeeds without them |
-| `AWS_APPSYNC_ENDPOINT`, `COGNITO_IDENTITY_POOL_ID`, `COGNITO_REGION`, `FABRARY_ALLOW_HOSTS` | web | no | Fabrary deck import; the defaults in code are correct, override only to change them |
-| `FABRARY_USER_AGENT` | web | no | Override of the browser-like User-Agent Fabrary's firewall requires; override only to rotate it |
-| `PRICE_SYNC_ENABLED` | web | no | `true` turns on the hourly in-process read of TCGplayer prices for the sets on sell lists; default off |
+| `AWS_APPSYNC_ENDPOINT`, `COGNITO_IDENTITY_POOL_ID`, `COGNITO_REGION`, `FABRARY_ALLOW_HOSTS` | both | no | Fabrary deck import on the web service, and the worker's reference-data step; the defaults in code are correct, override only to change them |
+| `FABRARY_USER_AGENT` | both | no | Override of the browser-like User-Agent Fabrary's firewall requires; override only to rotate it |
+| `PRICE_SYNC_ENABLED` | one of them | no | `true` turns on the hourly in-process read of TCGplayer prices for the sets on sell lists; default off. Any process that boots the application module runs it (the worker too), so set it on one service only |
 | `GEMINI_API_KEY` | worker | no | Read only by the worker; absent, recommendation and Tutor runs fail |
 | `GEMINI_THINKING_LEVEL`, `GEMINI_CHAT_THINKING_LEVEL` | worker | no | `low`, `medium` or `high` |
 | `OPENROUTER_API_KEY`, `CHAT_OPENROUTER_MODEL`, `RECOMMENDATION_OPENROUTER_MODEL` | worker | no | Optional model provider instead of Gemini |
 | `SCRAPER_FETCH_PROVIDER` | worker | no | `direct` (default) or `firecrawl` |
 | `FIRECRAWL_API_KEY` | worker | no | Needed when the provider is `firecrawl` |
-| `FIRECRAWL_REQUESTS_PER_MINUTE`, `FIRECRAWL_MONTHLY_CREDIT_BUDGET`, `FIRECRAWL_CREDITS_PER_PASS`, `FIRECRAWL_CREDITS_PER_DETAIL`, `FIRECRAWL_CREDITS_PER_LISTING_PAGE` | worker | no | Rate and credit budget of the plan |
-| `STORE_PRICE_VALID_DAYS`, `STORE_AVAILABILITY_PASS_DAYS` | worker | no | How long a store price stays valid, and how often the availability pass runs |
-| `STORE_SCRAPER_ENABLED`, `STORE_ALLOW_HOSTS`, `ADMIN_API_KEY` | web | no | Admin scrape endpoint and the legacy scrape script (see the last section); `ADMIN_API_KEY` is required when `STORE_SCRAPER_ENABLED=true` |
+| `FIRECRAWL_REQUESTS_PER_MINUTE`, `FIRECRAWL_MONTHLY_CREDIT_BUDGET`, `FIRECRAWL_CREDITS_PER_PASS`, `FIRECRAWL_CREDITS_PER_DETAIL`, `FIRECRAWL_CREDITS_PER_LISTING_PAGE` | both | no | Rate and credit budget of the plan |
+| `STORE_PRICE_VALID_DAYS`, `STORE_AVAILABILITY_PASS_DAYS` | both | no | How long a store price stays valid (read by the web service and the worker), and how often the availability pass runs (worker) |
+| `STORE_SCRAPER_ENABLED`, `STORE_ALLOW_HOSTS`, `ADMIN_API_KEY` | web | no | `STORE_SCRAPER_ENABLED` and `STORE_ALLOW_HOSTS` are read only by the legacy scrape script (see the last section); `ADMIN_API_KEY` is the key of the admin endpoints. The schema requires `ADMIN_API_KEY` when `STORE_SCRAPER_ENABLED=true` |
 
 `EXPOSE_DEV_SECRETS=true` makes the API put sign-in secrets (confirmation link, codes) in its responses so tests need no inbox.
 Never set it in staging or production.
@@ -113,9 +115,9 @@ What to check on the deployed environment before or with this release:
 - `APP_BASE_URL` is set, for the e-mailed links.
 - Every user signs in again after the deploy, because sessions moved to the `ra_session` cookie over a `user_session` row.
 - Migrations run on boot, including `1778533613000` (the `purpose` column of `sign_in_code`).
-- The worker service is running: its housekeeping step purges accounts and decks deleted more than 30 days ago, used-up or expired sign-in codes at least an hour old, and ended sessions.
+- The worker service is running: its housekeeping step purges accounts and decks deleted more than 30 days ago, used-up or expired sign-in codes at least an hour old, and revoked sessions.
 - Mark the web e2e job as a required check in the repository settings.
-- Routes the plan listed without a coverage row: `/api/collection/sources/:id/copies`, `/api/catalog/collector-codes`, `/library-csv-sources/:sourceId/versions`, `/api/collection/library`.
+- Routes the persona-rethink plan listed without a coverage row: `/api/collection/sources/:id/copies`, `/api/catalog/collector-codes`, `/library-csv-sources/:sourceId/versions`, `/api/collection/library`.
 
 ## Verify
 
@@ -148,7 +150,7 @@ Each pass, under a database advisory lock so two workers never delete the same r
 
 - accounts and decks deleted more than 30 days ago (with everything that cascades from them);
 - sign-in codes that are used up or expired and at least an hour old;
-- sessions that ended.
+- revoked sessions (signed out, or ended by a password change or account deletion).
 
 No cron service is needed for this.
 If an earlier setup created a Railway cron service that runs `pnpm purge:deleted-users -- --yes`, it is redundant; whether one still exists is only visible in the Railway dashboard.
