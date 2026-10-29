@@ -133,6 +133,99 @@ Visit `https://<your-railway-domain>/entrar` in a browser:
 
 The worker is healthy when its logs show the loops running and housekeeping ticks (`housekeeping.tick`).
 
+## Smoke test
+
+`pnpm smoke` checks a deployed environment end to end, and `.github/workflows/smoke.yml` runs it for you.
+It checks, in order:
+
+1. `/api/health` answers `status: ok`; on a push to main it first waits (up to 10 minutes) until `commit` equals the pushed commit, so it never tests the old deploy.
+2. The SPA index and `/entrar` are HTML with the app root.
+3. A protected API route answers 401 when signed out.
+4. It signs in as the smoke account, then checks `/api/auth/me`, a catalog search, the deck list, the deck page API and its missing list.
+5. A real Chromium loads `/` and the smoke deck's page, so a broken JavaScript bundle fails the run.
+6. It signs out and checks the session no longer works.
+
+It never creates accounts, decks or share links.
+Nothing about an environment is stored in the repository: every value is a GitHub Environment secret or variable.
+
+The `commit` in `/api/health` is Railway's `RAILWAY_GIT_COMMIT_SHA`, which Railway sets only for deploys triggered from GitHub.
+Check that the staging web service deploys from GitHub, or the run waits for a commit that never shows up and fails after the timeout.
+
+### Two ways to sign in
+
+- **Staging, by e-mailed code (`SMOKE_SIGN_IN=code`).** The smoke requests a code, reads the e-mail from a Resend inbox and verifies the six digits. This exercises the real sign-in, including the e-mail.
+- **Production, by password (`SMOKE_SIGN_IN=password`).** `POST /api/auth/sign-in` takes an e-mail and a password and needs no Turnstile token and no e-mail. No bot-protection bypass exists in the code, and none should be added.
+
+Staging has to run Cloudflare's test keys (see step 5 below), so Turnstile always passes there.
+That also means **staging has no bot protection while it uses the test keys**.
+Production keeps its real keys.
+
+### One-time setup
+
+1. **Turn on receiving in Resend.**
+   In the Resend dashboard open Emails, then the Receiving tab.
+   Resend gives you a managed domain `<id>.resend.app`: any username at it receives mail (for example `smoke@<id>.resend.app`).
+   A domain of your own also works, by adding the MX record the dashboard shows; use a subdomain, because an MX record on a domain that already receives other mail conflicts with it.
+   Docs: https://resend.com/docs/dashboard/receiving/introduction
+2. **Create an API key that can read received e-mails.**
+   Resend's key permissions are `full_access` and `sending_access`; `sending_access` is documented as send-only, so use a separate key with full access, and name it for the smoke.
+   Docs: https://resend.com/docs/api-reference/api-keys/create-api-key
+   Resend does not say in its docs which permission the receiving endpoints need, so the first manual run (step 10) is what confirms the key works.
+   This key is the `RESEND_INBOUND_API_KEY` secret.
+3. **Sign up the smoke account on staging** with that address (`smoke@<id>.resend.app`), in a browser on the staging site.
+   With the test keys from step 5 on, the sign-up goes through; the confirmation e-mail lands in the Resend Receiving tab.
+4. **Sign up the smoke account on production** with the same kind of address, in a browser.
+   Production has real bot protection, so this has to be a person in a browser.
+   Then open Settings and set a password: the app e-mails a six-digit code to the account's own address, which you read in the Resend Receiving tab, and the password must have at least 10 characters.
+   That is the `SMOKE_PASSWORD` secret of the production environment.
+5. **Put Cloudflare's test keys on staging** (never on production).
+   - API service: `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA` (always passes).
+   - Web build: `VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA` (always passes; `1x00000000000000000000BB` is the invisible one).
+   - The site key is read at build time (`apps/web/src/components/auth/TurnstileWidget.tsx`), so redeploy the web service after changing it.
+   - A test secret key only accepts the test token `XXXX.DUMMY.TOKEN.XXXX`, which the test site keys produce; a real token fails.
+   Docs: https://developers.cloudflare.com/turnstile/troubleshooting/testing/
+6. **Give each smoke account its deck.**
+   Run once per environment, from your machine:
+
+   ```bash
+   # staging: signs in by code, read from the Resend inbox
+   SMOKE_BASE_URL=https://<staging-domain> SMOKE_SIGN_IN=code SMOKE_INBOX=resend \
+     SMOKE_EMAIL=smoke@<id>.resend.app RESEND_INBOUND_API_KEY=<key> \
+     SMOKE_TURNSTILE_TOKEN=XXXX.DUMMY.TOKEN.XXXX pnpm smoke:setup
+
+   # production: signs in with the password from step 4
+   SMOKE_BASE_URL=https://<production-domain> SMOKE_SIGN_IN=password \
+     SMOKE_EMAIL=smoke@<id>.resend.app SMOKE_PASSWORD=<password> pnpm smoke:setup
+   ```
+
+   It creates one small deck only if the account has none, so running it again changes nothing.
+   Do not paste those values into a file in the repository.
+7. **Create the GitHub Environments** `staging` and `production` (repository Settings, Environments).
+8. **Add the secrets** to each environment:
+   `SMOKE_BASE_URL`, `SMOKE_EMAIL`;
+   staging also `RESEND_INBOUND_API_KEY` and `SMOKE_TURNSTILE_TOKEN` (`XXXX.DUMMY.TOKEN.XXXX`);
+   production also `SMOKE_PASSWORD`.
+9. **Add the variable** `SMOKE_SIGN_IN` to each environment: `code` on staging, `password` on production.
+10. **Run the workflow once by hand**: Actions, Smoke, Run workflow, pick `staging`, then `production`.
+
+Until the secrets exist, a push to main shows the Smoke job as skipped with a notice naming what is missing, instead of failing.
+A manual run with something missing fails and names it.
+
+**Not verified yet:** delivery of the sign-in e-mail from Resend's sending side to a `.resend.app` receiving address has not been tested.
+The first manual run on staging checks it.
+If the code never arrives, the run fails with "no sign-in code e-mail reached the inbox" after 90 seconds; look at the Receiving tab to see whether the e-mail arrived at all.
+
+### Running it from your machine
+
+```bash
+SMOKE_BASE_URL=https://<domain> SMOKE_SIGN_IN=none pnpm smoke      # no sign-in: only the public checks
+```
+
+Other inputs: `SMOKE_EXPECT_COMMIT` (wait for that SHA), `SMOKE_COMMIT_WAIT_MS`, `SMOKE_CODE_WAIT_MS`, `SMOKE_TOTAL_TIMEOUT_MS`.
+Against a local API started with `EXPOSE_DEV_SECRETS=true` you can use `SMOKE_INBOX=dev-response`: the code request then answers with the digits (`_devCode`) and no inbox is read.
+The browser check needs Chromium: `pnpm exec playwright install chromium`.
+Each address allows 5 untried codes an hour, so repeated failed runs that never reach the verify call can lock the code request for a while (HTTP 429).
+
 ## Manual user deletion
 
 1. Run `pnpm tsx scripts/delete-user.ts <userId>` against the production DB

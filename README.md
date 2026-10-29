@@ -72,6 +72,7 @@ pnpm --filter @rathe-arsenal/api test:int    # integration tests (database)
 pnpm --filter @rathe-arsenal/api test:e2e    # API end-to-end tests (database)
 pnpm --filter @rathe-arsenal/web test:e2e    # Playwright journeys and accessibility scan (api and web running)
 pnpm --filter @rathe-arsenal/web test:visual # screenshot regression, local only
+pnpm smoke                                   # post-deploy smoke test of a deployed environment (SMOKE_BASE_URL, see scripts/deploy-railway.md)
 ```
 
 CI runs three jobs: quality (lint, typecheck, unit tests), API end-to-end tests against Postgres, and the web Playwright job.
