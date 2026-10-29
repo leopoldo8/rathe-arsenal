@@ -4,7 +4,7 @@ import { AuthFetchError, authFetch } from '../lib/auth-fetch';
 
 // ---------------------------------------------------------------------------
 // Types - mirror the sharing API contracts in
-// .specs/features/sharing-decks/design.md (ISharedDeckResponse and friends).
+// the shared-deck API (ISharedDeckResponse and friends; sharing PRs #156 to #167).
 // ---------------------------------------------------------------------------
 
 export interface ISharedCardImage {

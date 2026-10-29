@@ -130,4 +130,4 @@ Ported per D4 — the redesign does not retire light theme. Most light values ar
 ---
 
 *Last updated: 2026-08-16 — product-redesign FND-01/FND-05: dark canvas/surface/accent/status/pitch swap, new fg-tertiary tier, pitch -ink companions.*
-*Referenced by: `.specs/features/product-redesign/spec.md`, `.specs/features/product-redesign/design/01-foundation.md`, `apps/web/src/styles/__tests__/contrast.spec.ts`*
+*Referenced by: `apps/web/src/styles/__tests__/contrast.spec.ts`*

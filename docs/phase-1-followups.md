@@ -1,6 +1,6 @@
 # Phase 1 Follow-ups
 
-> **What this is:** every trade-off, shortcut, and "we'll do it later" decision made during Phase 0 that needs revisiting before the project can move from closed beta (5-10 testers) to anything more public. This file is the single source of truth for "what does Phase 0 owe Phase 1?" — anything intentionally cut should be listed here so it does not silently rot.
+> **What this is:** every trade-off, shortcut, and "we'll do it later" decision made during Phase 0 that needs revisiting before the project can move from closed beta (5-10 testers) to anything more public (the audience has since been widened to the whole Brazilian market, decided by the owner on 2026-10-21). This file is the single source of truth for "what does Phase 0 owe Phase 1?" — anything intentionally cut should be listed here so it does not silently rot.
 >
 > **What this is not:** a roadmap of new features. It is a debt ledger.
 >
@@ -21,6 +21,8 @@
 ## Frontend testing infrastructure
 
 ### A18. No Vitest bootstrap in `apps/web` — frontend unit tests are structurally unavailable
+
+**Status update (2026-10-28):** RESOLVED. `apps/web` runs Vitest (`"test": "vitest run"` in `apps/web/package.json`) and CI runs it ("Unit tests (web)" in `.github/workflows/ci.yml`), with many component tests under `apps/web/src/**/__tests__`. The backfill list below is moot for `PathCResult`, `PathCBanner` and `TestDeckResult`, which no longer exist in `apps/web/src`.
 
 **Status:** Harness resolved on 2026-04-11 (branch `chore/phase-1a-a18-vitest-bootstrap`). `apps/web` has `vitest.config.ts`, `src/test/setup.ts` (loading `@testing-library/jest-dom/vitest` + RTL cleanup), and tests running for `<EmptyHomeState>`, `<DeleteAccountModal>`, `<ShoppingLine>`, `<ShoppingLineVariants>`, `<ShoppingLineVariantBreakdown>`, plus `format-brl` and `format-relative-time` utilities. **Backfill still outstanding** for Phase 1a interactive surfaces: `<CardAutocomplete>`, the home state machine (`home.tsx`), `<PathCResult>` + `PathCBanner`, `<TestDeckResult>`, and the swap editor per-row reject flow. Renamed follow-up: "A18-backfill — Phase 1a component tests".
 
@@ -56,6 +58,8 @@ Estimated: 1-2 hours to bootstrap the harness; the first component backfill batc
 
 ### U7-R1. Re-solve double engine pass on every reject click
 
+**Status update (2026-10-28):** MOOT in the UI. Nothing in `apps/web/src` or `scripts/` calls `reject-substitute`, `reset-rejections` or `re-solve` any more, because swaps merged into card alternatives (AD-012, PR #143). The three routes now answer 410 Gone (`ReSolveController` is a stub), and the service that ran the double pass no longer exists.
+
 **Phase 1a posture:** `ReSolveService.rejectSubstitute` and `reSolveDryRun` both run `computeAndStoreReadiness` (or `computeReadinessWithExclusions`) once with the exclusion set, then run `computeReadinessWithExclusions` a second time with an empty set to derive curve warnings. That is two full engine passes per click — catalog scan × per-deck inventory × substitution search, doubled.
 
 **Why deferred:** the race-safety fix (U7-R2) and the dead-code cleanup are cheap one-liners; eliminating the double pass requires either (a) threading a cached "baseline" through the request lifecycle or (b) teaching `computeEffectiveReadiness` to emit per-slot drop reasons so curve warnings fall out of a single pass. Option (b) is an engine-level redesign and would delay U7's merge by at least one working session. At Phase 1a scale (≤20 tracked decks × 4595-card catalog × per-click latency <100ms observed in tests) the user-visible cost is acceptable.
@@ -76,6 +80,8 @@ Estimated: 1-2 hours to bootstrap the harness; the first component backfill batc
 ---
 
 ### U7-R2. Re-solve test coverage gaps against plan scenarios
+
+**Status update (2026-10-28):** MOOT in the UI, same reason as U7-R1.
 
 **Phase 1a posture:** `re-solve.service.spec.ts` covers happy path, cross-deck isolation, idempotency (sequential), and the curve-break case. The plan lists two additional scenarios that never landed as tests:
 - "Reject multiple substitutes in sequence — each rejection accounts for all previously rejected cards"
@@ -113,6 +119,8 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 ---
 
 ### A2. No refresh tokens — single 7-day access JWT
+
+**Status update (2026-10-28):** MOOT. There is no JWT. The session is one opaque cookie (`ra_session`, 400 days) over a `user_session` row (`apps/api/src/auth/session-cookie.ts`).
 
 **Phase 0 posture:** sign-in issues a single JWT valid for 7 days. When it expires, the user re-signs-in. No `/auth/refresh` endpoint, no refresh-token storage, no token-rotation logic.
 
@@ -170,6 +178,8 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ### A7. JWT secret rotation invalidates all live sessions
 
+**Status update (2026-10-28):** MOOT. `JWT_SECRET` is now only the HMAC key of sign-in codes (`apps/api/src/auth/sign-in-code.service.ts`); rotating it invalidates pending codes, not sessions.
+
 **Phase 0 posture:** `JWT_SECRET` rotation is a manual operational event documented in `scripts/deploy-railway.md`. Rotating it kicks every signed-in user immediately.
 
 **Why deferred:** dual-secret rotation (old key still valid for verification while new key signs new tokens) requires JWT key-id (`kid`) headers and a key-id-aware verifier. Phase 0 has zero need for this complexity.
@@ -188,6 +198,8 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ### A9. No multi-factor authentication
 
+**Status update (2026-10-28):** still open. The posture sentence below is dated: sign-in is now by e-mailed code, with an optional password.
+
 **Phase 0 posture:** email + password only.
 
 **Why deferred:** explicitly excluded by the Phase 0 origin plan.
@@ -198,6 +210,8 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ### A10. No social/OAuth providers (Google, Apple, GitHub, Discord)
 
+**Status update (2026-10-28):** still open. The posture sentence below is dated: sign-in is now by e-mailed code, with an optional password.
+
 **Phase 0 posture:** none.
 
 **Why deferred:** every OAuth provider is its own provider/configuration/UX surface. Not justified by closed-beta scale.
@@ -207,6 +221,8 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 ---
 
 ### A11. No password policy beyond 10-character minimum
+
+**Status update (2026-10-28):** still open. The password is now optional (`SignUpDto.password?`); when given, the 10-character minimum still applies.
 
 **Phase 0 posture:** the sign-up DTO enforces `@MinLength(10)` and nothing else. No complexity rules, no breach-database lookup (e.g. HIBP API), no rotation prompts.
 
@@ -220,6 +236,8 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ### A12. No email change flow
 
+**Status update (2026-10-28):** RESOLVED. `PATCH /api/auth/me/email` exists (`apps/api/src/auth/auth.controller.ts`).
+
 **Phase 0 posture:** the email a user signs up with is permanent. To change it, the user asks the operator to delete and recreate the account.
 
 **Why deferred:** explicitly excluded by the Phase 0 origin plan. Closed beta.
@@ -229,6 +247,8 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 ---
 
 ### A13. JWT contents are minimal — only `sub` (userId)
+
+**Status update (2026-10-28):** MOOT. There is no JWT.
 
 **Phase 0 posture:** the JWT carries `{ sub: userId, iat, exp }`. The strategy loads the user from DB on every request to get the email and verify the user still exists / is still verified.
 
@@ -280,11 +300,13 @@ path, no coordination), or (b) regenerate candidates with
 `gold-set-regression.spec.ts` block enforcing a tier 2 acceptance floor.
 No external labelers required at any step.
 
-**Where documented:** `docs/plans/2026-04-10-001-feat-phase-1a-product-core-plan.md` "Deferred to Implementation" + "Risks & Dependencies" sections; validation cadence in `docs/validation-philosophy.md`.
+**Where documented:** the Phase 1a plan (deleted 2026-10-28, in git history); validation cadence in `docs/validation-philosophy.md`.
 
 ---
 
 ### A16. No CAPTCHA on sign-up (deferred from S6)
+
+**Status update (2026-10-28):** RESOLVED. Cloudflare Turnstile guards sign-up and code requests (`apps/api/src/auth/turnstile.service.ts`). It is active only where `TURNSTILE_SECRET_KEY` and `VITE_TURNSTILE_SITE_KEY` are set.
 
 **Phase 0 posture:** none. **Phase 1a posture:** still none. The full S1-S12 origin-doc posture lists "Sign-up has a CAPTCHA gate" as part of S6, which is required before public launch. Phase 1a ships rate limiting (5 sign-in/min, 3 sign-up/hour per IP) and email verification, but no CAPTCHA.
 
@@ -298,7 +320,7 @@ No external labelers required at any step.
 
 **When triggered, the work is:** add hCaptcha or Cloudflare Turnstile to the sign-up form, validate the token server-side in `AuthService.signUp()` before the existing-user check. ~1 hour of integration. The plan plan-1a documents this as a deliberate compensating control choice, not an oversight.
 
-**Where documented:** `docs/plans/2026-04-10-001-feat-phase-1a-product-core-plan.md` Scope Boundaries section.
+**Where documented:** the Phase 1a plan's Scope Boundaries section (deleted 2026-10-28, in git history).
 
 ---
 
@@ -314,7 +336,9 @@ No external labelers required at any step.
 
 ## Non-auth Phase 0 deferrals
 
-These come from the original Phase 0 plan (`docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md`) and are reproduced here so the Phase 1 implementer has one place to look. The original plan is the canonical source.
+**Status update (2026-10-28):** B2 (shopping line and store pipeline), B5 (tiers 2 and 3), B6 (swap editor, since merged into card alternatives, AD-012) and B8 (manual card search) shipped. B1 (Discover) and B3 (history chart) are not built (Phase 1c, deferred). The rest were not checked.
+
+These come from the original Phase 0 plan (deleted on 2026-10-28, in git history) and are reproduced here so the Phase 1 implementer has one place to look. The original plan is the canonical source.
 
 - **B1.** No Discover surface (R11-R14)
 - **B2.** No shopping line / store data pipeline (R28-R33, including the Sbrauble vertical scraper)
@@ -335,6 +359,8 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 ## Phase 1c trade-offs (2026-04-19)
 
 ### Outbound click telemetry uses a dedicated table, not a third-party analytics platform
+
+**Status update (2026-10-28):** NOT BUILT. Phase 1c is deferred; no `outbound_click_event` table or telemetry route exists in `apps/`, `packages/` or `scripts/`.
 
 **Posture.** Phase 1c ships its own `outbound_click_event` table + `POST /api/telemetry/outbound-click` endpoint to make the secondary success metric measurable. No PostHog, Mixpanel, Plausible, or GA4 integration.
 
@@ -360,11 +386,13 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 
 ### P2-IP1. IP posture activation before any monetization surface ships
 
+**Status update (2026-10-28):** the audience is now the whole Brazilian market (owner decision, 2026-10-21), not the ~47-person Pelotas community named in this entry. The monetization triggers below are unchanged.
+
 **Posture.** Rathe Arsenal is built entirely on LSS-owned IP (card images, hero/card/keyword names, "Rathe" worldbuilding). The project has committed to **Option A — fan project with indirect monetization** (ads + Patreon, no paywall) on 2026-04-19. The LSS Fan Content Policy explicitly permits this for "platforms and services like card databases", so the posture is defensible. The full decision, operational rules, required disclaimer, triggers, and activation checklist live in `docs/research/ip-posture.md` — treat that file as the single source of truth, not this entry.
 
 **Why deferred to Phase 2.** Phase 1 (v1 foundation, closed beta, ~47-person Pelotas FaB community) does not activate any monetization surface. No ads, no Patreon, no affiliate links, no paid tier. The IP posture question only becomes binding at the moment the first monetization surface ships — and that belongs to Phase 2, not Phase 1. Phase 1 can and should surface the required disclaimer in the footer / `/about` / `README.md` as a low-cost preparatory step, but the full activation checklist is Phase 2 work.
 
-**Update (2026-07-01):** the preparatory disclaimer step is **done** — footer (authenticated shell), public `/about` page, anonymous auth screens, and the `README.md` block all ship the localized disclaimer (`feat/pre-launch-hardening`, `.specs/features/pre-launch-hardening/`; en-US verbatim, pt-BR translated). This does **not** activate any monetization surface; the full Phase 2 activation checklist in `docs/research/ip-posture.md` remains untouched and binding before ads/Patreon/affiliate links ship.
+**Update (2026-07-01):** the preparatory disclaimer step is **done** — footer (authenticated shell), public `/about` page, anonymous auth screens, and the `README.md` block all ship the localized disclaimer (`feat/pre-launch-hardening`, PR #109; en-US verbatim, pt-BR translated). This does **not** activate any monetization surface; the full Phase 2 activation checklist in `docs/research/ip-posture.md` remains untouched and binding before ads/Patreon/affiliate links ship.
 
 **Update (2026-10-18):** the IP posture was re-reviewed against the verbatim policy (`docs/research/ip-posture.md`, "Review — 2026-10-18"). The disclaimer now uses the Third Party Apps wording and ends with "© Legend Story Studios", shown on every surface with card images (PR #151). The ~47-person audience limit is not a policy requirement and no longer blocks public pages.
 
@@ -386,6 +414,8 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 
 ### Engine Pass 2 expands missing copies into per-copy `substituted` entries
 
+**Status update (2026-10-28):** still open in the engine (`packages/engine/src/readiness/compute.ts` Pass 2 still loops per missing copy and pushes one `substituted` entry each). The `/swaps` page named below is gone and AD-005 is superseded by AD-012; the entries now feed the card alternatives, which group copies by card.
+
 **Status:** Open. Worked around in the UI (2026-06-29, `feat/swap-copies-grouping`, AD-005) — not fixed at the root.
 
 **Posture:** `packages/engine/src/readiness/compute.ts` Pass 2 loops `for (i = 0; i < missingQty; i++)` and pushes one `ISubstitutedEntry` per missing copy, each with `original.quantity: 1` (lines ~201-227). A deck missing N copies of the same card that all resolve to the same substitute yields N identical `substituted` entries. Both the Swaps page (`/swaps`) and the deck-detail breakdown (`/decks/:id`) rendered these as N duplicate rows (with a latent React key collision).
@@ -400,13 +430,13 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 3. Frontend: replace the client-side grouping (in `-swaps.helpers.ts` / `BreakdownSections.helpers.ts`) with the server-provided quantity, and add the per-copy accept control.
 4. Re-verify fidelity, notOwned, and readiness math against the new aggregation.
 
-**Where documented:** This entry. Cross-referenced from `.specs/STATE.md` AD-005 and `.specs/features/swap-copies-grouping/`.
+**Where documented:** This entry. Cross-referenced from `.specs/STATE.md` AD-005.
 
 ---
 
 ## Sharing decks (2026-10-18, PRs #156 to #161)
 
-Shared deck links, share attribution, generated link-preview images and copying a shared deck shipped from `.specs/features/sharing-decks/`. Known gaps, none blocking:
+Shared deck links, share attribution, generated link-preview images and copying a shared deck shipped by the sharing-decks feature. Known gaps, none blocking:
 
 ### SH1. Not yet checked in a real WhatsApp chat
 **Posture:** the preview tags and the 1200x630 JPEG are covered by e2e tests and a local walkthrough. On staging (https://rathe-arsenal-staging.up.railway.app, 2026-10-18) the HTML for an unknown token carries the generic `og:*` tags and `noindex`, and the generic image renders its text with the bundled fonts inside the real Railway container. No live deck link has been pasted into WhatsApp or Meta's sharing debugger yet.
@@ -429,6 +459,8 @@ Shared deck links, share attribution, generated link-preview images and copying 
 **Trigger:** the first user with a non-Brazilian number.
 
 ### SH6. Visual baselines are stale for the deck detail and Settings
+
+**Status update (2026-10-28):** still open; the visual suite is not a CI step, so nothing has refreshed the baselines.
 **Posture:** the deck detail gained the sharing card and Settings gained the display name and contact panels; the local Playwright visual suite (not run in CI) will report those screens as changed.
 **Trigger:** the next run of the visual suite. **Work:** review the diffs and update the baselines on purpose, as PR #151 did.
 
