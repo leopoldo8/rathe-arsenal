@@ -2,7 +2,7 @@
   "name": "rathe-arsenal",
   "version": "0.0.0",
   "private": true,
-  "description": "Flesh and Blood deck readiness tool with tier 1 substitution engine",
+  "description": "Flesh and Blood deck builder: readiness, alternatives, prices and sharing for the cards you own",
   "license": "UNLICENSED",
   "engines": {
     "node": ">=20.18.0",

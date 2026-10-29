@@ -40,6 +40,6 @@ Read these as a record of their date.
 
 ## Plan status convention
 
-Every plan in `plans/` and `superpowers/plans/` carries a `status:` line in its frontmatter: `completed` (built and merged), `deferred` (written, not built, waiting on an owner decision) or `active`.
+Every plan in `plans/` and `superpowers/plans/` carries a `status:` line in its frontmatter: `completed` (built and merged) or `deferred` (written, not built, waiting on an owner decision).
 Unit checkboxes inside a plan are not a progress signal; completed plans routinely keep every box unticked.
 Check `status:`, then the code.

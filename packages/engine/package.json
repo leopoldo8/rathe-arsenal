@@ -2,6 +2,7 @@
   "name": "@rathe-arsenal/engine",
   "version": "0.0.0",
   "private": true,
+  "description": "Pure TypeScript legality, readiness and substitution engine for Flesh and Blood decks",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
