@@ -85,6 +85,7 @@ pnpm --filter @rathe-arsenal/web exec playwright install chromium   # once, befo
 pnpm --filter @rathe-arsenal/web test:e2e    # Playwright journeys and accessibility scan (needs pnpm dev running)
 pnpm --filter @rathe-arsenal/web test:visual # screenshot regression, local only
 pnpm smoke                                   # post-deploy smoke test of a deployed environment (SMOKE_BASE_URL, see scripts/deploy-railway.md)
+pnpm smoke:configure <staging|production>    # one-time setup of the smoke account and its GitHub Environment (scripts/deploy-railway.md)
 ```
 
 The API integration and end-to-end tests run on a database of their own, `rathe_arsenal_test`, which they create next to the dev one on the first run, so they never touch the data `pnpm dev` works on.

@@ -3,7 +3,7 @@ name: Smoke
 # Checks the critical flows of a deployed environment, signing in as a dedicated smoke account.
 # - Every push to main: staging, after waiting for Railway to deploy that exact commit.
 # - Manual run: staging or production, whichever is picked.
-# Setup (accounts, secrets, variables): "Smoke test" in scripts/deploy-railway.md.
+# Setup (account, secrets, variable): `pnpm smoke:configure <staging|production>`, see "Smoke test" in scripts/deploy-railway.md.
 
 on:
   push:
@@ -58,6 +58,7 @@ jobs:
           RESEND_INBOUND_API_KEY: ${{ secrets.RESEND_INBOUND_API_KEY }}
           SMOKE_TURNSTILE_TOKEN: ${{ secrets.SMOKE_TURNSTILE_TOKEN }}
           SMOKE_SIGN_IN: ${{ vars.SMOKE_SIGN_IN }}
+          # Only the code sign-in reads the inbox; password mode ignores it and the two Resend and Turnstile secrets.
           SMOKE_INBOX: resend
           # A push waits for Railway to deploy this commit; a manual run checks whatever is live.
           SMOKE_EXPECT_COMMIT: ${{ github.event_name == 'push' && github.sha || '' }}
@@ -78,6 +79,7 @@ jobs:
           RESEND_INBOUND_API_KEY: ${{ secrets.RESEND_INBOUND_API_KEY }}
           SMOKE_TURNSTILE_TOKEN: ${{ secrets.SMOKE_TURNSTILE_TOKEN }}
           SMOKE_SIGN_IN: ${{ vars.SMOKE_SIGN_IN }}
+          # Only the code sign-in reads the inbox; password mode ignores it and the two Resend and Turnstile secrets.
           SMOKE_INBOX: resend
           # A push waits for Railway to deploy this commit; a manual run checks whatever is live.
           SMOKE_EXPECT_COMMIT: ${{ github.event_name == 'push' && github.sha || '' }}
