@@ -52,7 +52,7 @@ async function checkSignedIn(api: ApiClient, config: ISmokeConfig): Promise<numb
     const list = await api.request('GET', '/api/decks');
     expect(list.status === 200, `GET /api/decks answered ${list.status}, expected 200`);
     const first = (list.json as IDeckList | null)?.trackedDecks?.[0];
-    expect(first, 'the smoke account has no deck; run the setup step once (pnpm smoke:setup, see scripts/deploy-railway.md)');
+    expect(first, 'the smoke account has no deck; run pnpm smoke:configure once (see scripts/deploy-railway.md)');
     const detail = await api.request('GET', `/api/decks/${first.id}`);
     expect(detail.status === 200, `GET /api/decks/${first.id} answered ${detail.status}, expected 200`);
     const missing = await api.request('GET', `/api/decks/${first.id}/missing?lookups=read`);
