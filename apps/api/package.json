@@ -1,6 +1,7 @@
 {
   "name": "@rathe-arsenal/api",
   "version": "0.0.0",
+  "license": "MIT",
   "private": true,
   "description": "Rathe Arsenal API + SPA host",
   "scripts": {
@@ -8,8 +9,8 @@
     "build": "nest build",
     "start": "node --enable-source-maps dist/main.js",
     "test": "jest",
-    "test:int": "jest --testRegex '.*\\.int-spec\\.ts$' --forceExit",
-    "test:e2e": "jest --testRegex '.*\\.e2e-spec\\.ts$' --forceExit --runInBand",
+    "test:int": "node scripts/run-with-test-db.js jest --testRegex '.*\\.int-spec\\.ts$' --forceExit",
+    "test:e2e": "node scripts/run-with-test-db.js jest --testRegex '.*\\.e2e-spec\\.ts$' --forceExit --runInBand",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "typecheck": "tsc --noEmit",
