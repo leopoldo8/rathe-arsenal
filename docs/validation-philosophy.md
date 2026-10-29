@@ -58,24 +58,38 @@ script, return-unprompted tracking, compilation into pass/fail.
 **That ceremony is retired.** It's replaced by the following, each of
 which produces a more reliable signal at zero coordination cost:
 
-- **E2E test suite covering the critical journey** — sign-up → verify
-  email → onboarding (step 1 → 2 → 3) → home populated → deck detail
-  → approve/reject substitution → shopping line. Blocks merges when
-  any node breaks. Detects regressions the Cúpula walkthrough would
-  never catch because manual walks don't re-run on every PR.
-- **Server telemetry on substitution decisions** — count approvals,
-  rejections, resets, bulk-clears per deck, per user, per tier. When
-  the community starts using the product, this tells us organically
-  whether tier-2 suggestions are trustworthy (R22-style aggregate
-  metric) without a labeling session.
-- **Dev-browser self-validation loop** — `scripts/smoke.sh` (to be
-  written) imports the test-fixture decks documented in
-  `docs/dev-fixtures.md`, walks each core surface, captures screenshots
-  at 1440×900 and 375×812, writes a compact report. Runnable locally
-  or in CI. Replaces "watch a tester navigate the deck detail".
-- **Visual regression** — Playwright snapshot tests against the
-  captured baselines. A PR that accidentally shifts typography or
-  breaks a layout gets flagged on the diff, not on the next walkthrough.
+- **E2E test suite covering the critical journeys** — the Playwright
+  project `e2e-chromium` (`apps/web/tests/e2e/`) runs in CI as the
+  "Web E2E" job, together with an axe accessibility scan. It covers
+  sign-in by e-mailed code and the account flow, adding cards
+  (manual, scanner, ready-made products), scratch and edited decks,
+  card alternatives, the missing list and the Tutor chat. The API has
+  its own end-to-end suite (`test:e2e`, Postgres) in the same CI run.
+  Detects regressions the Cúpula walkthrough would never catch because
+  manual walks don't re-run on every PR.
+- **Server telemetry** — what exists today: the `share_event` table
+  (`created`, `opened`, `signed_up`, `offer`, `quote_sent`, `buy`), read with `pnpm share:report`; the usage ledgers
+  `chat_usage` and `firecrawl_usage`; structured log lines for imports
+  (`import.finished`), the missing list (`missing.served`), lists
+  (`lists.created`) and sign-in limits (`auth.code.address_limit`);
+  and opt-in Sentry for errors. The per-decision telemetry on swap
+  approvals that an earlier version of this document promised was
+  never built: swap approvals and rejections were dropped when swaps
+  merged into card alternatives (AD-012), and the decisions routes
+  now answer 410 Gone.
+- **Dev-browser self-validation loop** — `pnpm seed:fixture` prepares
+  the fixture user and decks documented in `docs/dev-fixtures.md`, and
+  `pnpm screenshot` (`scripts/screenshot-all-surfaces.ts`) captures the
+  core surfaces. A `scripts/smoke.sh` was proposed in an earlier
+  version of this document and never written; these two commands
+  replace it.
+- **Visual regression** — Playwright snapshot tests
+  (`pnpm --filter @rathe-arsenal/web test:visual`, project
+  `visual-dark-desktop`) against committed baselines. The suite
+  exists but is not a CI step: `.github/workflows/ci.yml` runs only
+  `--project=e2e-chromium` for the web, and the workflow notes the
+  visual suite as a local self-validation tool. Update procedure:
+  `docs/design/v1/visual-regression.md`.
 
 ### What replaces "A17 tier-2 labeler session"
 
@@ -89,11 +103,11 @@ when ≥60% of them are accepted.
   substitution behavior (`gold-set-regression.spec.ts`).
 - Tier-2 is shipped to production with the current constants
   (`TIER_2_KEYWORD_OVERLAP_WEIGHT = 0.15`, chosen during Phase 1a).
-- Acceptance rate is **measured passively** via the decisions API
-  telemetry — `decision='approved'` count divided by total tier-2
-  suggestions surfaced. When the signal drops below a watchable
-  threshold (say, < 40% acceptance over a rolling 7-day window with
-  ≥20 decisions), revisit constants.
+- Acceptance rate was meant to be **measured passively** from swap
+  decisions (approved count divided by tier-2 suggestions surfaced).
+  That metric is not collected: the decisions API was retired with the
+  swap flow (AD-012). If a tier-2 signal is wanted again, it has to be
+  built on the alternatives the player actually picks.
 - No human labeling session is on the critical path to ship.
 
 If the owner ever wants an explicit tier-2 sanity check, the lowest-
@@ -108,7 +122,8 @@ When writing new plans, brainstorms, or follow-up entries:
   "Cúpula walkthrough", "labeler session", "user testing round" in
   release prerequisites.
 - **Do list automated validation as a gate.** E2E test green, visual
-  regression clean, telemetry dashboards wired, smoke script passes.
+  regression clean, telemetry dashboards wired, fixture and screenshot
+  commands run.
 - **Do plan the telemetry primitives up front.** Every feature that
   touches a decision surface (substitute, mark owned, import, etc.)
   should ship with the counter that lets telemetry tell the story.
@@ -133,7 +148,7 @@ Not never — just intentionally scoped:
 ## Pointers
 
 - Test fixtures for self-validation: `docs/dev-fixtures.md`
-- Telemetry posture for Phase 1c: `docs/plans/2026-04-18-001-feat-phase-1c-discover-history-telemetry-plan-addendum.md`
+- Telemetry posture for Phase 1c (deferred, never built): `docs/plans/2026-04-18-001-feat-phase-1c-discover-history-telemetry-plan-addendum.md`
 - Original v1 brainstorm (with retired Gate 2 language, kept for
   historical context): `docs/brainstorms/2026-04-19-v1-visual-identity-and-ux-requirements.md`
 - Personal project guidelines (applies to this and other projects):
