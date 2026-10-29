@@ -9,7 +9,7 @@ The repository expects two Railway services in one project, plus one Postgres ad
 - **Web service**: runs the NestJS app, which serves `/api/*` and the bundled React SPA from the root path.
 - **Worker service**: runs the same build with a different start command, `node --enable-source-maps dist/stores/variant-queue-worker.js` (from `apps/api`).
   It drains the job queues (store prices and availability, recommendations, Tutor answers, reference data) and runs housekeeping.
-  Nothing in the repository starts it: `railway.json` and the package scripts define no worker start command, so this command is set in the dashboard (the plan that introduced it, `docs/superpowers/plans/2026-06-03-variant-fetch-queue.md`, names it).
+  Nothing in the repository starts it: `railway.json` and the package scripts define no worker start command, so this command is set in the dashboard (PR #92, which introduced the worker, names it).
   The dashboard must match this; the repository cannot confirm what is configured there.
 
 Both services boot the full application module, so both validate the same environment (see the table below): the required variables must be set on each.

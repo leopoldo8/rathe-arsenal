@@ -12,7 +12,6 @@ this order before doing non-trivial work.
 | [`docs/README.md`](docs/README.md) | Index of every doc: which are current and which are historical records. Start here when unsure what to trust. |
 | [`.specs/STATE.md`](.specs/STATE.md) | Decisions log (AD-NNN) and the current handoff. Read before planning or resuming work. |
 | [`.design/`](.design/) | Confirmed design documents and mockups, one per feature. Read the one for the area you touch. |
-| [`.specs/features/`](.specs/features/) | Plan, checks, verification and implementation notes of each feature built with the spec-driven flow. |
 | [`docs/dev-fixtures.md`](docs/dev-fixtures.md) | Test deck URLs + sign-up/import helper for local screenshots and QA. |
 | [`docs/phase-1-followups.md`](docs/phase-1-followups.md) | Debt ledger. Every Phase 0/1 trade-off + trigger to revisit. |
 | [`docs/research/ip-posture.md`](docs/research/ip-posture.md) | LSS card-image IP stance. Consult before any monetization surface or asset pipeline change. |
@@ -35,18 +34,16 @@ this order before doing non-trivial work.
 - **In flight**: nothing. The last feature, persona-rethink, merged
   in PR #181 on 2026-10-29 and CI is green on `main`. Open items are
   in the Handoff of `.specs/STATE.md`.
-- **Deferred**: every plan in `docs/plans/` is `status: completed`
-  except Phase 1c (`2026-04-18-001`) and its addendum, both
-  `status: deferred`. Discover, the three-mode home, the readiness
+- **Deferred**: `docs/plans/` holds only Phase 1c
+  (`2026-04-18-001`) and its addendum, both `status: deferred`.
+  Plans and specs of finished features were deleted on 2026-10-29;
+  `git log --all -- .specs/features docs/plans` finds them.
+  Phase 1c's Discover, the three-mode home, the readiness
   history chart and outbound click telemetry were never built (no
   `discover_deck` / Algolia code exists) and await an owner decision
   to execute or drop.
-- **Reading plan frontmatter**: `status:` was historically left stale;
-  it was reconciled against the code on 2026-08-16. Unit checkboxes
-  inside a plan are *not* a progress signal — completed plans routinely
-  keep every `- [ ]` unticked.
-- **Recently shipped**, by feature (details in `.specs/features/` and
-  `.specs/STATE.md`; PR numbers via `gh pr list --state merged`):
+- **Recently shipped**, by feature (details in `.specs/STATE.md` and
+  `.design/`; PR numbers via `gh pr list --state merged`):
   - i18n (pt-BR / en-US), uxui-remediation and pre-launch-hardening
     (LSS disclaimer surface, opt-in Sentry): PRs #104, #108 and #109, 2026-06.
   - Product redesign (#110, 2026-10-03), then the phone card scanner

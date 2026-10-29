@@ -4,7 +4,7 @@ import { authFetch } from '../lib/auth-fetch';
 import { isShareLinkUnavailable } from './shared-decks';
 import { listsQueryKey, type IListCardImage, type IListSummary, type TCondition, type TListKind } from './lists';
 
-// Mirrors the shared-list contract of the API (.specs/features/shared-lists/contract.md).
+// Mirrors the shared-list contract of the API (the shared-lists API, PRs #174 and #175).
 
 export interface ISharedListLine {
   readonly id: number;

@@ -28,18 +28,23 @@ Read these as a record of their date.
 
 | Folder | What it holds |
 |--------|---------------|
-| [`audit/`](audit/) | Quality audits: `uxui-2026-06-29`, `ai-slop-2026-10-03`, and `personas-2026-10-21` (the persona audit behind the persona-rethink feature; the owner has not yet decided whether to commit it) |
-| [`brainstorms/`](brainstorms/) | Early requirements and the retired gate documents |
+| [`audit/`](audit/) | Quality audits: `uxui-2026-06-29`, `ai-slop-2026-10-03`, and `personas-2026-10-21` (the persona audit behind the persona-rethink release; the owner has not yet decided whether to commit it) |
+| [`brainstorms/gates/`](brainstorms/gates/) | Retired gate documents; the engine gold-set CSV and the store consent artifacts that code cites live here |
 | [`ideation/`](ideation/) | Idea exploration before the first plan |
-| [`plans/`](plans/) | Implementation plans from April to May 2026 |
+| [`plans/`](plans/) | Only the deferred Phase 1c plan and its addendum |
 | [`prototypes/`](prototypes/) | The Phase 0 engine validation |
 | [`research/`](research/) | Security notes and the Phase 1b compliance log (the two research files above are current) |
-| [`superpowers/`](superpowers/) | The variant fetch queue spec and plan (built in PR #92) |
+| [`roadmap/`](roadmap/) | Future work that is not scheduled: `card-scanner-ocr.md` |
 | [`design/v1/`](design/v1/) | The 2026-04 visual identity prototype and `path-abc-spec.md`, which predates the 2026-10 redesign |
-| [`../.specs/features/`](../.specs/features/) | One folder per feature built with the spec-driven flow: plan, checks, verification, implementation notes |
+
+## Removed on 2026-10-29
+
+Finished specs and plans were deleted: everything under `.specs/features/`, `docs/superpowers/`, the finished plans in `docs/plans/`, and the requirement brainstorms.
+Git history keeps them: `git log --all -- .specs/features docs/plans docs/superpowers docs/brainstorms`.
+Some historical records still name these paths; treat such references as pointers into history.
 
 ## Plan status convention
 
-Every plan in `plans/` and `superpowers/plans/` carries a `status:` line in its frontmatter: `completed` (built and merged) or `deferred` (written, not built, waiting on an owner decision).
-Unit checkboxes inside a plan are not a progress signal; completed plans routinely keep every box unticked.
-Check `status:`, then the code.
+A plan carries a `status:` line in its frontmatter: `completed` (built and merged) or `deferred` (written, not built, waiting on an owner decision).
+Only deferred plans stay in `plans/`; a finished plan is deleted.
+Unit checkboxes inside a plan are not a progress signal.

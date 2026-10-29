@@ -300,7 +300,7 @@ path, no coordination), or (b) regenerate candidates with
 `gold-set-regression.spec.ts` block enforcing a tier 2 acceptance floor.
 No external labelers required at any step.
 
-**Where documented:** `docs/plans/2026-04-10-001-feat-phase-1a-product-core-plan.md` "Deferred to Implementation" + "Risks & Dependencies" sections; validation cadence in `docs/validation-philosophy.md`.
+**Where documented:** the Phase 1a plan (deleted 2026-10-29, in git history); validation cadence in `docs/validation-philosophy.md`.
 
 ---
 
@@ -320,7 +320,7 @@ No external labelers required at any step.
 
 **When triggered, the work is:** add hCaptcha or Cloudflare Turnstile to the sign-up form, validate the token server-side in `AuthService.signUp()` before the existing-user check. ~1 hour of integration. The plan plan-1a documents this as a deliberate compensating control choice, not an oversight.
 
-**Where documented:** `docs/plans/2026-04-10-001-feat-phase-1a-product-core-plan.md` Scope Boundaries section.
+**Where documented:** the Phase 1a plan's Scope Boundaries section (deleted 2026-10-29, in git history).
 
 ---
 
@@ -338,7 +338,7 @@ No external labelers required at any step.
 
 **Status update (2026-10-29):** B2 (shopping line and store pipeline), B5 (tiers 2 and 3), B6 (swap editor, since merged into card alternatives, AD-012) and B8 (manual card search) shipped. B1 (Discover) and B3 (history chart) are not built (Phase 1c, deferred). The rest were not checked.
 
-These come from the original Phase 0 plan (`docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md`) and are reproduced here so the Phase 1 implementer has one place to look. The original plan is the canonical source.
+These come from the original Phase 0 plan (deleted on 2026-10-29, in git history) and are reproduced here so the Phase 1 implementer has one place to look. The original plan is the canonical source.
 
 - **B1.** No Discover surface (R11-R14)
 - **B2.** No shopping line / store data pipeline (R28-R33, including the Sbrauble vertical scraper)
@@ -392,7 +392,7 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 
 **Why deferred to Phase 2.** Phase 1 (v1 foundation, closed beta, ~47-person Pelotas FaB community) does not activate any monetization surface. No ads, no Patreon, no affiliate links, no paid tier. The IP posture question only becomes binding at the moment the first monetization surface ships — and that belongs to Phase 2, not Phase 1. Phase 1 can and should surface the required disclaimer in the footer / `/about` / `README.md` as a low-cost preparatory step, but the full activation checklist is Phase 2 work.
 
-**Update (2026-07-01):** the preparatory disclaimer step is **done** — footer (authenticated shell), public `/about` page, anonymous auth screens, and the `README.md` block all ship the localized disclaimer (`feat/pre-launch-hardening`, `.specs/features/pre-launch-hardening/`; en-US verbatim, pt-BR translated). This does **not** activate any monetization surface; the full Phase 2 activation checklist in `docs/research/ip-posture.md` remains untouched and binding before ads/Patreon/affiliate links ship.
+**Update (2026-07-01):** the preparatory disclaimer step is **done** — footer (authenticated shell), public `/about` page, anonymous auth screens, and the `README.md` block all ship the localized disclaimer (`feat/pre-launch-hardening`, PR #109; en-US verbatim, pt-BR translated). This does **not** activate any monetization surface; the full Phase 2 activation checklist in `docs/research/ip-posture.md` remains untouched and binding before ads/Patreon/affiliate links ship.
 
 **Update (2026-10-18):** the IP posture was re-reviewed against the verbatim policy (`docs/research/ip-posture.md`, "Review — 2026-10-18"). The disclaimer now uses the Third Party Apps wording and ends with "© Legend Story Studios", shown on every surface with card images (PR #151). The ~47-person audience limit is not a policy requirement and no longer blocks public pages.
 
@@ -430,13 +430,13 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 3. Frontend: replace the client-side grouping (in `-swaps.helpers.ts` / `BreakdownSections.helpers.ts`) with the server-provided quantity, and add the per-copy accept control.
 4. Re-verify fidelity, notOwned, and readiness math against the new aggregation.
 
-**Where documented:** This entry. Cross-referenced from `.specs/STATE.md` AD-005 and `.specs/features/swap-copies-grouping/`.
+**Where documented:** This entry. Cross-referenced from `.specs/STATE.md` AD-005.
 
 ---
 
 ## Sharing decks (2026-10-18, PRs #156 to #161)
 
-Shared deck links, share attribution, generated link-preview images and copying a shared deck shipped from `.specs/features/sharing-decks/`. Known gaps, none blocking:
+Shared deck links, share attribution, generated link-preview images and copying a shared deck shipped by the sharing-decks feature. Known gaps, none blocking:
 
 ### SH1. Not yet checked in a real WhatsApp chat
 **Posture:** the preview tags and the 1200x630 JPEG are covered by e2e tests and a local walkthrough. On staging (https://rathe-arsenal-staging.up.railway.app, 2026-10-18) the HTML for an unknown token carries the generic `og:*` tags and `noindex`, and the generic image renders its text with the bundled fonts inside the real Railway container. No live deck link has been pasted into WhatsApp or Meta's sharing debugger yet.

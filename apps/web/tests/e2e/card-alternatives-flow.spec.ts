@@ -1,5 +1,5 @@
 /**
- * E2E for card alternatives (C58 of `.specs/features/card-alternatives/checks.md`, C457 of persona-rethink):
+ * E2E for card alternatives (card alternatives, PRs #130 and #143, and the persona-rethink release, PR #181):
  * open Alternativas from a row of the missing list, pick the first candidate, see the "in place of" mark on
  * the deck list, then undo it and find the original card back in the missing list.
  *
