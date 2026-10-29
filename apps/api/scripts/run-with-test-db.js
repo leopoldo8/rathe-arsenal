@@ -39,6 +39,19 @@ async function ensureDatabase(urlString) {
   } finally {
     await client.end();
   }
+  await ensureExtensions(urlString);
+}
+
+// Several migration specs create uuid columns on their own, while the extension is otherwise created
+// by the first spec that boots the whole app, so on a fresh database they race. Creating it here removes the race.
+async function ensureExtensions(urlString) {
+  const client = new Client({ connectionString: urlString });
+  await client.connect();
+  try {
+    await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+  } finally {
+    await client.end();
+  }
 }
 
 async function main() {
