@@ -52,7 +52,6 @@ The API refuses to start when a required variable is missing or invalid.
 | `EMAIL_FROM` | both | yes | `Rathe Arsenal <noreply@your-verified-domain>`, or `onboarding@resend.dev` for testing |
 | `APP_BASE_URL` | both | yes | Public base URL, used in e-mailed links and as the one origin allowed to write |
 | `EXPOSE_DEV_SECRETS` | none | no | Never set in staging or production. See the warning below |
-| `JWT_EXPIRES_IN` | none | no | Still validated if set, but nothing reads it: sessions are `user_session` rows with no expiry |
 | `TURNSTILE_SECRET_KEY` | web | no | Cloudflare Turnstile on sign-up and code requests; absent, the check is skipped |
 | `VITE_TURNSTILE_SITE_KEY` | web (build) | no | Site key for the widget; absent, no widget is shown |
 | `SENTRY_DSN` | both | no | Absent, API Sentry is off |

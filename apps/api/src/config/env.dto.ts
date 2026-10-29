@@ -8,7 +8,6 @@ import {
   IsOptional,
   IsString,
   IsUrl,
-  Matches,
   MinLength,
   Min,
   ValidateIf,
@@ -48,11 +47,6 @@ export class EnvDto {
   @IsString()
   @MinLength(32, { message: 'JWT_SECRET must be at least 32 characters (use `openssl rand -hex 32`)' })
   JWT_SECRET!: string;
-
-  @IsOptional()
-  @IsString()
-  @Matches(/^\d+[smhd]$/, { message: 'JWT_EXPIRES_IN must look like "7d", "12h", "30m"' })
-  JWT_EXPIRES_IN?: string;
 
   @IsString()
   @IsNotEmpty()

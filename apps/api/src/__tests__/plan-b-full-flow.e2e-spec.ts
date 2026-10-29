@@ -164,7 +164,6 @@ describe('Plan B full flow (E2E, U11)', () => {
       'postgresql://postgres:dev@localhost:5432/rathe_arsenal';
     process.env['JWT_SECRET'] =
       process.env['JWT_SECRET'] ?? 'test-jwt-secret-that-is-at-least-32-chars-long';
-    process.env['JWT_EXPIRES_IN'] = '1d';
     process.env['RESEND_API_KEY'] =
       process.env['RESEND_API_KEY'] ?? 're_test_fake_key_for_dev_bypass';
     process.env['EMAIL_FROM'] = 'Test <noreply@test.local>';

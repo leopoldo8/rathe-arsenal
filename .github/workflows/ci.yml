@@ -93,7 +93,6 @@ jobs:
           NODE_ENV: development
           DATABASE_URL: postgresql://postgres:dev@localhost:5432/rathe_arsenal
           JWT_SECRET: ci-test-jwt-secret-that-is-at-least-32-chars-long
-          JWT_EXPIRES_IN: 1d
           RESEND_API_KEY: re_test_fake_key_for_ci_bypass
           EMAIL_FROM: CI Test <noreply@test.local>
           APP_BASE_URL: http://localhost:5173
@@ -115,7 +114,6 @@ jobs:
       NODE_ENV: development
       DATABASE_URL: postgresql://postgres:dev@localhost:5432/rathe_arsenal
       JWT_SECRET: ci-test-jwt-secret-that-is-at-least-32-chars-long
-      JWT_EXPIRES_IN: 1d
       RESEND_API_KEY: re_test_fake_key_for_ci_bypass
       EMAIL_FROM: CI Test <noreply@test.local>
       APP_BASE_URL: http://localhost:5173

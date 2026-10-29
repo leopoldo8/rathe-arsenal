@@ -151,7 +151,6 @@ describe('Shared lists (E2E)', () => {
     process.env['DATABASE_URL'] =
       process.env['DATABASE_URL'] ?? 'postgresql://postgres:dev@localhost:5432/rathe_arsenal';
     process.env['JWT_SECRET'] = process.env['JWT_SECRET'] ?? 'test-jwt-secret-that-is-at-least-32-chars-long';
-    process.env['JWT_EXPIRES_IN'] = '1d';
     process.env['RESEND_API_KEY'] = process.env['RESEND_API_KEY'] ?? 're_test_fake_key_for_dev_bypass';
     process.env['EMAIL_FROM'] = 'Test <noreply@test.local>';
     process.env['APP_BASE_URL'] = 'http://localhost:5173';

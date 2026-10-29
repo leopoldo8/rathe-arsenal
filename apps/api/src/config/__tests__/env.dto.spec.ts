@@ -7,7 +7,6 @@ describe('validateEnv', () => {
     PORT: '3000',
     DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
     JWT_SECRET: 'a'.repeat(64),
-    JWT_EXPIRES_IN: '7d',
     RESEND_API_KEY: 're_test_x',
     EMAIL_FROM: 'noreply@example.com',
     APP_BASE_URL: 'http://localhost:5173',
