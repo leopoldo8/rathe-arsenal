@@ -128,7 +128,7 @@
 - **Trade-off**: Readers that sum per card must sum across versions; `''` has to be translated to "Não sei" at every display.
 - **Scope**: `apps/api` collection, lists, scanner, readiness load; `apps/web` collection and lists.
 - **Date**: 2026-10-23
-- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+- **Status**: active - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; built and merged in PR #181 on 2026-10-29
 
 ### AD-017
 - **Decision**: A pick or a swap moves the quantity the caller gives (1 to the copies still needed, or the copies over the limit) from the side it names, `card_replacement.side` in `('deck', 'inventory')`; omitted, `decideAdoption` keeps today's behaviour. Supersedes AD-009's "moves the original's missing copies".
@@ -136,7 +136,7 @@
 - **Trade-off**: The alternatives sheet, the recommendations rail and the Tutor share the path, so each passes its own quantity.
 - **Scope**: `apps/api` replacements, chat; `apps/web` missing list, chat proposals.
 - **Date**: 2026-10-23
-- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+- **Status**: active - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; built and merged in PR #181 on 2026-10-29
 
 ### AD-018
 - **Decision**: A deck line carries an inventory quantity next to its deck quantity (`deck_card.inventoryQuantity`); legality counts copies per card across deck, inventory, weapons and equipment; readiness, the missing list, spare copies and the Tutor count the inventory, always said apart from the deck.
@@ -144,7 +144,7 @@
 - **Trade-off**: Every reader of `deck_card` decides once whether it counts the inventory; old Fabrary imports have none.
 - **Scope**: `packages/engine`, `apps/api` decks, readiness, sharing, lists, chat; `apps/web` editor.
 - **Date**: 2026-10-23
-- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+- **Status**: active - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; built and merged in PR #181 on 2026-10-29
 
 ### AD-019
 - **Decision**: Decks are soft-deleted (`tracked_deck.deletedAt`) and kept 30 days; every deck read skips deleted decks, `SharedDeckLookup.findLive` included (extends AD-015); the housekeeping step deletes them for good with today's cascades.
@@ -152,7 +152,7 @@
 - **Trade-off**: Every new deck query must filter `"deletedAt" IS NULL`.
 - **Scope**: `apps/api` decks, sharing, readiness, chat, recommendations, worker.
 - **Date**: 2026-10-23
-- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+- **Status**: active - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; built and merged in PR #181 on 2026-10-29
 
 ### AD-020
 - **Decision**: Scheduled work runs as steps of the worker's `runWorkerLoops` (`stores/variant-queue-worker.ts`), each claiming its work with a lock; the API runs no new timers.
@@ -160,7 +160,7 @@
 - **Trade-off**: The worker process carries one more loop; a worker crash stops housekeeping until it restarts.
 - **Scope**: `apps/api` worker, `scripts/purge-deleted-users.ts` logic.
 - **Date**: 2026-10-23
-- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+- **Status**: active - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; built and merged in PR #181 on 2026-10-29
 
 ### AD-021
 - **Decision**: Accounts: one e-mail field starts sign-up and sign-in and may reveal that an address has an account; e-mails are stored lowercased; a password is optional; six-digit sign-in codes (15 minutes, 5 tries, one live per address) with a button token; an unconfirmed account can do everything except create share links; the sign-up return page is stored on the user; Cloudflare Turnstile guards sign-up and code requests; the session lasts until sign-out and is held on the server, in an httpOnly cookie `ra_session` (`SameSite=Lax`, `Path=/api`), with writes from another origin refused (`403` `ORIGIN_REJECTED`); no response body carries the token (owner's pick, 2026-10-23).
@@ -168,7 +168,7 @@
 - **Trade-off**: Every signed-in player signs in once more at deploy; reset links already sent stop working; mail delivery becomes the way in for code-only accounts.
 - **Scope**: `apps/api` auth, users, email, guards; `apps/web` auth pages, `AuthProvider`, the HTTP wrappers of AD-004, `api/shared-decks.ts`; the Playwright storage state, `scripts/fixture/fixture-seed.ts`, the API e2e tests and `docs/dev-fixtures.md`, which send the cookie instead of a Bearer token.
 - **Date**: 2026-10-23
-- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+- **Status**: active - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; built and merged in PR #181 on 2026-10-29
 
 ### AD-022
 - **Decision**: Each needed card has one stored store state (`priced`, `store_lacks`, `not_on_site`, `looking_up`, `no_price`); prices stay valid `STORE_PRICE_VALID_DAYS`, availability comes from a pass every `STORE_AVAILABILITY_PASS_DAYS`; lookups are per card (`variant_fetch_job.cardIdentifier`, one pending per card) and every Firecrawl call is counted in `firecrawl_usage` against `FIRECRAWL_MONTHLY_CREDIT_BUDGET`, with the pass taking priority.
@@ -176,7 +176,7 @@
 - **Trade-off**: Pending per-deck jobs are dropped at deploy; the free plan cannot price the release, so the owner moves to a paid plan when needed.
 - **Scope**: `apps/api` stores, decks, worker; `apps/web` missing list, admin settings.
 - **Date**: 2026-10-23
-- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+- **Status**: active - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; built and merged in PR #181 on 2026-10-29
 
 ### AD-023
 - **Decision**: Deck share links gain the `quote` intent, which resolves only to the quote page and carries no store data; `share_event.kind` gains `offer`, `quote_sent` and `buy`; `referredVia` gains `quote`. Extends AD-015.
@@ -184,7 +184,7 @@
 - **Trade-off**: A `quote` address handed out must keep resolving as a quote or answer 404.
 - **Scope**: `apps/api` sharing, auth sign-up; `apps/web` share sheet, quote page.
 - **Date**: 2026-10-23
-- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+- **Status**: active - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; built and merged in PR #181 on 2026-10-29
 
 ### AD-024
 - **Decision**: Spare copies are computed on request by one function from the collection, the decks at stage `building`, `ready` or `active`, and `user.spareRule` (`within_format`, `any_deck`, `per_deck`, null until asked), holding foil copies before regular ones; nothing stores a spare count.
@@ -192,7 +192,7 @@
 - **Trade-off**: Every surface that shows spare copies calls the same function; the Tutor's old deck-usage SQL goes.
 - **Scope**: `apps/api` collection, lists, sharing, chat.
 - **Date**: 2026-10-23
-- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+- **Status**: active - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; built and merged in PR #181 on 2026-10-29
 
 ### AD-025
 - **Decision**: A rule date is printed only from a curated `RULE_CHANGES` entry in `packages/engine/src/legality/rules.ts` (format, effective date, summary key, official source URL).
@@ -200,7 +200,7 @@
 - **Trade-off**: A rule change with no entry shows no date.
 - **Scope**: `packages/engine`, `apps/web` deck page, the Tutor.
 - **Date**: 2026-10-23
-- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+- **Status**: active - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; built and merged in PR #181 on 2026-10-29
 
 ### AD-026
 - **Decision**: Wherever the same card name exists in another pitch, the name is written through one helper with the pitch as a word, in visible text and aria-labels; game words are explained from one i18n namespace shown by a "?" sheet and the public `/termos` page; a CI test fails on dashes and banned words in pt-BR values, and an axe scan in the Playwright run fails on serious and critical issues.
@@ -208,73 +208,28 @@
 - **Trade-off**: A new screen that names a card or a game word must use the helper and the namespace; `@axe-core/playwright` is a new dev dependency.
 - **Scope**: `apps/web` every card-naming component, i18n, Playwright.
 - **Date**: 2026-10-23
-- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+- **Status**: active - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; built and merged in PR #181 on 2026-10-29
 
 ### AD-027
-- **Decision**: The persona-rethink spec is accepted with the FAIL basis of the verification documented, and a Verifier round 5 is authorized; the owner decided this on 2026-10-27 (option (a) of the formal gate).
+- **Decision**: The persona-rethink spec is accepted with the FAIL basis of the verification documented, and a Verifier round 5 was authorized; the owner decided this on 2026-10-27 (option (a) of the formal gate).
 - **Reason**: The verification (`.specs/features/persona-rethink/verification.md`) lists gaps that no further check or test removes cheaply: the screen-arrangement checks missing for most journeys, the boundary and pure rows of the Test policy, and the binding Uncovered cells.
 - **Trade-off**: Those gaps ship as recorded gaps; a change in any of them is caught only by the checks that exist.
 - **Scope**: `.specs/features/persona-rethink/`.
 - **Date**: 2026-10-27
-- **Status**: accepted
+- **Status**: done - round 5 and the later rounds ran, and the feature merged in PR #181 on 2026-10-29
 
 ## Handoff
 
-- **Feature**: persona-rethink - `.specs/features/persona-rethink/` - planned, built and verified through round 7 (commit `57a131bf`): 468 of 468 checks PASS. Branch `design/close-the-deck` in worktree `.claude/worktrees/close-the-deck`, not pushed, no PR.
-- **Verdict**: stays FAIL, only on the basis the owner accepted on 2026-10-27 (the screen-arrangement checks missing for most journeys, the "Screen copy and arrangement" Test policy row, the Uncovered cells carried from the binding sources), plus four contradictions with a picked screen that decisions taken under the owner's delegation kept: C71 (D1), C74 (D4), C82 (D5), C288 (D17). `validate_verification.py` exits 1 with the single error "verdict is FAIL".
-- **Decisions and deviations**: `.specs/features/persona-rethink/decisions-2026-10-27.md` and `.specs/features/persona-rethink/implementation-notes.md` (its "Before deploying" section lists what to check on the deployed environment).
-- **Next (the owner's)**: push the branch and open the PR when they decide.
-- **Open**: `docs/phase-1-followups.md` AU1 to AU3.
-
-### Previous handoff (sharing-decks)
-
-- **Feature**: sharing-decks - `.specs/features/sharing-decks/` - planned, built and merged (#156 to #161): shared deck page with missing view, share card with WhatsApp contact (alternative B), display name and contact in Settings, return to the shared page after sign-in or verification, share attribution and `pnpm share:report`, link-preview tags and generated images, copy a shared deck. Verified by API unit (1073) and e2e (283) suites, web suite (2252), and a browser walkthrough against the real API.
-- **Next**: Card list, Shared list (with list previews) and Price suggestion from `.design/sharing.md`.
-- **Open**: `docs/phase-1-followups.md` SH1 to SH6, of which SH1 (a real WhatsApp paste after the production deploy) is the owner's.
-
-### Previous handoff (ai-chat-screens)
-
-- **Feature**: ai-chat-screens - `.specs/features/ai-chat-screens/` - planned, built and VERIFIED (PASS, round 3 scoped, independent Verifier, profile `ui`). Branch `feat/ai-chat-ui` in worktree `.claude/worktrees/ai-chat-ui`, stacked on `feat/ai-chat` (PR #145), not pushed, no PR. The Tutor tab, `/chat` and `/chat/<id>` (chat B), proposal cards with apply, dismiss and undo, the conversation list (sheet on phones, side panel on desktop), and the Tutor tile on the deck page (entry 3); small API additions for `chatAccess` on every auth response and proposal display fields (AD-014).
-- **Owner calls**: deviations 8 and 10 in `implementation-notes.md` confirmed 2026-10-12 (applied swap follows chat-B's `Desfazer`, AC 3 text-only top item, `A troca saiu do deck.`, phone chip band without tint). Still the owner's: walking the flow (verification step 5).
-- **Local environment**: the dev database's `CHK_card_replacement_picked_from_valid` was realigned to the entity's eight values (implementation notes).
-
-### Previous handoff (ai-chat backend, PR #145)
-
-- **Feature**: ai-chat - `.specs/features/ai-chat/` - planned, built and VERIFIED (PASS, round 2 scoped, independent Verifier, profile `standard` provisional) on an autonomous run with the owner away. Branch `feat/ai-chat` in worktree `.claude/worktrees/ai-chat`, based on `46f7e2c`, not pushed, no PR. Backend only: chat access flag and `chat:grant`, daily Fabrary tournament deck sync, comprehensive rules reference from rules.fabtcg.com, conversations answered by Gemini 3.8 Flash with nine tools in a worker loop of their own, US$5 monthly budget on a `chat_usage` ledger, deck and swap proposals applied by the user (AD-013).
-- **Waiting on the owner**: pick a chat screen and a deck entry from `.design/mockups/ai-chat/index.html`; the screens are not built (project `CLAUDE.md`, "UI changes").
-- **Blocks go-live**: run `chat:probe` once with the real key (the multi-call request shape is proven only against a stubbed fetch), the migration on production, `GEMINI_API_KEY` on the worker service, `chat:grant` for the four users.
-- **Deviations and owner calls**: `.specs/features/ai-chat/implementation-notes.md`.
-- **Tests**: api e2e and int-specs with `DATABASE_URL=postgresql://postgres:dev@localhost:5432/rathe_arsenal_chat`, a database built only by migrations (see `checks.md`); the worktree needs a copy of the root `.env` and a built `packages/engine`.
-
-### Previous handoff (card-recommendations, merged as #136)
-- **Feature**: card-recommendations — `.specs/features/card-recommendations/` — planned, built and verified on an autonomous run (owner away), profile `standard` provisional. Branch `feat/card-recommendations` in worktree `.claude/worktrees/card-recommendations`, based on `5ad1916`, not pushed, no PR. Per-deck recommendations judged by Gemini 3.8 Flash (AD-010, AD-011): queued runs drained by the worker, the deck-page panel, the home clear-upgrade marker, dismiss, adopt as a `card_replacement` with `pickedFrom = 'recommendation'`, and the alternatives in-group order.
-- **Verification**: three independent rounds, each FAIL on fewer and smaller gaps (round 3: 73/73 checks proven, full gate green, one surviving mutant on unpinned migration column defaults). That last gap is fixed and author-checked, not independently re-verified: run one more scoped Verifier round so `validate_verification.py` exits 0.
-- **Blocks go-live**: `GEMINI_API_KEY` on the `scrapper-worker` service, and the migration on production. The live Gemini request shape is unproven until the first real run.
-- **Deviations and owner calls**: `.specs/features/card-recommendations/implementation-notes.md` (1-14 and "Needs owner").
-- **Tests**: run this branch's api e2e and int-specs with `DATABASE_URL=postgresql://postgres:dev@localhost:5432/rathe_arsenal_recs`, a separate database in the same container; several int-specs otherwise default to the dev database.
-
-### Previous handoff
-
-- **Feature**: card-alternatives — `.specs/features/card-alternatives/` — built and VERIFIED (PASS, round 5 scoped, profile standard), merged to `main` as #130; the synergy spike (AD-010) merged as #131.
-- **Deviations**: 1-20 in `.specs/features/card-alternatives/implementation-notes.md`.
-- **Open, owner**: the 0.05 owned bonus in the alternatives order is uncalibrated (plan open question 1); case-insensitive tag uniqueness (`IDX_deck_tag_user_name_ci`) and `user.preferences` still differ between migrations and entities.
-
-### Older handoff
-
-- **Feature**: card-scanner — `.specs/features/card-scanner/` — **built and VERIFIED (PASS, round 3, independent Verifier, profile standard)**. Merged to `main` as #122. Phone-camera scanning at `/add-cards/scan`: on-device OCR of the collector code with a 3-variant vote, per-card notice with Wrong + name search, review list, one atomic batch commit (AD-008).
-- **Deviations**: DEV-01..08 in `.specs/features/card-scanner/implementation-notes.md` (index shape grouped by card, tesseract.js 7, all 15 core files ship ~53 MB, confirm on the bar, re-arm rule, 2x2 tabs on phones, vitest on half the cores, e2e apps on 127.0.0.1).
-- **Open, owner**: real-device recognition rate unmeasured (33/38 right, 0 wrong on clean official images); a commit retried after a lost response adds twice; `add-cards` visual baseline tolerates the fourth tab (1% diff), consider refreshing baselines.
-- **Since #122**: full-screen page with flashlight (#128), camera focus, lens choice, 2x zoom and `?debug=1` readout (#129), faster OCR and resolver fixes (#132), pt-BR "Não é essa" label (#133), tilt correction with a capture margin (#134). Next steps, ranked: `.specs/features/card-scanner/ocr-roadmap.md`.
-- **Gate for this feature**: as below, plus `apps/web` OCR benchmark (`recognition-benchmark.spec.ts`, ~60 s, downloads 38 LSS images into gitignored `apps/web/.cache/` on first run) and `tests/e2e/card-scanner-flow.spec.ts` (Chromium fake camera, needs `pnpm dev`).
-
-- **Latest work**: AI-slop audit — `docs/audit/ai-slop-2026-10-03/inventory.md` (findings, owner decisions, what shipped, deviations). Shipped in #115 (dead code), #116 (copy pass), #117 (localized engine reasons), #118 (deck detail and home), #119 (swaps, library, sources, new deck, settings).
-- **Feature**: product-redesign — `.specs/features/product-redesign/` — all 10 phases complete and merged to `main` (#110), followed by post-launch polish #111–#114. Every deviation (DEV-01..31) and the provisional calls live in `implementation-notes.md`.
-- **Provisional, owner to confirm**: DEV-20 bulk actions (sequential calls, 50-row cap), DEV-12 `cardCounts` on `GET /api/decks`, DEV-14 DECK-02 "Comprar tudo" → link to the shopping list, DEV-19 onboarding keeps the top nav, DEV-22 Sources chevron removal, DEV-14 decklist "by type" cannot split attack vs non-attack actions (catalog `types[0]`).
-- **Open follow-ups**: recompute paths other than swap mutations do not take the deck lock (DEV-10); `review_aggregate` table is now unused (drop needs a migration); owner visual sign-off against the prototype (unreachable from the run, DEV-01).
-- **Deploy step**: run `pnpm --filter @rathe-arsenal/api backfill:swap-suggestions` once right after the first deploy (`scripts/deploy-railway.md`).
-- **Gate**: `pnpm typecheck`, `pnpm lint`, engine/api/web unit, api `test:int` and `test:e2e` (`--runInBand` under load), and both Playwright projects (`cd apps/web && npx playwright test`, needs `pnpm dev` running; `pnpm seed:fixture` resets the fixture).
-- **Local DB**: Docker container `rathe-arsenal-pg` (DEV-04); `docker start rathe-arsenal-pg` after a reboot.
-- **Blockers**: none.
+- **Feature**: none in flight. persona-rethink (`.specs/features/persona-rethink/`) merged to `main` in PR #181 on 2026-10-29, and CI is green on `main`.
+- **Verdict at merge**: FAIL on the basis the owner accepted on 2026-10-27 (AD-027), plus four screens kept as built against a picked screen, decided under the owner's delegation: C71 (D1), C74 (D4), C82 (D5), C288 (D17).
+  Decisions and deviations: `.specs/features/persona-rethink/decisions-2026-10-27.md` and `.specs/features/persona-rethink/implementation-notes.md`.
+- **Open, owner**:
+  - The four kept-as-built screens C71, C74, C82 and C288 are provisional until the owner confirms them.
+  - `docs/phase-1-followups.md` AU1 and AU3.
+  - Other uses of `--ra-ember` were not checked for contrast in the dark theme.
+- **Before deploying**: the "Before deploying" section of `.specs/features/persona-rethink/implementation-notes.md` lists what to check on the deployed environment (environment variables, the sign-in migration, the worker service that runs housekeeping, the required check for the web e2e job, and routes with no coverage row).
+- **Next step**: the owner picks the next feature; nothing is queued. Phase 1c is deferred and unbuilt.
+- **Branch**: `main`.
 
 ### Prior completed features (reference)
 - **uxui-remediation** — `.specs/features/uxui-remediation/` — ✅ COMPLETE & VERIFIED, merged to `main` (PR #108). a11y/impeccable-bans/ReadinessHero remediation; 24 tasks, Verifier PASS.
