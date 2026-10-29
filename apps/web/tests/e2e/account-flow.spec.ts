@@ -7,10 +7,12 @@ import { fileURLToPath } from 'node:url';
 import { test, expect, request, type Page } from '@playwright/test';
 import { ANON_STORAGE_STATE, BASE_URL, STORAGE_STATE_PATH, fixtureCredentials, loadFixture } from '../support/fixture';
 import { stubCodeSignIn, STUB_EMAIL } from '../support/account-stubs';
+import { giveOwnAuthAddress, ownAuthHeaders } from '../support/own-auth-address';
 
 test.use({ storageState: ANON_STORAGE_STATE });
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, context }) => {
+  await giveOwnAuthAddress(context);
   await page.addInitScript(() => localStorage.setItem('rathe.lang', 'pt-BR'));
 });
 
@@ -171,7 +173,11 @@ test('a session that ends mid-edit keeps the page and the draft', async ({ brows
   const { email, password } = fixtureCredentials();
   const context = await browser.newContext({ storageState: ANON_STORAGE_STATE, baseURL: BASE_URL });
   await context.addInitScript(() => localStorage.setItem('rathe.lang', 'pt-BR'));
-  const signedIn = await context.request.post('/api/auth/sign-in', { data: { email, password } });
+  await giveOwnAuthAddress(context);
+  const signedIn = await context.request.post('/api/auth/sign-in', {
+    data: { email, password },
+    headers: ownAuthHeaders(context),
+  });
   expect(signedIn.status()).toBe(200);
   const page = await context.newPage();
   await page.goto(`/decks/${readyDeckId}?edit=1`);
@@ -315,7 +321,11 @@ test('a password change asks the e-mailed code first', async ({ page }) => {
   const email = `lucas.${Date.now().toString(36)}@hotmail.com`;
   const oldPassword = 'the-old-password-123';
   const newPassword = 'the-new-password-456';
-  expect((await page.request.post('/api/auth/sign-up', { data: { email, password: oldPassword } })).status()).toBe(201);
+  const signUp = await page.request.post('/api/auth/sign-up', {
+    data: { email, password: oldPassword },
+    headers: ownAuthHeaders(page.context()),
+  });
+  expect(signUp.status()).toBe(201);
   await page.goto('/settings');
   await expect(page.getByText('Senha: você tem uma senha')).toBeVisible();
 
@@ -341,10 +351,13 @@ test('a password change asks the e-mailed code first', async ({ page }) => {
   expect((await saved).status()).toBe(204);
   await expect(page.getByLabel('Nova senha')).toHaveCount(0);
 
-  // Sign-in is limited per address of the caller, and the earlier tests of this file spend it: wait it out.
+  // Sign-in is limited per address of the caller; this context has its own, but keep waiting out a 429 in case of a retry.
   const signIn = async (password: string): Promise<number> => {
     for (let attempt = 0; attempt < 3; attempt += 1) {
-      const answer = await page.request.post('/api/auth/sign-in', { data: { email, password } });
+      const answer = await page.request.post('/api/auth/sign-in', {
+        data: { email, password },
+        headers: ownAuthHeaders(page.context()),
+      });
       if (answer.status() !== 429) return answer.status();
       await page.waitForTimeout((Number(answer.headers()['retry-after'] ?? '60') + 1) * 1000);
     }
