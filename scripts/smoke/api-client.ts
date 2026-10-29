@@ -30,13 +30,18 @@ export class ApiClient {
     const headers: Record<string, string> = { Accept: 'application/json, text/html;q=0.9', ...options.headers };
     if (options.body !== undefined) headers['Content-Type'] = 'application/json';
     if (options.withSession !== false && this.sessionToken) headers['Cookie'] = `${SESSION_COOKIE}=${this.sessionToken}`;
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      method,
-      headers,
-      body: options.body === undefined ? null : JSON.stringify(options.body),
-      redirect: 'manual',
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}${path}`, {
+        method,
+        headers,
+        body: options.body === undefined ? null : JSON.stringify(options.body),
+        redirect: 'manual',
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+    } catch (error) {
+      throw new Error(`${method} ${path} could not reach ${this.baseUrl}: ${describeNetworkError(error)}`);
+    }
     const text = await res.text();
     this.captureSession(res.headers);
     return { status: res.status, headers: res.headers, text, json: parseJson(text) };
@@ -59,4 +64,9 @@ function parseJson(text: string): unknown {
   } catch {
     return null;
   }
+}
+
+function describeNetworkError(error: unknown): string {
+  const cause = (error as { cause?: { code?: string; message?: string } }).cause;
+  return cause?.code ?? cause?.message ?? (error as Error).message;
 }
