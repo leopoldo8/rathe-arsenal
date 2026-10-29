@@ -49,6 +49,3 @@ apps/web/.tanstack/
 # Card scanner: OCR assets copied from node_modules, and the OCR benchmark image cache
 apps/web/public/ocr/
 apps/web/.cache/
-
-# Price spike downloads and reports (regenerated on demand)
-scripts/price-spike/out/
