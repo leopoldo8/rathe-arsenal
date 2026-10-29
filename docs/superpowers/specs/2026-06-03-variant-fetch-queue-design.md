@@ -1,7 +1,7 @@
 # Variant-Fetch Queue — Design
 
 Date: 2026-06-03
-Status: Approved (pending implementation plan)
+Status: Implemented (PR #92)
 
 ## 1. Context & problem
 
