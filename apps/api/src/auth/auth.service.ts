@@ -129,8 +129,11 @@ export class AuthService {
     return { body: response, sessionToken: grant.sessionToken };
   }
 
-  async requestCode(email: string, locale: TLocale = 'pt-BR'): Promise<ICodeRequestResult> {
-    return this.signInCodes.request(email, locale);
+  async requestCode(email: string, locale: TLocale = 'pt-BR'): Promise<ICodeRequestResult & { _devCode?: string }> {
+    const { code, ...issued } = await this.signInCodes.request(email, locale);
+    // Like the password code below: with EXPOSE_DEV_SECRETS the digits ride in the answer, so a local smoke
+    // run with no inbox can finish the sign-in. An address with no account has no code and gets none.
+    return this.exposeDevSecrets && code !== undefined ? { ...issued, _devCode: code } : issued;
   }
 
   async verifyCode(email: string, code: string): Promise<ISessionGrant<ICodeSignInResponse>> {

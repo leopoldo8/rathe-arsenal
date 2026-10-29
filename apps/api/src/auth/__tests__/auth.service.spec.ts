@@ -679,3 +679,35 @@ describe('AuthService.requestPasswordCode', () => {
     expect(JSON.stringify(answer)).not.toContain('482913');
   });
 });
+
+describe('AuthService.requestCode', () => {
+  const issued = { expiresAt: new Date('2026-10-27T12:15:00Z'), resendAfter: new Date('2026-10-27T12:00:45Z'), code: '482913' };
+
+  it('hands the digits back only when EXPOSE_DEV_SECRETS is exactly "true"', async () => {
+    const exposed = buildService({ exposeDevSecrets: 'true' });
+    exposed.signInCodes.request.mockResolvedValue(issued);
+
+    const answer = await exposed.service.requestCode('lucas@hotmail.com');
+
+    expect(answer).toEqual({ expiresAt: issued.expiresAt, resendAfter: issued.resendAfter, _devCode: '482913' });
+  });
+
+  it.each([undefined, 'false', '1', 'TRUE', ''])('keeps the digits out of the answer when EXPOSE_DEV_SECRETS is %p', async (flag) => {
+    const hidden = buildService({ exposeDevSecrets: flag });
+    hidden.signInCodes.request.mockResolvedValue(issued);
+
+    const answer = await hidden.service.requestCode('lucas@hotmail.com');
+
+    expect(answer).toEqual({ expiresAt: issued.expiresAt, resendAfter: issued.resendAfter });
+    expect(JSON.stringify(answer)).not.toContain('482913');
+  });
+
+  it('has no digits to hand back for an address with no account', async () => {
+    const exposed = buildService({ exposeDevSecrets: 'true' });
+    exposed.signInCodes.request.mockResolvedValue({ expiresAt: issued.expiresAt, resendAfter: issued.resendAfter });
+
+    const answer = await exposed.service.requestCode('nobody@hotmail.com');
+
+    expect(answer).toEqual({ expiresAt: issued.expiresAt, resendAfter: issued.resendAfter });
+  });
+});
