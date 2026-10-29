@@ -1,6 +1,7 @@
 {
   "name": "@rathe-arsenal/engine",
   "version": "0.0.0",
+  "license": "MIT",
   "private": true,
   "description": "Pure TypeScript legality, readiness and substitution engine for Flesh and Blood decks",
   "main": "dist/index.js",

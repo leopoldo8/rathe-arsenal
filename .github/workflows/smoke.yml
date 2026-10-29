@@ -1,0 +1,85 @@
+name: Smoke
+
+# Checks the critical flows of a deployed environment, signing in as a dedicated smoke account.
+# - Every push to main: staging, after waiting for Railway to deploy that exact commit.
+# - Manual run: staging or production, whichever is picked.
+# Setup (accounts, secrets, variables): "Smoke test" in scripts/deploy-railway.md.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Which deployed environment to check
+        type: choice
+        options: [staging, production]
+        default: staging
+
+permissions:
+  contents: read
+
+# A newer push supersedes an older run: the older commit would never be the one live.
+concurrency:
+  group: smoke-${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Smoke (${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }})
+    # Pinned like the web e2e job: ubuntu-latest moved to 26.04, where Playwright 1.59 cannot install Chromium.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+
+    # The secrets are scoped to the two steps that read them, so the actions and the dependency install scripts never see them.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check the smoke inputs are set
+        id: ready
+        run: pnpm exec tsx scripts/smoke/readiness.ts
+        env:
+          SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          RESEND_INBOUND_API_KEY: ${{ secrets.RESEND_INBOUND_API_KEY }}
+          SMOKE_TURNSTILE_TOKEN: ${{ secrets.SMOKE_TURNSTILE_TOKEN }}
+          SMOKE_SIGN_IN: ${{ vars.SMOKE_SIGN_IN }}
+          SMOKE_INBOX: resend
+          # A push waits for Railway to deploy this commit; a manual run checks whatever is live.
+          SMOKE_EXPECT_COMMIT: ${{ github.event_name == 'push' && github.sha || '' }}
+          # An automatic run with no setup yet skips; a manual run that cannot start fails.
+          SMOKE_STRICT: ${{ github.event_name == 'workflow_dispatch' }}
+
+      - name: Install Chromium
+        if: steps.ready.outputs.ready == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run the smoke test
+        if: steps.ready.outputs.ready == 'true'
+        run: pnpm smoke
+        env:
+          SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          RESEND_INBOUND_API_KEY: ${{ secrets.RESEND_INBOUND_API_KEY }}
+          SMOKE_TURNSTILE_TOKEN: ${{ secrets.SMOKE_TURNSTILE_TOKEN }}
+          SMOKE_SIGN_IN: ${{ vars.SMOKE_SIGN_IN }}
+          SMOKE_INBOX: resend
+          # A push waits for Railway to deploy this commit; a manual run checks whatever is live.
+          SMOKE_EXPECT_COMMIT: ${{ github.event_name == 'push' && github.sha || '' }}
+          # An automatic run with no setup yet skips; a manual run that cannot start fails.
+          SMOKE_STRICT: ${{ github.event_name == 'workflow_dispatch' }}

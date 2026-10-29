@@ -32,6 +32,12 @@ export interface ICodeRequestResult {
   resendAfter: Date;
 }
 
+/** What `request` answers: the code's life, plus the digits when a code was e-mailed (none for an unknown address). */
+export interface ISignInCodeIssued extends ICodeRequestResult {
+  /** The six digits just e-mailed; the caller decides whether anything but the inbox may see them. */
+  code?: string;
+}
+
 export interface IPasswordCodeIssued extends ICodeRequestResult {
   /** The six digits just e-mailed; the caller decides whether anything but the inbox may see them. */
   code: string;
@@ -64,7 +70,7 @@ export class SignInCodeService {
    * Stores a new code for a known address, replacing the live one, and e-mails it. An address with
    * no account gets the same answer and no e-mail, so this route says nothing the start step does not.
    */
-  async request(email: string, locale: TLocale): Promise<ICodeRequestResult> {
+  async request(email: string, locale: TLocale): Promise<ISignInCodeIssued> {
     const now = Date.now();
     const result = {
       expiresAt: new Date(now + SIGN_IN_CODE_TTL_MS),
@@ -93,7 +99,7 @@ export class SignInCodeService {
       throw new AuthError(EAuthErrorCode.EmailDeliveryFailed, 'Could not send the sign-in code. Please try again later.');
     }
     this.logger.log({ event: 'auth.code.requested', userId: user.id });
-    return result;
+    return { ...result, code };
   }
 
   /** Checks the six digits against the address's live code and spends it. Returns the address to sign in. */

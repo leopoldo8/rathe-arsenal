@@ -39,7 +39,7 @@ PASS="test-password-1234"
 curl -s -X POST http://localhost:5173/api/auth/sign-up \
   -H 'Content-Type: application/json' \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\"}" | jq -r '._devVerificationLink'
-# visit that link, then:
+# Opening that link (a web URL, /verify-email?token=...) confirms the e-mail. Signing in with the password works before that too.
 
 # The session is the ra_session cookie: keep it in a cookie jar and send it back.
 JAR=$(mktemp)
@@ -69,11 +69,12 @@ duplicates fixed elements at every scroll frame.
 Create a scratch deck (no Fabrary import) for testing the Start-from-scratch flow:
 
 ```bash
-# Create a scratch deck via the API (Dorinthea + Classic Constructed)
+# Create a scratch deck via the API (Dorinthea + Classic Constructed).
+# heroIdentifier is the hero's catalog slug; the body takes no name (the deck is named after the hero and format).
 curl -s -b "$JAR" -X POST http://localhost:5173/api/decks \
   -H 'Origin: http://localhost:5173' \
   -H "Content-Type: application/json" \
-  -d '{"heroIdentifier": "WTR000", "format": "Classic Constructed", "name": "Test Scratch Deck"}'
+  -d '{"heroIdentifier": "dorinthea-ironsong", "format": "Classic Constructed"}'
 ```
 
 ## Fixture deck status + tag operations (v2)

@@ -1,6 +1,7 @@
 {
   "name": "@rathe-arsenal/web",
   "version": "0.0.0",
+  "license": "MIT",
   "private": true,
   "description": "Rathe Arsenal SPA (React, Vite, TanStack Router, pt-BR / en-US)",
   "type": "module",

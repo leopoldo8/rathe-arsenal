@@ -4,6 +4,8 @@
 
 > **Disclaimer.** Rathe Arsenal is in no way affiliated with Legend Story Studios. Legend Story Studios®, Flesh and Blood™, and set names are trademarks of Legend Story Studios. Flesh and Blood characters, cards, logos, and art are property of Legend Story Studios. © Legend Story Studios
 
+> **License.** The code in this repository is open source under the [MIT License](LICENSE). The license covers the code only: card names, text, images and the other Flesh and Blood material are the property of Legend Story Studios and are not licensed by this repository.
+
 Rathe Arsenal helps Flesh and Blood players in Brazil work out what their collection can play.
 It is pt-BR first, with en-US.
 
@@ -49,18 +51,27 @@ docs/         Living guides plus historical records (start at docs/README.md)
 
 ## Local development
 
-Prereqs: Node ≥20.18, pnpm ≥9.15 (`corepack enable && corepack prepare pnpm@9.15.0 --activate`), local Postgres.
+You need no third-party account: sign-in codes and e-mails are logged or returned by the API in development, and every integration key in `.env.example` is optional.
+
+Prereqs: Node ≥20.18, pnpm ≥9.15 (`corepack enable && corepack prepare pnpm@9.15.0 --activate`), and Docker (for Postgres 16).
 
 ```bash
-pnpm install
-cp .env.example .env       # fill in JWT_SECRET, RESEND_API_KEY, EMAIL_FROM, APP_BASE_URL, DATABASE_URL
-pnpm dev                   # runs api (3000) + web (5173, proxies /api) concurrently
+pnpm install               # also builds packages/engine, which the API and web import from its dist
+pnpm env:init              # creates .env: generated JWT_SECRET, EXPOSE_DEV_SECRETS=true (see below)
+pnpm db:up                 # Postgres 16 from docker-compose.yml, database rathe_arsenal on localhost:5432
+pnpm dev                   # api on :3000 + web on :5173 (open this one; it proxies /api)
 ```
 
-To sign in without an inbox, add `EXPOSE_DEV_SECRETS=true` to `.env`: the API then returns the sign-in secrets in its responses.
-Never set it in staging or production; the API refuses to start with it when `NODE_ENV=production`.
+Check it: `curl http://localhost:3000/api/health` answers `{"status":"ok"}` and http://localhost:5173 opens the app.
+The schema is created on the first start, and the card catalog comes from the `@flesh-and-blood/cards` package.
+Prices and store availability stay empty locally; a worker fills them.
 
-`pnpm seed:fixture` prepares a signed-in test user with decks (see [`docs/dev-fixtures.md`](docs/dev-fixtures.md)).
+- **Port 5432 already in use?** Start the database on another port, `POSTGRES_PORT=5433 pnpm db:up`, and change the port in `DATABASE_URL` in `.env`.
+- **Signing in without an inbox.** In development the e-mail service only logs what it would send, so `RESEND_API_KEY` can stay the placeholder. `EXPOSE_DEV_SECRETS=true` (set by `pnpm env:init`) makes the API return the secrets instead: a sign-in code request for an existing account answers with `_devCode`, a sign-up with `_devVerificationLink`. The API refuses to start with it when `NODE_ENV=production`, and `.env.example` keeps it off.
+- **Port 3000 only serves the API in development.** The app is on :5173; the API serves the built app only after `pnpm build`.
+- **Engine changes.** `pnpm dev`, `lint`, `typecheck` and `test` rebuild `packages/engine` first; `pnpm engine:build` does it on its own.
+
+`pnpm seed:fixture` prepares a signed-in test user with decks (see [`docs/dev-fixtures.md`](docs/dev-fixtures.md)); it needs `pnpm dev` running and an internet connection.
 
 ## Test
 
@@ -70,13 +81,20 @@ pnpm typecheck
 pnpm test                                    # unit tests of every package
 pnpm --filter @rathe-arsenal/api test:int    # integration tests (database)
 pnpm --filter @rathe-arsenal/api test:e2e    # API end-to-end tests (database)
-pnpm --filter @rathe-arsenal/web test:e2e    # Playwright journeys and accessibility scan (api and web running)
+pnpm --filter @rathe-arsenal/web exec playwright install chromium   # once, before the browser tests
+pnpm --filter @rathe-arsenal/web test:e2e    # Playwright journeys and accessibility scan (needs pnpm dev running)
 pnpm --filter @rathe-arsenal/web test:visual # screenshot regression, local only
+pnpm smoke                                   # post-deploy smoke test of a deployed environment (SMOKE_BASE_URL, see scripts/deploy-railway.md)
 ```
+
+The API integration and end-to-end tests run on a database of their own, `rathe_arsenal_test`, which they create next to the dev one on the first run, so they never touch the data `pnpm dev` works on.
+Set `TEST_DATABASE_URL` to use a different one.
+The browser tests run against the dev server and its database (`rathe_arsenal`).
 
 CI runs three jobs: quality (lint, typecheck, unit tests), API end-to-end tests against Postgres, and the web Playwright job.
 The visual regression project is not part of CI; see [`docs/design/v1/visual-regression.md`](docs/design/v1/visual-regression.md).
 The testing approach is in [`docs/validation-philosophy.md`](docs/validation-philosophy.md).
+To contribute, read [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Build
 
@@ -87,3 +105,12 @@ pnpm build                 # builds web first (api serves dist)
 ## Deploy
 
 See [`scripts/deploy-railway.md`](scripts/deploy-railway.md).
+
+## Third-party assets
+
+Vendored files that carry their own licenses (the dependencies keep theirs in `node_modules`):
+
+- **Fonts for the share images** in `apps/api/assets/fonts/`: Newsreader and Hanken Grotesk, and an outline of UnifrakturCook Bold drawn into the wordmark. All under the SIL Open Font License 1.1; the license texts sit next to the files.
+- **WhatsApp mark** in `apps/web/src/components/contact/WhatsappGlyph.tsx`: from Simple Icons, CC0 (public domain).
+- **Slot icons** in `apps/web/src/assets/icons/`: shapes adapted from Lucide, MIT License.
+- **Web fonts** (Hanken Grotesk, Newsreader, UnifrakturCook, IBM Plex Serif, JetBrains Mono) are loaded from Google Fonts at run time, all open source.

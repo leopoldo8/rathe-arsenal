@@ -1,0 +1,24 @@
+# Local development database: Postgres 16, the version CI uses.
+# `pnpm db:up` starts it. If port 5432 is taken on your machine, pick another one:
+#   POSTGRES_PORT=5433 pnpm db:up     (and use that port in DATABASE_URL in .env)
+# The API tests create their own database (rathe_arsenal_test) next to this one on their first run.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: rathe_arsenal
+    ports:
+      # Loopback only: the password is a well-known `dev`, so nobody else on the network may reach it.
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d rathe_arsenal']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  postgres-data:
