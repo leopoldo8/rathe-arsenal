@@ -94,8 +94,8 @@ test('the page behind "Resolver" fits a phone with no control over another', asy
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `step ${index + 1}: no horizontal scroll`).toBeLessThanOrEqual(0);
 
-    // The shell's own top bar and tab bar are not the page: only the controls inside <main> are checked.
-    const boxes = await page.locator('main').locator('a, button, input').evaluateAll((elements) =>
+    // This route renders outside the app shell and has no <main>, so the whole body is the page.
+    const boxes = await page.locator('body').locator('a, button, input').evaluateAll((elements) =>
       elements
         .map((element) => ({ name: element.textContent?.trim() || element.getAttribute('aria-label') || element.tagName, rect: element.getBoundingClientRect() }))
         .filter(({ rect }) => rect.width > 0 && rect.height > 0)
@@ -135,7 +135,7 @@ test('the page behind Resolver follows r4-resolve-b-phone at 390 px', async ({ p
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `step ${index + 1}: no horizontal scroll`).toBeLessThanOrEqual(0);
 
-    const heights = await page.locator('main button').evaluateAll((buttons) =>
+    const heights = await page.locator('button').evaluateAll((buttons) =>
       buttons
         .map((button) => ({ name: button.textContent?.trim() || button.getAttribute('aria-label') || 'button', rect: button.getBoundingClientRect() }))
         .filter(({ rect }) => rect.width > 0 && rect.height > 0)
