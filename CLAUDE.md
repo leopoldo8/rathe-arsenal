@@ -87,6 +87,11 @@ not designed until it has both:
 This rule exists because the persona rethink (PR #181) designed most
 new screens for phones only, and the desktop sign-in lost its layout.
 
+When showing mockups to the owner, put every alternative in one
+`index.html` that links or embeds each one (widths and themes
+included), and open it in the owner's browser yourself (`open
+<path>/index.html`). The owner opens one file, never a folder of PNGs.
+
 ## Language
 
 Code + docs + commit messages: English. Conversation with owner:
