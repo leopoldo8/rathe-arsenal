@@ -2,7 +2,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { pinPortuguese } from './helpers';
 import { loadFixture } from '../support/fixture';
-import { stubMissingList } from '../support/missing-list-stubs';
+import { missingListStub, stubMissingList } from '../support/missing-list-stubs';
 
 const OPEN_NAME = 'Ver alternativas para Alpha Rampage (Vermelho)';
 const PANEL_WIDTH = 480;
@@ -65,6 +65,83 @@ test.describe('Alternativas panel, docked at 1440', () => {
     await page.keyboard.press('Escape');
     await expect(panel).toHaveCount(0);
     await expect(trigger).toBeFocused();
+  });
+});
+
+const STAND_IN_CARD = {
+  cardIdentifier: 'bloodrush-bellow-red',
+  name: 'Bloodrush Bellow',
+  pitch: 1,
+  imageUrl: null,
+  freeCopies: 0,
+  priceCents: null,
+  productUrl: null,
+  rationale: {
+    tier: 1,
+    pitch: 'red',
+    pitchRelation: { relation: 'same', pitch: 'red' },
+    originalClasses: ['Generic'],
+    candidateGeneric: true,
+    sharedClasses: [],
+    powerDelta: 0,
+    defenseDelta: 0,
+    sharedKeywords: [],
+    relaxed: null,
+  },
+};
+
+async function openListWithStandIn(page: Page): Promise<void> {
+  await pinPortuguese(page);
+  await stubMissingList(page);
+  await page.route('**/api/decks/*/alternatives*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ needed: 1, groups: [{ group: 'very_close', cards: [STAND_IN_CARD] }] }) }),
+  );
+  await page.goto(`/decks/${loadFixture().readyDeckId}/missing`, { waitUntil: 'networkidle' });
+}
+
+test.describe('Alternativas panel, layers and focus at 1440', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('Escape closes the card preview first and the panel on the next press', async ({ page }) => {
+    await openListWithStandIn(page);
+    await page.getByRole('button', { name: OPEN_NAME }).click();
+    const panel = page.getByTestId('alternatives-panel');
+    await panel.getByTestId('alternative-preview').click();
+    await expect(panel.getByTestId('alternative-preview-view')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(panel.getByTestId('alternative-preview-view')).toHaveCount(0);
+    await expect(panel).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCount(0);
+  });
+
+  test('after "Usar" the focus lands on the next row, not on the page body', async ({ page }) => {
+    await openListWithStandIn(page);
+    const rows = page.getByTestId('missing-row');
+    const before = await rows.count();
+    const picked = rows.filter({ hasText: 'Alpha Rampage' });
+    const index = (await rows.evaluateAll((nodes, text) => nodes.findIndex((node) => node.textContent?.includes(text)), 'Alpha Rampage')) as number;
+    const nextName = await rows.nth(index + 1).getByRole('button', { name: /^Ver alternativas para/ }).getAttribute('aria-label');
+
+    // Once the pick is accepted the list answers again without the picked card, as it does after a stand-in.
+    await page.route('**/api/decks/*/replacements', (route) => route.fulfill({ status: 201, contentType: 'application/json', body: '{"replacement":{}}' }));
+    await page.route('**/api/decks/*/missing', (route) => {
+      const list = missingListStub();
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...list, lines: list.lines.filter((line) => line.cardIdentifier !== 'alpha-rampage-red') }),
+      });
+    });
+
+    await picked.getByRole('button', { name: OPEN_NAME }).click();
+    await page.getByTestId('alternatives-panel').getByRole('button', { name: /^Usar / }).click();
+
+    await expect(page.getByTestId('alternatives-panel')).toHaveCount(0);
+    await expect(rows).toHaveCount(before - 1);
+    await expect(page.getByRole('button', { name: nextName! })).toBeFocused();
   });
 });
 

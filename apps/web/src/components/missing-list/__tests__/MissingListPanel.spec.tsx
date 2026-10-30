@@ -1,7 +1,10 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor, act } from '@testing-library/react';
 import { MissingListPage } from '../MissingListPage';
+import type { IAlternativeCard } from '../../../api/replacements';
+import type { IMissingLine } from '../../../api/missing-list';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { line, Providers, response } from './missingListKit';
 
 const api = vi.hoisted(() => ({ fetch: vi.fn() }));
@@ -132,5 +135,130 @@ describe('the docked Alternativas panel and the keyboard', () => {
     expect(panel).toBeInTheDocument();
     expect(screen.getAllByTestId('alternatives-panel')).toHaveLength(1);
     expect(screen.getAllByTestId('missing-row')[1]).toHaveAttribute('data-alternatives-open', 'true');
+  });
+});
+
+const STAND_IN: IAlternativeCard = {
+  cardIdentifier: 'coax-a-commotion-red',
+  name: 'Coax a Commotion',
+  pitch: 1,
+  imageUrl: null,
+  freeCopies: 3,
+  priceCents: null,
+  productUrl: null,
+  rationale: {
+    tier: 1,
+    pitch: 'red',
+    pitchRelation: { relation: 'same', pitch: 'red' },
+    originalClasses: ['Generic'],
+    candidateGeneric: true,
+    sharedClasses: [],
+    powerDelta: 0,
+    defenseDelta: 0,
+    sharedKeywords: [],
+    relaxed: null,
+  },
+};
+
+/** Serves the list from `listed` (which a test can shrink) and one stand-in for every card. */
+async function renderWithStandIn(listed: { current: readonly IMissingLine[] }): Promise<QueryClient> {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } } });
+  screenWidth.value = 1440;
+  api.fetch.mockImplementation(async (path: string) => {
+    if (path === '/decks/7/missing') return response(listed.current);
+    if (path === '/decks/7') return { id: 7, name: 'Deck', hero: 'Rhinar' };
+    if (path.startsWith('/decks/7/alternatives?')) return { needed: 3, groups: [{ group: 'very_close', cards: [STAND_IN] }] };
+    if (path === '/decks/7/replacements') return { replacement: {} };
+    throw new Error(`unhandled ${path}`);
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <MissingListPage deckId={7} />
+    </QueryClientProvider>,
+  );
+  await screen.findByTestId('missing-list-page');
+  return client;
+}
+
+describe('Escape on the docked Alternativas panel closes only the innermost layer', () => {
+  it('closes the card preview first and the panel on the next Escape', async () => {
+    await renderWithStandIn({ current: LINES });
+    fireEvent.click(opener('Pack Hunt (Vermelho)'));
+    const panel = await screen.findByTestId('alternatives-panel');
+    fireEvent.click(await within(panel).findByTestId('alternative-preview'));
+    expect(within(panel).getByTestId('alternative-preview-view')).toBeInTheDocument();
+
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+
+    await waitFor(() => expect(within(panel).queryByTestId('alternative-preview-view')).toBeNull());
+    expect(screen.getByTestId('alternatives-panel')).toBeInTheDocument();
+
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+
+    await waitFor(() => expect(screen.queryByTestId('alternatives-panel')).toBeNull());
+  });
+
+  it('ignores an Escape that another layer already handled', async () => {
+    await renderWithStandIn({ current: LINES });
+    fireEvent.click(opener('Pack Hunt (Vermelho)'));
+    await screen.findByTestId('alternatives-panel');
+
+    const handled = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    handled.preventDefault();
+    await act(async () => {
+      document.body.dispatchEvent(handled);
+    });
+
+    expect(screen.getByTestId('alternatives-panel')).toBeInTheDocument();
+  });
+});
+
+describe('focus after "Usar" removes the picked row from the list', () => {
+  async function pickFirstCard(): Promise<void> {
+    const panel = await screen.findByTestId('alternatives-panel');
+    fireEvent.click(await within(panel).findByRole('button', { name: 'Usar Coax a Commotion (Vermelho) no lugar' }));
+  }
+
+  it('moves to the Alternativas button of the next row', async () => {
+    const listed = { current: [...LINES, line({ cardIdentifier: 'wrath-red', name: 'Wrath', pitch: 1 })] };
+    await renderWithStandIn(listed);
+    fireEvent.click(opener('Savage Swing (Vermelho)'));
+    await screen.findByTestId('alternatives-panel');
+
+    listed.current = listed.current.filter((entry) => entry.cardIdentifier !== 'savage-swing-red');
+    await pickFirstCard();
+
+    await waitFor(() => expect(screen.queryByTestId('alternatives-panel')).toBeNull());
+    await waitFor(() => expect(screen.getAllByTestId('missing-row')).toHaveLength(2));
+    await waitFor(() => expect(opener('Wrath (Vermelho)')).toHaveFocus());
+  });
+
+  it('moves to the list heading when no row is left', async () => {
+    const listed = { current: [LINES[0]!] };
+    await renderWithStandIn(listed);
+    fireEvent.click(opener('Pack Hunt (Vermelho)'));
+    await screen.findByTestId('alternatives-panel');
+
+    listed.current = [];
+    await pickFirstCard();
+
+    await waitFor(() => expect(screen.queryByTestId('alternatives-panel')).toBeNull());
+    await waitFor(() => expect(screen.queryByTestId('missing-row')).toBeNull());
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveFocus());
+  });
+
+  it('moves to the next row when the list changed under the open panel and the panel then closes', async () => {
+    const listed = { current: [...LINES, line({ cardIdentifier: 'wrath-red', name: 'Wrath', pitch: 1 })] };
+    const client = await renderWithStandIn(listed);
+    fireEvent.click(opener('Savage Swing (Vermelho)'));
+    await screen.findByTestId('alternatives-panel');
+
+    listed.current = listed.current.filter((entry) => entry.cardIdentifier !== 'savage-swing-red');
+    await client.invalidateQueries();
+    await waitFor(() => expect(screen.getAllByTestId('missing-row')).toHaveLength(2));
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+
+    await waitFor(() => expect(screen.queryByTestId('alternatives-panel')).toBeNull());
+    await waitFor(() => expect(opener('Wrath (Vermelho)')).toHaveFocus());
   });
 });

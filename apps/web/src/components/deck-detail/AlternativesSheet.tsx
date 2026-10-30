@@ -44,6 +44,8 @@ interface IAlternativesSheetProps {
   readonly layout?: TAlternativesLayout;
   /** Docked only: the element that opened the panel, which gets the focus back when it closes. */
   readonly restoreFocusTo?: HTMLElement | null;
+  /** Docked only: where the focus goes instead when the element that opened the panel is gone, as after "Usar". */
+  readonly focusFallback?: (() => HTMLElement | null) | undefined;
 }
 
 function toPitch(pitch: number | null): 1 | 2 | 3 | null {
@@ -160,6 +162,20 @@ function CardPreview({ card, needed, disabled, onBack, onPick }: ICardPreviewPro
   const sources = card.imageUrl ? [card.imageUrl.large, ...card.imageUrl.sources.map((source) => source.large)] : [];
   const [sourceIndex, setSourceIndex] = useState(0);
   const src = sources[sourceIndex];
+  const backRef = useRef(onBack);
+  backRef.current = onBack;
+
+  // The preview is a layer of its own: Escape closes it and nothing below it. It listens in the capture phase
+  // and marks the event as handled, so the docked panel's own Escape listener leaves the panel open.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      event.preventDefault();
+      backRef.current();
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, []);
 
   return (
     <section className={styles.preview} data-testid="alternative-preview-view" aria-label={displayName}>
@@ -341,22 +357,27 @@ function AlternativesBody({ deckId, target, onClose, docked }: IPanelBodyProps):
   );
 }
 
-function DockedPanel({ deckId, target, onClose, restoreFocusTo }: Omit<IAlternativesSheetProps, 'layout'>): React.ReactElement {
+function DockedPanel({ deckId, target, onClose, restoreFocusTo, focusFallback }: Omit<IAlternativesSheetProps, 'layout'>): React.ReactElement {
   const { t } = useTranslation();
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const fallbackRef = useRef(focusFallback);
+  fallbackRef.current = focusFallback;
 
   // Nothing here is modal, so focus is moved in by hand when the panel opens and handed back when it closes.
   useEffect(() => {
     panelRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') closeRef.current();
+      // A layer inside the panel (the card preview) marks the Escape it handled, and that one is not ours.
+      if (event.key === 'Escape' && !event.defaultPrevented) closeRef.current();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      if (restoreFocusTo?.isConnected) restoreFocusTo.focus();
+      // After "Usar" the card's row can already be gone from the list; the focus must not fall to the body.
+      const target = restoreFocusTo?.isConnected ? restoreFocusTo : (fallbackRef.current?.() ?? null);
+      target?.focus();
     };
   }, [restoreFocusTo]);
 
@@ -374,9 +395,9 @@ function DockedPanel({ deckId, target, onClose, restoreFocusTo }: Omit<IAlternat
   );
 }
 
-export function AlternativesSheet({ deckId, target, onClose, layout = 'sheet', restoreFocusTo = null }: IAlternativesSheetProps): React.ReactElement {
+export function AlternativesSheet({ deckId, target, onClose, layout = 'sheet', restoreFocusTo = null, focusFallback }: IAlternativesSheetProps): React.ReactElement {
   if (layout === 'docked') {
-    return <DockedPanel deckId={deckId} target={target} onClose={onClose} restoreFocusTo={restoreFocusTo} />;
+    return <DockedPanel deckId={deckId} target={target} onClose={onClose} restoreFocusTo={restoreFocusTo} focusFallback={focusFallback} />;
   }
   return (
     <Dialog.Root open onOpenChange={(open) => !open && onClose()}>

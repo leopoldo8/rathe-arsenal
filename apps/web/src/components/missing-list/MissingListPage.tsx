@@ -24,6 +24,7 @@ import {
   type TSide,
 } from './missingListModel';
 import { buildShoppingListText } from './shoppingListText';
+import { useRowFocusKeeper } from './useRowFocusKeeper';
 import styles from './MissingListPage.module.css';
 
 interface IMissingListPageProps {
@@ -121,6 +122,8 @@ export function MissingListPage({ deckId }: IMissingListPageProps): React.ReactE
   const [side, setSide] = useState<TSide>('all');
   const [expanded, setExpanded] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [pageElement, setPageElement] = useState<HTMLDivElement | null>(null);
+  const focusKeeper = useRowFocusKeeper(pageElement);
 
   if (query.isLoading) {
     return (
@@ -161,7 +164,10 @@ export function MissingListPage({ deckId }: IMissingListPageProps): React.ReactE
 
   const actions = <ListActions onShare={() => setShareOpen(true)} onCopy={() => void handleCopy()} shareFirst={phone} />;
   const pricedCards = pricedLines(lines).length;
-  const openAlternatives = (target: IMissingLine, trigger: HTMLElement): void => setAlternatives({ line: target, trigger });
+  const openAlternatives = (target: IMissingLine, trigger: HTMLElement): void => {
+    focusKeeper.remember(trigger);
+    setAlternatives({ line: target, trigger });
+  };
   const openIdentifier = alternatives?.line.cardIdentifier ?? null;
   const panelLayout = docked ? 'docked' : phone ? 'sheet' : 'overlay';
   const panel =
@@ -176,13 +182,14 @@ export function MissingListPage({ deckId }: IMissingListPageProps): React.ReactE
         }}
         layout={panelLayout}
         restoreFocusTo={alternatives.trigger}
+        focusFallback={focusKeeper.fallbackTarget}
         onClose={() => setAlternatives(null)}
       />
     );
 
   return (
     <div className={styles.workspace} data-testid="missing-workspace" data-panel={alternatives !== null && docked ? 'docked' : undefined}>
-    <div className={styles.page} data-testid="missing-list-page" data-layout={phone ? 'phone' : 'desktop'}>
+    <div className={styles.page} ref={setPageElement} data-testid="missing-list-page" data-layout={phone ? 'phone' : 'desktop'}>
       <header className={styles.summaryBar}>
         <MissingSummary summary={summary} lines={lines} />
         {!phone && actions}
