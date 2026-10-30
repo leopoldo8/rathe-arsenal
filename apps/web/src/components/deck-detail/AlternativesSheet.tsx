@@ -34,10 +34,16 @@ const PITCH_CLASS: Readonly<Record<number, string | undefined>> = {
   3: styles.pitchBlue,
 };
 
+/** How the panel sits on the screen: a bottom sheet on a phone, a side panel over the page, or docked beside the list. */
+export type TAlternativesLayout = 'sheet' | 'overlay' | 'docked';
+
 interface IAlternativesSheetProps {
   readonly deckId: number;
   readonly target: IAlternativesTarget;
   readonly onClose: () => void;
+  readonly layout?: TAlternativesLayout;
+  /** Docked only: the element that opened the panel, which gets the focus back when it closes. */
+  readonly restoreFocusTo?: HTMLElement | null;
 }
 
 function toPitch(pitch: number | null): 1 | 2 | 3 | null {
@@ -193,7 +199,14 @@ function CardPreview({ card, needed, disabled, onBack, onPick }: ICardPreviewPro
   );
 }
 
-export function AlternativesSheet({ deckId, target, onClose }: IAlternativesSheetProps): React.ReactElement {
+interface IPanelBodyProps {
+  readonly deckId: number;
+  readonly target: IAlternativesTarget;
+  readonly onClose: () => void;
+  readonly docked: boolean;
+}
+
+function AlternativesBody({ deckId, target, onClose, docked }: IPanelBodyProps): React.ReactElement {
   const { t } = useTranslation();
   const inputId = useId();
   const searchRef = useRef<HTMLInputElement>(null);
@@ -236,89 +249,141 @@ export function AlternativesSheet({ deckId, target, onClose }: IAlternativesShee
   }
 
   return (
+    <>
+      <div className={styles.header}>
+        {docked ? (
+          <h2 className={styles.title}>{t('alternatives.title', { name: target.name })}</h2>
+        ) : (
+          <Dialog.Title className={styles.title}>{t('alternatives.title', { name: target.name })}</Dialog.Title>
+        )}
+        {docked ? (
+          <button type="button" className={styles.close} onClick={onClose}>{t('alternatives.close')}</button>
+        ) : (
+          <Dialog.Close className={styles.close}>{t('alternatives.close')}</Dialog.Close>
+        )}
+      </div>
+      {alternatives.isSuccess && (
+        <p className={styles.needed} data-testid="alternatives-needed">
+          {t('alternatives.needed', { count: needed })}
+        </p>
+      )}
+
+      <label className={styles.searchLabel} htmlFor={inputId}>
+        {t('alternatives.searchLabel')}
+      </label>
+      <input
+        id={inputId}
+        ref={searchRef}
+        type="search"
+        autoComplete="off"
+        spellCheck={false}
+        className={styles.searchInput}
+        placeholder={t('alternatives.searchPlaceholder')}
+        value={text}
+        onChange={(event) => setText(event.currentTarget.value)}
+      />
+
+      {pickError !== null && (
+        <p role="alert" className={styles.error} data-testid="alternatives-pick-error">
+          {pickError}
+        </p>
+      )}
+
+      {alternatives.isPending && (
+        <p role="status" className={styles.hint} data-testid="alternatives-loading">
+          {t('alternatives.loading')}
+        </p>
+      )}
+
+      {alternatives.isError && (
+        <div role="alert" className={styles.errorRow} data-testid="alternatives-error">
+          <p className={styles.error}>{localizeApiError(alternatives.error, t)}</p>
+          <button type="button" className={styles.retry} onClick={() => void alternatives.refetch()}>
+            {t('alternatives.retry')}
+          </button>
+        </div>
+      )}
+
+      {isEmpty && (
+        <p className={styles.hint} data-testid="alternatives-empty">
+          {query === undefined ? t('alternatives.empty') : t('alternatives.searchEmpty')}
+        </p>
+      )}
+
+      {preview !== null && (
+        <CardPreview
+          card={preview.card}
+          needed={needed}
+          disabled={pick.isPending}
+          onBack={() => setPreview(null)}
+          onPick={() => handlePick(preview.card, preview.group)}
+        />
+      )}
+
+      {preview === null && groups.map((group) => (
+        <section key={group.group} className={styles.group} data-testid={`alternatives-group-${group.group}`}>
+          <h3 className={styles.groupTitle}>{t(GROUP_LABEL_KEY[group.group])}</h3>
+          <ul className={styles.list} aria-label={t('alternatives.listAria')}>
+            {group.cards.map((card) => (
+              <CardOption
+                key={card.cardIdentifier}
+                card={card}
+                needed={needed}
+                disabled={pick.isPending}
+                onPick={() => handlePick(card, group.group)}
+                onPreview={() => setPreview({ card, group: group.group })}
+              />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </>
+  );
+}
+
+function DockedPanel({ deckId, target, onClose, restoreFocusTo }: Omit<IAlternativesSheetProps, 'layout'>): React.ReactElement {
+  const { t } = useTranslation();
+  const panelRef = useRef<HTMLElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
+  // Nothing here is modal, so focus is moved in by hand when the panel opens and handed back when it closes.
+  useEffect(() => {
+    panelRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') closeRef.current();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      if (restoreFocusTo?.isConnected) restoreFocusTo.focus();
+    };
+  }, [restoreFocusTo]);
+
+  return (
+    <aside
+      ref={panelRef}
+      tabIndex={-1}
+      className={styles.docked}
+      aria-label={t('alternatives.title', { name: target.name })}
+      data-testid="alternatives-panel"
+      data-layout="docked"
+    >
+      <AlternativesBody deckId={deckId} target={target} onClose={onClose} docked />
+    </aside>
+  );
+}
+
+export function AlternativesSheet({ deckId, target, onClose, layout = 'sheet', restoreFocusTo = null }: IAlternativesSheetProps): React.ReactElement {
+  if (layout === 'docked') {
+    return <DockedPanel deckId={deckId} target={target} onClose={onClose} restoreFocusTo={restoreFocusTo} />;
+  }
+  return (
     <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className={styles.overlay} />
-        <Dialog.Content className={styles.sheet} aria-describedby={undefined} data-testid="alternatives-sheet">
-          <div className={styles.header}>
-            <Dialog.Title className={styles.title}>{t('alternatives.title', { name: target.name })}</Dialog.Title>
-            <Dialog.Close className={styles.close}>{t('alternatives.close')}</Dialog.Close>
-          </div>
-          {alternatives.isSuccess && (
-            <p className={styles.needed} data-testid="alternatives-needed">
-              {t('alternatives.needed', { count: needed })}
-            </p>
-          )}
-
-          <label className={styles.searchLabel} htmlFor={inputId}>
-            {t('alternatives.searchLabel')}
-          </label>
-          <input
-            id={inputId}
-            ref={searchRef}
-            type="search"
-            autoComplete="off"
-            spellCheck={false}
-            className={styles.searchInput}
-            placeholder={t('alternatives.searchPlaceholder')}
-            value={text}
-            onChange={(event) => setText(event.currentTarget.value)}
-          />
-
-          {pickError !== null && (
-            <p role="alert" className={styles.error} data-testid="alternatives-pick-error">
-              {pickError}
-            </p>
-          )}
-
-          {alternatives.isPending && (
-            <p role="status" className={styles.hint} data-testid="alternatives-loading">
-              {t('alternatives.loading')}
-            </p>
-          )}
-
-          {alternatives.isError && (
-            <div role="alert" className={styles.errorRow} data-testid="alternatives-error">
-              <p className={styles.error}>{localizeApiError(alternatives.error, t)}</p>
-              <button type="button" className={styles.retry} onClick={() => void alternatives.refetch()}>
-                {t('alternatives.retry')}
-              </button>
-            </div>
-          )}
-
-          {isEmpty && (
-            <p className={styles.hint} data-testid="alternatives-empty">
-              {query === undefined ? t('alternatives.empty') : t('alternatives.searchEmpty')}
-            </p>
-          )}
-
-          {preview !== null && (
-            <CardPreview
-              card={preview.card}
-              needed={needed}
-              disabled={pick.isPending}
-              onBack={() => setPreview(null)}
-              onPick={() => handlePick(preview.card, preview.group)}
-            />
-          )}
-
-          {preview === null && groups.map((group) => (
-            <section key={group.group} className={styles.group} data-testid={`alternatives-group-${group.group}`}>
-              <h3 className={styles.groupTitle}>{t(GROUP_LABEL_KEY[group.group])}</h3>
-              <ul className={styles.list} aria-label={t('alternatives.listAria')}>
-                {group.cards.map((card) => (
-                  <CardOption
-                    key={card.cardIdentifier}
-                    card={card}
-                    needed={needed}
-                    disabled={pick.isPending}
-                    onPick={() => handlePick(card, group.group)}
-                    onPreview={() => setPreview({ card, group: group.group })}
-                  />
-                ))}
-              </ul>
-            </section>
-          ))}
+        <Dialog.Content className={styles.sheet} aria-describedby={undefined} data-testid="alternatives-sheet" data-layout={layout}>
+          <AlternativesBody deckId={deckId} target={target} onClose={onClose} docked={false} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

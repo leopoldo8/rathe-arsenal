@@ -13,7 +13,8 @@ vi.mock('../../../lib/api-client', async (importOriginal) => ({
   useApiClient: () => api.fetch,
 }));
 vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: toast.show }) }));
-vi.mock('../../../hooks/useMediaQuery', () => ({ useMediaQuery: () => phone.value }));
+// Only the phone query follows `phone`; the wide-screen query that docks the Alternativas panel stays off.
+vi.mock('../../../hooks/useMediaQuery', () => ({ useMediaQuery: (query: string) => query.includes('max-width') && phone.value }));
 vi.mock('../../deck-detail/ShareDialog', () => ({
   ShareDialog: ({ open, initialIntent }: { open: boolean; initialIntent: string | null }) =>
     open ? <div data-testid="share-dialog" data-intent={initialIntent} /> : null,

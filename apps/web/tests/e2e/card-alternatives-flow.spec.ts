@@ -31,7 +31,8 @@ test.describe('Card alternatives — E2E', () => {
 
     await control.click();
 
-    const sheet = page.getByTestId('alternatives-sheet');
+    // From 1100 px the alternatives sit in a docked panel instead of the bottom sheet.
+    const sheet = page.getByTestId(/^alternatives-(sheet|panel)$/);
     await expect(sheet).toBeVisible();
     await expect(sheet.getByTestId(/^alternatives-group-/).first()).toBeVisible();
     // A card the owner does not have, so the picked card is missing and shows in the missing list too.
@@ -63,7 +64,8 @@ test.describe('Card alternatives — E2E', () => {
     expect(originalName).not.toBe('');
 
     await control.click();
-    const sheet = page.getByTestId('alternatives-sheet');
+    // From 1100 px the alternatives sit in a docked panel instead of the bottom sheet.
+    const sheet = page.getByTestId(/^alternatives-(sheet|panel)$/);
     await expect(sheet.getByTestId(/^alternatives-group-/).first()).toBeVisible();
     // The very first candidate of the sheet, whatever its owned tag says.
     const first = sheet.getByTestId('alternative-card').first();
