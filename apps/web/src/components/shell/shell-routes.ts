@@ -18,12 +18,9 @@ export const FULL_SCREEN_PATHS: readonly string[] = ['/add-cards/scan'];
 
 /**
  * Signed-in pages whose approved phone design is a focused full-screen page (its own back link and
- * sticky bar), so on a phone they draw no top bar, footer or tab bar. From desktop width they get the shell.
+ * sticky bar), so on a phone (under 720 px) they draw no top bar, footer or tab bar. From 720 px they get the shell.
  */
 export const PHONE_FOCUSED_PATHS: readonly string[] = ['/spare', '/library-pending'];
-
-/** Width where the desktop layout starts; the same threshold the shell uses to drop the tab bar. */
-export const DESKTOP_MIN_WIDTH_PX = 960;
 
 function matchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);

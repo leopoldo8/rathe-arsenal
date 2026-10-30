@@ -9,6 +9,8 @@ import styles from './AppShell.module.css';
 interface IAppShellProps {
   readonly children: React.ReactNode;
   readonly fitViewport?: boolean;
+  /** False draws the page alone, full screen, inside the same elements so it is not remounted when the chrome comes back. */
+  readonly chrome?: boolean;
 }
 
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 959px)';
@@ -26,7 +28,7 @@ const MOBILE_BREAKPOINT_QUERY = '(max-width: 959px)';
  * rendered in JS based on a matchMedia check to avoid rendering the mobile nav
  * on wide viewports.
  */
-export function AppShell({ children, fitViewport = false }: IAppShellProps): React.ReactElement {
+export function AppShell({ children, fitViewport = false, chrome = true }: IAppShellProps): React.ReactElement {
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia(MOBILE_BREAKPOINT_QUERY).matches;
@@ -47,14 +49,14 @@ export function AppShell({ children, fitViewport = false }: IAppShellProps): Rea
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   return (
-    <div className={styles.shell} data-fit-viewport={fitViewport ? 'true' : undefined}>
-      <TopBar />
+    <div className={chrome ? styles.shell : styles.bare} data-fit-viewport={fitViewport && chrome ? 'true' : undefined}>
+      {chrome && <TopBar />}
       {/* A new scope per page, so a game word is explained once on each screen. */}
-      <main className={styles.main}>
+      <main className={chrome ? styles.main : styles.bare}>
         <GlossaryScope key={pathname}>{children}</GlossaryScope>
       </main>
-      <Footer />
-      {isMobile && <BottomTabBar />}
+      {chrome && <Footer />}
+      {chrome && isMobile && <BottomTabBar />}
     </div>
   );
 }

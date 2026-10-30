@@ -346,6 +346,20 @@
   order: 2;
 }
 
+/* The row menu buttons are positioned, so without a layer of its own the sticky bar would let them show through. */
+@media (min-width: 720px) {
+  .bar {
+    z-index: 1;
+  }
+}
+
+/* From 720 to 959 px the shell's fixed tab bar (60 px) sits at the bottom, so the sell bar sticks above it. */
+@media (min-width: 720px) and (max-width: 959px) {
+  .bar {
+    inset-block-end: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 @media (min-width: 1100px) {
   .pageWide {
     max-inline-size: var(--ra-page-max-inline);
