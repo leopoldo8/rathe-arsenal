@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { isAuthShellPath, isFullScreenPath } from '../shell-routes';
+import { drawsShell, isAuthShellPath, isFullScreenPath } from '../shell-routes';
 
 /** Signed-in pages that only send the visitor elsewhere, so they never draw a shell. */
 const REDIRECT_ONLY_PATHS = ['/reviews', '/swaps'];
@@ -21,8 +21,18 @@ describe('the app shell covers every signed-in page', () => {
     expect(paths).toContain('/library-pending');
   });
 
-  it.each(['/spare', '/library-pending'])('draws the top bar and footer on %s', (pathname) => {
+  it.each(['/spare', '/library-pending'])('draws the top bar and footer on %s from desktop width', (pathname) => {
     expect(isAuthShellPath(pathname)).toBe(true);
+    expect(drawsShell(pathname, false)).toBe(true);
+  });
+
+  it.each(['/spare', '/library-pending'])('keeps %s a focused full-screen page on a phone', (pathname) => {
+    expect(drawsShell(pathname, true)).toBe(false);
+  });
+
+  it('draws the shell on a phone for the other signed-in pages', () => {
+    expect(drawsShell('/home', true)).toBe(true);
+    expect(drawsShell('/library', true)).toBe(true);
   });
 
   it('has a shell, or a full screen, or only a redirect, for each signed-in page', () => {

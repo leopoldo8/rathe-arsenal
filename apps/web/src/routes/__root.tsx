@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, createRootRoute, useRouterState } from '@tanstack/react-router';
 import { AppShell } from '../components/shell/AppShell';
 import { NotFoundState } from '../components/shell/NotFoundState';
 import { fitsViewport } from '../components/shell/viewport-fit';
-import { isAuthShellPath, isSignedInAppPath } from '../components/shell/shell-routes';
+import { DESKTOP_MIN_WIDTH_PX, drawsShell, isSignedInAppPath } from '../components/shell/shell-routes';
 import { SignInSheet } from '../components/auth/SignInSheet';
 
 export const Route = createRootRoute({
@@ -23,10 +23,25 @@ function RootLayout(): React.ReactElement {
   );
 }
 
+const PHONE_QUERY = `(max-width: ${DESKTOP_MIN_WIDTH_PX - 1}px)`;
+
+function useIsPhoneWidth(): boolean {
+  const [isPhone, setIsPhone] = useState<boolean>(() => window.matchMedia(PHONE_QUERY).matches);
+  useEffect(() => {
+    const query = window.matchMedia(PHONE_QUERY);
+    const onChange = (event: MediaQueryListEvent): void => setIsPhone(event.matches);
+    query.addEventListener('change', onChange);
+    setIsPhone(query.matches);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+  return isPhone;
+}
+
 function RootContent(): React.ReactElement {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isPhone = useIsPhoneWidth();
 
-  const isAuthShell = isAuthShellPath(pathname);
+  const isAuthShell = drawsShell(pathname, isPhone);
 
   const isAuthPage = AUTH_PAGE_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(prefix + '/'),
