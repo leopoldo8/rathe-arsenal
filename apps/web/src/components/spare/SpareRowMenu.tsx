@@ -52,6 +52,19 @@ export function SpareRowMenu({ name, cardName, onWhy }: ISpareRowMenuProps): Rea
     else if (event.key === 'Home') move(0);
     else if (event.key === 'End') move(list.length - 1);
     else if (event.key === 'Tab') setOpen(false);
+    else if (event.key === ' ' && document.activeElement instanceof HTMLAnchorElement) {
+      // A button activates on Space by itself; a link only does on Enter.
+      event.preventDefault();
+      document.activeElement.click();
+    }
+  }
+
+  /**
+   * Closes the menu after an item ran. The item is about to unmount, so focus goes back to the button first;
+   * a sheet opened by the item takes the focus from there once it mounts.
+   */
+  function finishItem(): void {
+    close(true);
   }
 
   return (
@@ -78,7 +91,7 @@ export function SpareRowMenu({ name, cardName, onWhy }: ISpareRowMenuProps): Rea
             role="menuitem"
             className={styles.item}
             onClick={() => {
-              setOpen(false);
+              finishItem();
               onWhy();
             }}
           >
@@ -90,7 +103,7 @@ export function SpareRowMenu({ name, cardName, onWhy }: ISpareRowMenuProps): Rea
             href={ligaFabUrl(cardName)}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => setOpen(false)}
+            onClick={finishItem}
           >
             {t('spare.ligaFab')}
             <span aria-hidden="true"> ↗</span>

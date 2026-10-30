@@ -50,3 +50,23 @@ test('the row menu works with the keyboard at desktop width', async ({ page, con
   await expect(button).toBeFocused();
   await api.dispose();
 });
+
+test('Space opens "Ver na LigaFAB" and the focus returns to the menu button', async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await context.route('https://www.ligafab.com.br/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>LigaFAB</title>' }));
+  const api = await openSparePageWithCards(page, context);
+
+  const button = page.getByTestId('spare-row').first().getByRole('button', { name: /^Mais ações de/ });
+  await button.focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('menuitem', { name: /Ver na LigaFAB/ })).toBeFocused();
+
+  const popup = context.waitForEvent('page');
+  await page.keyboard.press('Space');
+  await (await popup).close();
+
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(button).toBeFocused();
+  await api.dispose();
+});
