@@ -56,6 +56,7 @@ export const spare = {
   whySpare: 'Por que sobra?',
   ligaFab: 'Ver na LigaFAB',
   ligaFabAria: 'Ver {{name}} na LigaFAB',
+  rowActions: 'Mais ações de {{name}}',
   stepperAria: 'Quantas cópias de {{name}} vender',
   less: 'Menos uma cópia de {{name}}',
   more: 'Mais uma cópia de {{name}}',

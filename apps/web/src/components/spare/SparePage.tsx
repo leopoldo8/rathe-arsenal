@@ -5,7 +5,6 @@ import { LINE_QUANTITY_MAX } from '../../api/lists';
 import { usePatchDeckMutation } from '../../api/decks';
 import { SPARE_QUERY_KEY, useSpareQuery, type IIdeaDeck, type ISpareResponse, type ISpareRow } from '../../api/spare';
 import { cardName } from '../../lib/card-name';
-import { ligaFabUrl } from '../../lib/ligafab-link';
 import { formatBrl } from '../../utils/format-brl';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
 import { useToast } from '../ui/Toast/useToast';
@@ -23,6 +22,7 @@ import {
   type TPriceFilter,
   type TSort,
 } from './spareModel';
+import { SpareRowMenu } from './SpareRowMenu';
 import { SpareRuleSheet } from './SpareRuleSheet';
 import { WhySpareSheet } from './WhySpareSheet';
 import styles from './SparePage.module.css';
@@ -135,15 +135,8 @@ function SpareRowItem({ row, rows, quantity, onQuantity, onWhy, t }: ISpareRowIt
         <p className={styles.meta}>{version === null ? t('spare.sparePlain', { count: row.spare }) : t('spare.versionLine', { version, count: row.spare })}</p>
         {suggested !== null && <p className={styles.meta}>{t('spare.suggested', { price: suggested })}</p>}
         {showStore && row.storeCents !== null && <p className={styles.meta}>{t('spare.storeReference', { price: formatBrl(row.storeCents) })}</p>}
-        <button type="button" className={styles.link} onClick={() => onWhy(row)}>
-          {t('spare.whySpare')}
-        </button>
-        <a className={styles.link} href={ligaFabUrl(row.name)} target="_blank" rel="noopener noreferrer">
-          {t('spare.ligaFab')}
-          <span className={styles.srOnly}> {name}</span>
-          <span aria-hidden="true"> ↗</span>
-        </a>
       </div>
+      <div className={styles.actions}>
       <div className={styles.stepper} role="group" aria-label={t('spare.stepperAria', { name })}>
         <button type="button" className={styles.stepButton} aria-label={t('spare.less', { name })} disabled={quantity <= 0} onClick={() => onQuantity(quantity - 1)}>
           &minus;
@@ -154,6 +147,8 @@ function SpareRowItem({ row, rows, quantity, onQuantity, onWhy, t }: ISpareRowIt
         <button type="button" className={styles.stepButton} aria-label={t('spare.more', { name })} disabled={quantity >= max} onClick={() => onQuantity(quantity + 1)}>
           +
         </button>
+      </div>
+      <SpareRowMenu name={name} cardName={row.name} onWhy={() => onWhy(row)} />
       </div>
     </li>
   );
@@ -223,61 +218,72 @@ export function SparePage({ onBack, onSent }: ISparePageProps): React.ReactEleme
   const totals = chosenTotals(spare.rows, chosen);
   const setQuantity = (row: ISpareRow, quantity: number): void => setChosen((known) => ({ ...known, [rowKey(row)]: Math.max(0, Math.min(maxToSell(row), quantity)) }));
 
+  const barNode =
+    spare.rows.length === 0 ? null : (
+      <div className={styles.bar} data-testid="spare-bar">
+        {totals.copies === 0 ? (
+          <button type="button" className={styles.barEmpty} disabled>
+            {t('spare.barEmpty')}
+          </button>
+        ) : (
+          <>
+            <p className={styles.barTitle}>{plural(t, 'spare.chosen', totals.copies)}</p>
+            <p className={styles.barTotal}>{plural(t, 'spare.barTotal', totals.copies, { price: `R$ ${totals.cents / 100}` })}</p>
+            <button type="button" className={styles.barSell} onClick={() => setView({ kind: 'draft' })}>
+              {t('spare.sell')}
+            </button>
+          </>
+        )}
+      </div>
+    );
+
   return (
-    <div className={styles.page} data-testid="spare-page">
+    <div className={`${styles.page} ${styles.pageWide}`} data-testid="spare-page">
       <button type="button" className={styles.back} onClick={onBack}>
         {t('spare.backToCollection')}
       </button>
       <h1 className={styles.title}>{plural(t, 'spare.title', spare.totalSpare)}</h1>
-      {ruleRow(spare, () => setView({ kind: 'rule' }), t)}
-      {spare.ideaDecks.map((deck) => (
-        <IdeaNotice key={deck.deckId} deck={deck} />
-      ))}
-      {spare.rows.length === 0 ? (
-        <p className={styles.empty}>{t('spare.empty')}</p>
-      ) : (
-        <>
-          <Chips label={t('spare.sortLabel')} options={SORTS.map((entry) => ({ value: entry.sort, text: t(entry.labelKey) }))} value={sort} onChange={setSort} />
-          <Chips
-            label={t('spare.showLabel')}
-            options={PRICE_FILTERS.map((value) => ({ value, text: t(FILTER_LABEL_KEY[String(value)] ?? 'spare.showAll') }))}
-            value={filter}
-            onChange={setFilter}
-          />
-          {visible.length === 0 ? (
-            <p className={styles.empty}>{t('spare.noRowsInFilter')}</p>
-          ) : (
-            <ul className={styles.list} aria-label={t('spare.rowList')}>
-              {visible.map((row) => (
-                <SpareRowItem
-                  key={rowKey(row)}
-                  row={row}
-                  rows={spare.rows}
-                  quantity={chosen[rowKey(row)] ?? 0}
-                  onQuantity={(quantity) => setQuantity(row, quantity)}
-                  onWhy={(picked) => setView({ kind: 'why', row: picked })}
-                  t={t}
-                />
-              ))}
-            </ul>
-          )}
-          <div className={styles.bar} data-testid="spare-bar">
-            {totals.copies === 0 ? (
-              <button type="button" className={styles.barEmpty} disabled>
-                {t('spare.barEmpty')}
-              </button>
-            ) : (
+      <div className={styles.layout}>
+        <div className={styles.panel}>
+          <div className={styles.panelTop}>
+            {ruleRow(spare, () => setView({ kind: 'rule' }), t)}
+            {spare.ideaDecks.map((deck) => (
+              <IdeaNotice key={deck.deckId} deck={deck} />
+            ))}
+            {spare.rows.length > 0 && (
               <>
-                <p className={styles.barTitle}>{plural(t, 'spare.chosen', totals.copies)}</p>
-                <p className={styles.barTotal}>{plural(t, 'spare.barTotal', totals.copies, { price: `R$ ${totals.cents / 100}` })}</p>
-                <button type="button" className={styles.barSell} onClick={() => setView({ kind: 'draft' })}>
-                  {t('spare.sell')}
-                </button>
+                <Chips label={t('spare.sortLabel')} options={SORTS.map((entry) => ({ value: entry.sort, text: t(entry.labelKey) }))} value={sort} onChange={setSort} />
+                <Chips
+                  label={t('spare.showLabel')}
+                  options={PRICE_FILTERS.map((value) => ({ value, text: t(FILTER_LABEL_KEY[String(value)] ?? 'spare.showAll') }))}
+                  value={filter}
+                  onChange={setFilter}
+                />
               </>
             )}
           </div>
-        </>
-      )}
+          {barNode}
+        </div>
+        {spare.rows.length === 0 ? (
+          <p className={styles.empty}>{t('spare.empty')}</p>
+        ) : visible.length === 0 ? (
+          <p className={styles.empty}>{t('spare.noRowsInFilter')}</p>
+        ) : (
+          <ul className={styles.list} aria-label={t('spare.rowList')}>
+            {visible.map((row) => (
+              <SpareRowItem
+                key={rowKey(row)}
+                row={row}
+                rows={spare.rows}
+                quantity={chosen[rowKey(row)] ?? 0}
+                onQuantity={(quantity) => setQuantity(row, quantity)}
+                onWhy={(picked) => setView({ kind: 'why', row: picked })}
+                t={t}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

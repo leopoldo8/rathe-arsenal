@@ -87,8 +87,7 @@ describe('SparePage (S21)', () => {
     expect(rows[3]).toHaveTextContent(/Snatch \(Vermelho\)2 sobrando/);
     expect(rows[3]).not.toHaveTextContent('Versão não informada');
     for (const row of rows) {
-      expect(within(row).getByRole('button', { name: 'Por que sobra?' })).toBeInTheDocument();
-      expect(within(row).getByText('Ver na LigaFAB')).toBeInTheDocument();
+      expect(within(row).getByRole('button', { name: /^Mais ações de / })).toHaveAttribute('aria-haspopup', 'menu');
       expect(within(row).getByRole('status')).toHaveTextContent('0');
       expect(within(row).getByRole('button', { name: /^Menos uma cópia/ })).toBeDisabled();
     }
@@ -226,13 +225,81 @@ describe('SparePage (S21)', () => {
     expect(byName('Delta')).not.toHaveTextContent('A Cúpula DT');
   });
 
-  it("Ver na LigaFAB is on the seller's screens", async () => {
+  it('"Ver na LigaFAB" is a menu item of each row that opens the store in a new tab', async () => {
     await renderPage(response());
     await screen.findByTestId('spare-page');
 
-    const links = within(screen.getByRole('list', { name: 'Cartas sobrando' })).getAllByText('Ver na LigaFAB');
-    expect(links).toHaveLength(8);
-    expect(links[0]!.closest('a')).toHaveAttribute('href', expect.stringContaining('Enlightened%20Strike'));
-    expect(links[0]!.closest('a')).toHaveAttribute('target', '_blank');
+    await userEvent.click(within(rowsOf()[0]!).getByRole('button', { name: /^Mais ações de Enlightened Strike/ }));
+    const link = within(screen.getByRole('menu')).getByRole('menuitem', { name: /Ver na LigaFAB/ });
+    expect(link).toHaveAttribute('href', expect.stringContaining('Enlightened%20Strike'));
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+  });
+
+  it('"Por que sobra?" from the row menu opens the reasons for that card', async () => {
+    await renderPage(response());
+    await screen.findByTestId('spare-page');
+
+    await userEvent.click(within(rowsOf()[6]!).getByRole('button', { name: /^Mais ações de Pack Hunt/ }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Por que sobra?' }));
+
+    expect(screen.queryByTestId('spare-page')).toBeNull();
+    expect(screen.getByText(/Pack Hunt/)).toBeInTheDocument();
+  });
+
+  it('the row menu button comes after the quantity stepper', async () => {
+    await renderPage(response());
+    await screen.findByTestId('spare-page');
+
+    const first = rowsOf()[0]!;
+    const stepper = within(first).getByRole('group', { name: /^Quantas cópias de/ });
+    const more = within(first).getByRole('button', { name: /^Mais ações de/ });
+    expect(stepper.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe('SparePage row menu keyboard and focus', () => {
+  it('opens, moves with the arrow keys, closes with Escape and returns focus to the button', async () => {
+    await renderPage(response());
+    await screen.findByTestId('spare-page');
+    const button = within(rowsOf()[0]!).getByRole('button', { name: /^Mais ações de/ });
+
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(button);
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+    const items = within(screen.getByRole('menu')).getAllByRole('menuitem');
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveFocus();
+
+    await userEvent.keyboard('{ArrowDown}');
+    expect(items[1]).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(items[0]).toHaveFocus();
+    await userEvent.keyboard('{ArrowUp}');
+    expect(items[1]).toHaveFocus();
+
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveFocus();
+  });
+
+  it('closes on a click outside', async () => {
+    await renderPage(response());
+    await screen.findByTestId('spare-page');
+
+    await userEvent.click(within(rowsOf()[0]!).getByRole('button', { name: /^Mais ações de/ }));
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('heading', { level: 1 }));
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('keeps only one menu open at a time', async () => {
+    await renderPage(response());
+    await screen.findByTestId('spare-page');
+
+    await userEvent.click(within(rowsOf()[0]!).getByRole('button', { name: /^Mais ações de/ }));
+    await userEvent.click(within(rowsOf()[1]!).getByRole('button', { name: /^Mais ações de/ }));
+    expect(screen.getAllByRole('menu')).toHaveLength(1);
   });
 });
