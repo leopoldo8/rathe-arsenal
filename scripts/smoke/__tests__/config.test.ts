@@ -20,6 +20,20 @@ describe('parseConfig', () => {
     const ok = parseConfig({ ...base, SMOKE_SIGN_IN: 'code', SMOKE_EMAIL: 'A@B.c', SMOKE_INBOX: 'dev-response' });
     assert.equal(ok.email, 'a@b.c');
   });
+  it('accepts the workflow env in password mode: SMOKE_INBOX=resend with empty Resend and Turnstile secrets', () => {
+    const config = parseConfig({
+      ...base,
+      SMOKE_SIGN_IN: 'password',
+      SMOKE_EMAIL: 'a@b.c',
+      SMOKE_PASSWORD: 'p',
+      SMOKE_INBOX: 'resend',
+      RESEND_INBOUND_API_KEY: '',
+      SMOKE_TURNSTILE_TOKEN: '',
+    });
+    assert.equal(config.signIn, 'password');
+    assert.equal(config.resendApiKey, null);
+    assert.equal(config.turnstileToken, null);
+  });
   it('validates the expected commit and widens the total bound to cover its wait', () => {
     assert.throws(() => parseConfig({ ...base, SMOKE_EXPECT_COMMIT: 'not-a-sha' }), /SHA/);
     const without = parseConfig(base);

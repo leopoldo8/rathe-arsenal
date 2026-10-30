@@ -16,6 +16,10 @@ describe('missingInputs', () => {
     assert.deepEqual(missingInputs(password), ['SMOKE_PASSWORD']);
     assert.deepEqual(missingInputs({ ...password, SMOKE_PASSWORD: 'p' }), []);
   });
+  it('does not ask for the Resend key or the Turnstile token in password mode', () => {
+    const workflowEnv = { SMOKE_BASE_URL: 'https://x.example', SMOKE_SIGN_IN: 'password', SMOKE_EMAIL: 'a@b.c', SMOKE_PASSWORD: 'p', RESEND_INBOUND_API_KEY: '', SMOKE_TURNSTILE_TOKEN: '', SMOKE_INBOX: 'resend' };
+    assert.deepEqual(missingInputs(workflowEnv), []);
+  });
   it('needs only the URL when sign-in is none', () => {
     assert.deepEqual(missingInputs({ SMOKE_BASE_URL: 'https://x.example', SMOKE_SIGN_IN: 'none' }), []);
   });

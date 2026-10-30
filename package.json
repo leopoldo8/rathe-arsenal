@@ -36,6 +36,7 @@
     "seed:fixture": "tsx scripts/seed-fixture.ts",
     "smoke": "tsx scripts/smoke/run.ts",
     "smoke:setup": "tsx scripts/smoke/setup.ts",
+    "smoke:configure": "tsx scripts/smoke/configure.ts",
     "smoke:test": "tsx --test scripts/smoke/__tests__/*.test.ts",
     "smoke:typecheck": "tsc -p scripts/smoke"
   },
