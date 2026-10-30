@@ -1,4 +1,5 @@
 export const deckEdit = {
+  sectionsLabel: 'Deck sections',
   pageTitle: 'Edit deck',
   backToDeck: '← Back to deck',
   backToDeckAria: 'Back to deck {{name}}',

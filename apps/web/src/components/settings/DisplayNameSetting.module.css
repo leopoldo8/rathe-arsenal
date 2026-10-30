@@ -84,3 +84,28 @@
 .error:empty {
   display: none;
 }
+
+/* Desktop: label and hint at the left, the field and its answer at the right, as the section grid lays them. */
+@media (min-width: 960px) {
+  .form {
+    display: contents;
+  }
+
+  .label,
+  .hint {
+    grid-column: 1;
+  }
+
+  .row,
+  .ok,
+  .error {
+    grid-column: 2;
+    max-inline-size: 520px;
+  }
+}
+
+@media (min-width: 960px) {
+  .label {
+    padding-block-start: var(--ra-space-3);
+  }
+}

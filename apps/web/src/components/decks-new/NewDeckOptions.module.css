@@ -71,3 +71,25 @@
   font-size: var(--ra-text-h2);
   line-height: 1;
 }
+
+/* Desktop: inside the two-column list of "Novo deck", each way is a rail row and its panel goes to the right column. */
+@media (min-width: 960px) {
+  .group {
+    display: contents;
+  }
+
+  .option {
+    grid-column: 1;
+  }
+
+  .group[data-open='true'] > .option {
+    border: 1px solid var(--ra-accent-soft-bd);
+    background: var(--ra-bg-surface);
+  }
+
+  .group > :not(.option) {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+    padding-inline: 0;
+  }
+}

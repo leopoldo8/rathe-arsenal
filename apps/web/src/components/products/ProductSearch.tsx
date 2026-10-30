@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from '@tanstack/react-router';
 import { useProductsQuery } from '../../api/products';
+import { RailLayout } from '../ui/RailLayout';
+import { ProductSteps } from './ProductSteps';
 import styles from './Products.module.css';
 
 /** "Qual deck você comprou?": the ready-made decks with a stored decklist, found by product or hero name. */
@@ -12,13 +14,21 @@ export function ProductSearch(): React.ReactElement {
   const list = products.data?.products ?? [];
 
   return (
-    <div className={styles.page}>
-      <Link to="/add-cards" className={styles.back}>
-        <span aria-hidden="true">‹ </span>
-        {t('products.back')}
-      </Link>
-      <h1 className={styles.title}>{t('products.searchTitle')}</h1>
-      <p className={styles.subtitle}>{t('products.searchSubtitle')}</p>
+    <RailLayout
+      className={styles.wide}
+      railLabel={t('products.stepsLabel')}
+      rail={<ProductSteps current="choose" />}
+      head={
+        <>
+          <Link to="/add-cards" className={styles.back}>
+            <span aria-hidden="true">‹ </span>
+            {t('products.back')}
+          </Link>
+          <h1 className={styles.title}>{t('products.searchTitle')}</h1>
+          <p className={styles.subtitle}>{t('products.searchSubtitle')}</p>
+        </>
+      }
+    >
       <input
         type="search"
         className={styles.search}
@@ -45,6 +55,6 @@ export function ProductSearch(): React.ReactElement {
           </li>
         ))}
       </ul>
-    </div>
+    </RailLayout>
   );
 }

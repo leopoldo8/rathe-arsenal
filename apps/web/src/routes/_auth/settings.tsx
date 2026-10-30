@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '../../auth/useAuth';
 import { DeleteAccountModal } from '../../components/delete-account-modal';
 import { ThemeToggle } from '../../components/shell/ThemeToggle';
@@ -10,6 +10,7 @@ import { SpareRuleSetting } from '../../components/settings/SpareRuleSetting';
 import { LanguageToggle } from '../../components/shell/LanguageToggle';
 import { useTranslation } from 'react-i18next';
 import { useCreditsQuery, useTriggerUrlSyncMutation, useUrlSyncStatusQuery } from '../../api/store-admin';
+import { IndexRail, RailLayout } from '../../components/ui/RailLayout';
 import styles from './settings.module.css';
 
 function CreditsLine() {
@@ -120,10 +121,25 @@ export function SettingsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const isAdmin = user?.role === 'admin';
+  const sectionItems = useMemo(() => [
+    { id: 'section-conta', label: t('settings.accountHeading') },
+    { id: 'section-profile', label: t('settings.yourProfile') },
+    { id: 'section-contact', label: t('sharing.contact.settingsTitle') },
+    { id: 'section-spare-rule', label: t('spare.settingsHeading') },
+    { id: 'section-theme', label: t('settings.theme') },
+    { id: 'section-language', label: t('settings.languageHeading') },
+    ...(isAdmin ? [{ id: 'section-store-sync', label: t('settings.storeCatalogSync') }] : []),
+    { id: 'section-account', label: t('settings.dangerZone'), tone: 'danger' as const },
+  ], [t, isAdmin]);
 
   return (
-    <div className={styles.page}>
-      <h1 className={styles.pageHeading}>{t('settings.accountSettings')}</h1>
+    <RailLayout
+      className={styles.page}
+      railLabel={t('settings.sectionsLabel')}
+      rail={<IndexRail items={sectionItems} />}
+      head={<h1 className={styles.pageHeading}>{t('settings.accountSettings')}</h1>}
+    >
 
       {/* ---- Section: Account (e-mail and password) ---- */}
       <AccountSetting className={styles.section} />
@@ -200,6 +216,6 @@ export function SettingsPage() {
           navigate({ to: '/' });
         }}
       />
-    </div>
+    </RailLayout>
   );
 }

@@ -26,6 +26,13 @@
   color: var(--ra-fg-secondary);
 }
 
+/* ---------- Empty state: in the page container, aligned with the top bar and the footer ---------- */
+.emptyPage {
+  inline-size: 100%;
+  max-inline-size: var(--ra-page-max-inline);
+  margin-inline: auto;
+}
+
 /* ---------- Populated state ---------- */
 .populated {
   display: flex;

@@ -212,3 +212,31 @@
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
 }
+
+/* Desktop: the e-mail and the password are rows of the section grid, label at the left and control at the right. */
+@media (min-width: 960px) {
+  .field,
+  .passwordRow {
+    display: contents;
+  }
+
+  .value {
+    max-inline-size: 520px;
+  }
+
+  .action {
+    justify-self: start;
+  }
+
+  .note {
+    grid-column: 2;
+    margin-block-start: 0;
+  }
+}
+
+@media (min-width: 960px) {
+  .label,
+  .passwordState {
+    padding-block-start: var(--ra-space-3);
+  }
+}

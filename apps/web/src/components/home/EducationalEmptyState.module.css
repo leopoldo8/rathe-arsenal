@@ -131,3 +131,18 @@
 .manualAddLink:hover {
   color: var(--ra-fg-primary);
 }
+
+/* Desktop: the explainer fills the page container, three steps side by side. */
+@media (min-width: 960px) {
+  .container {
+    max-width: none;
+  }
+
+  .lead {
+    max-width: 640px;
+  }
+
+  .steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

@@ -96,7 +96,7 @@ export function DeckEditForm({ deck, tags }: IDeckEditFormProps): React.ReactEle
   return (
     <div className={styles.stack}>
       <section className={styles.panel} data-testid="deck-edit-panel">
-        <div className={styles.field}>
+        <div id="deck-edit-field-name" className={styles.field}>
           <label className={styles.label} htmlFor={nameId}>
             {t('deckEdit.nameLabel')}
           </label>
@@ -121,7 +121,7 @@ export function DeckEditForm({ deck, tags }: IDeckEditFormProps): React.ReactEle
           )}
         </div>
 
-        <div className={styles.field}>
+        <div id="deck-edit-field-format" className={styles.field}>
           <FormatDropdown
             value={draft.format}
             label={t('deckEdit.formatLabel')}
@@ -129,7 +129,7 @@ export function DeckEditForm({ deck, tags }: IDeckEditFormProps): React.ReactEle
           />
         </div>
 
-        <div className={styles.field}>
+        <div id="deck-edit-field-status" className={styles.field}>
           <span className={styles.label}>{t('deckEdit.statusLabel')}</span>
           <DeckStatusSegments
             value={draft.status}
@@ -137,14 +137,14 @@ export function DeckEditForm({ deck, tags }: IDeckEditFormProps): React.ReactEle
           />
         </div>
 
-        <div className={styles.field}>
+        <div id="deck-edit-field-tags" className={styles.field}>
           <span id={tagsLabelId} className={styles.label}>
             {t('deckEdit.tagsLabel')}
           </span>
           <TagChipRow deckId={deck.id} tags={tags} />
         </div>
 
-        <div className={styles.field}>
+        <div id="deck-edit-field-notes" className={styles.field}>
           <label className={styles.label} htmlFor={notesId}>
             {t('deckEdit.notesLabel')}
           </label>

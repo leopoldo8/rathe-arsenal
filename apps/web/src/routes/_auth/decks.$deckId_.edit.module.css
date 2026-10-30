@@ -1,18 +1,17 @@
 /* /decks/:deckId/edit: metadata screen (EDIT-02..04, handoff 6) */
 
 .page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ra-space-6);
+  /* The rail layout draws the frame; on a phone the form keeps its own width. */
+  --rail-phone-max-inline: var(--ra-page-form-inline);
+  --rail-gap: var(--ra-space-6);
   padding: 0 0 var(--ra-space-12);
-  max-inline-size: var(--ra-page-max-inline);
-  inline-size: 100%;
-  margin-inline: auto;
   box-sizing: border-box;
 }
 
-.page > * {
-  max-inline-size: var(--ra-page-form-inline);
+@media (min-width: 960px) {
+  .page {
+    --rail-phone-max-inline: var(--ra-page-max-inline);
+  }
 }
 
 .header {

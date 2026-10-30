@@ -180,6 +180,7 @@ export const decks = {
   addCardsTitle: 'Adicionar cartas',
   addCardsPasteLabel: 'Link de deck ou lista de cartas',
   addCardsPastePlaceholder: 'Cole aqui',
+  addCardsWaysLabel: 'Outras formas de adicionar',
   addCardsPasteHint: 'Cole um link de deck (do Fabrary, por exemplo) ou uma lista de cartas',
   addCardsRowProduct: 'Comprei um deck pronto',
   addCardsRowCsv: 'Enviar uma planilha (.csv)',

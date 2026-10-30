@@ -47,6 +47,7 @@ export function DeckDangerZone({
 
   return (
     <section
+      id="deck-edit-danger"
       className={styles.zone}
       aria-labelledby="deck-edit-danger-title"
       data-testid="deck-danger-zone"

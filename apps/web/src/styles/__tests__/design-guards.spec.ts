@@ -1223,9 +1223,7 @@ describe('Page frame — every page starts its title and content at the same pla
     ['Library', LIBRARY_ROUTE_CSS],
     ['Sources', SOURCES_ROUTE_CSS],
     ['Add cards', ADD_CARDS_SHELL_CSS],
-    ['Settings', SETTINGS_CSS],
     ['New deck', NEW_DECK_PAGE_CSS],
-    ['Edit deck', EDIT_PAGE_CSS],
   ] as const)('%s page column uses the shared page width, centred', (_name, css) => {
     const body = ruleBody(css, '.page');
     expect(body).toContain('max-inline-size: var(--ra-page-max-inline)');
@@ -1233,11 +1231,22 @@ describe('Page frame — every page starts its title and content at the same pla
     expect(body).toContain('margin-inline: auto');
   });
 
+  it('draws the rail layout in the shared page width, centred, from desktop width', () => {
+    const css = readCssWithMedia('components/ui/RailLayout/RailLayout.module.css');
+    const frame = ruleBody(readCss('components/ui/RailLayout/RailLayout.module.css'), '.frame');
+    expect(frame).toContain('inline-size: 100%');
+    expect(frame).toContain('margin-inline: auto');
+    expect(atRuleBody(css, '@media (min-width: 960px)')).toContain('max-inline-size: var(--ra-page-max-inline)');
+  });
+
   it.each([
     ['Settings', SETTINGS_CSS],
     ['Edit deck', EDIT_PAGE_CSS],
-  ] as const)('%s keeps its form narrow but aligned to the left of the page column', (_name, css) => {
-    expect(ruleBody(css, '.page > *')).toContain('max-inline-size: var(--ra-page-form-inline)');
+  ] as const)('%s keeps its form narrow on a phone and fills the page column from desktop width', (_name, css) => {
+    expect(ruleBody(css, '.page')).toContain('--rail-phone-max-inline: var(--ra-page-form-inline)');
+    expect(atRuleBody(readCssWithMedia(_name === 'Settings' ? 'routes/_auth/settings.module.css' : 'routes/_auth/decks.$deckId_.edit.module.css'), '@media (min-width: 960px)')).toContain(
+      '--rail-phone-max-inline: var(--ra-page-max-inline)',
+    );
   });
 });
 

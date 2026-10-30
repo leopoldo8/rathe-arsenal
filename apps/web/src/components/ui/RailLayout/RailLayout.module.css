@@ -1,0 +1,68 @@
+/* Forms and steps: rail at the left from desktop width, the phone's single column below it. */
+
+.frame {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rail-gap, var(--ra-space-4));
+  inline-size: 100%;
+  max-inline-size: var(--rail-phone-max-inline, 640px);
+  margin-inline: auto;
+}
+
+.split {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rail-gap, var(--ra-space-4));
+  min-inline-size: 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rail-gap, var(--ra-space-4));
+  min-inline-size: 0;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rail-gap, var(--ra-space-4));
+  min-inline-size: 0;
+}
+
+.split[data-rail-on-phone='hidden'] .rail {
+  display: none;
+}
+
+
+@media (min-width: 960px) {
+  .frame {
+    max-inline-size: var(--ra-page-max-inline);
+    gap: var(--ra-space-6);
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: var(--rail-width, 260px) minmax(0, 1fr);
+    gap: var(--ra-space-12);
+    align-items: start;
+  }
+
+  .split[data-has-rail='true'] .content {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .split[data-has-rail='false'] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .split[data-rail-on-phone] .rail {
+    display: flex;
+    grid-column: 1;
+    grid-row: 1;
+    position: sticky;
+    inset-block-start: var(--ra-space-6);
+  }
+}

@@ -1,5 +1,8 @@
 export const products = {
   back: 'Adicionar cartas',
+  stepChoose: 'Escolher o deck',
+  stepConfirm: 'Confirmar e adicionar',
+  stepsLabel: 'Passos',
   searchTitle: 'Qual deck você comprou?',
   searchSubtitle: 'Armory Deck, Blitz Deck ou Silver Age.',
   searchAria: 'Buscar o deck pelo nome do produto ou do herói',

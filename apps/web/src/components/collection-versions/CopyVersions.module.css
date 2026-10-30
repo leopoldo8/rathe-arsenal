@@ -368,3 +368,8 @@
   font-weight: var(--ra-weight-semibold);
   cursor: pointer;
 }
+
+/* Import's version page in the rail layout: the marking panel is the rail, a little wider than a step list. */
+.bulkPage {
+  --rail-width: 360px;
+}

@@ -1,6 +1,11 @@
 export const collectionReader = {
   pasteLink: 'Colar uma lista',
   back: 'Adicionar cartas',
+  stepChooseFile: 'Escolher o arquivo',
+  stepPasteList: 'Colar a lista',
+  stepRead: 'Ver o que foi lido',
+  stepAdd: 'Adicionar as prontas',
+  stepsLabel: 'Passos',
 
   // ListReader (r3-list-phone)
   listTitle: 'Lista colada',

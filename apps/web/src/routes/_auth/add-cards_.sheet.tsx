@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ImportReport } from '../../components/collection-reader/ImportReport';
 import { takePendingImportFile } from '../../lib/pending-import-file';
+import { AddSteps } from '../../components/collection-reader/AddSteps';
+import { RailLayout } from '../../components/ui/RailLayout';
 import styles from '../../components/collection-reader/CollectionReader.module.css';
 
 export const Route = createFileRoute('/_auth/add-cards_/sheet')({
@@ -17,12 +19,20 @@ export function AddCardsSheetPage(): React.ReactElement {
 
   if (file !== null) return <ImportReport file={file} onChooseAnother={() => setFile(null)} />;
   return (
-    <div className={styles.page}>
-      <Link to="/add-cards" className={styles.back}>
-        <span aria-hidden="true">‹ </span>
-        {t('collectionReader.back')}
-      </Link>
-      <h1 className={styles.title}>{t('collectionReader.sheetTitle')}</h1>
+    <RailLayout
+      className={styles.wide}
+      railLabel={t('collectionReader.stepsLabel')}
+      rail={<AddSteps current="choose" chooseKey="collectionReader.stepChooseFile" />}
+      head={
+        <>
+          <Link to="/add-cards" className={styles.back}>
+            <span aria-hidden="true">‹ </span>
+            {t('collectionReader.back')}
+          </Link>
+          <h1 className={styles.title}>{t('collectionReader.sheetTitle')}</h1>
+        </>
+      }
+    >
       <div className={styles.dropZone}>
         <p className={styles.note}>{t('collectionReader.sheetHint')}</p>
         <input
@@ -40,6 +50,6 @@ export function AddCardsSheetPage(): React.ReactElement {
           {t('collectionReader.sheetChoose')}
         </label>
       </div>
-    </div>
+    </RailLayout>
   );
 }
