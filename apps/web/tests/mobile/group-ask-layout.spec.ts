@@ -140,8 +140,10 @@ test.describe('a visitor signed out', () => {
     expect(await y(page, page.getByRole('heading', { level: 1 })), 'the title is above the first section').toBeLessThan(await y(page, give));
     const rows = page.getByTestId('shared-card');
     expect(await rows.count()).toBeGreaterThan(5);
-    expect(await rows.first().getByRole('button', { name: /^Oferecer / }).isVisible()).toBe(true);
-    expect(await y(page, page.getByRole('button', { name: 'Copiar lista em texto' })), 'the copy button closes the page').toBeGreaterThan(await y(page, store));
+    expect(await rows.first().getByRole('checkbox', { name: /^Marcar / }).isVisible(), 'each card can be ticked').toBe(true);
+    const copy = page.getByRole('button', { name: 'Copiar lista em texto' });
+    expect(await y(page, copy), 'the copy button closes the title block, under the count').toBeGreaterThan(await y(page, give));
+    expect(await y(page, copy), 'the copy button is above the list').toBeLessThan(await y(page, rows.first()));
     await expectNoHorizontalScroll(page);
   });
 });
@@ -161,15 +163,20 @@ test.describe('a visitor who has some of the cards', () => {
 
     const summary = page.getByText('Você tem 4 cópias de 2 cartas que Caio procura.');
     const give = page.getByRole('heading', { name: 'Quem tiver, fala com Caio' });
-    const all = page.getByRole('button', { name: 'Oferecer as 2 cartas que você tem' });
     await expect(summary).toBeVisible();
     expect(await y(page, summary)).toBeLessThan(await y(page, give));
-    expect(await y(page, give)).toBeLessThan(await y(page, all));
-    expect(await y(page, all)).toBeLessThan(await y(page, page.getByTestId('shared-card').first()));
+    expect(await y(page, give)).toBeLessThan(await y(page, page.getByTestId('shared-card').first()));
     const first = page.getByTestId('shared-card').first();
     await expect(first).toContainText('Você tem 3');
+    await expect(page.getByTestId('offer-bar'), 'no bar before a card is ticked').toHaveCount(0);
 
-    // r3-offer-phone: the combined button opens the message before WhatsApp.
+    // Tick the two cards the visitor has; the bar offers them.
+    await page.getByRole('checkbox', { name: 'Marcar Reckless Swing (Azul)' }).check();
+    await page.getByRole('checkbox', { name: 'Marcar Nullrune Hood' }).check();
+    const all = page.getByRole('button', { name: 'Oferecer no WhatsApp' });
+    await expect(page.getByTestId('offer-bar')).toContainText('2 cartas selecionadas · 4 cópias');
+
+    // r3-offer-phone: the bar's button opens the message before WhatsApp.
     await all.click();
     const sheet = page.getByTestId('share-dialog');
     await expect(sheet.getByText('Oferecer para Caio')).toBeVisible();

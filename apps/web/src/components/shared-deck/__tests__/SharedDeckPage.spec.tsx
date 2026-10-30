@@ -505,11 +505,11 @@ describe('SharedDeckPage', () => {
       expect(await screen.findByRole('button', { name: 'Copiado' })).toBeInTheDocument();
     });
 
-    it('offers each card to the sharer on WhatsApp instead of a contact bar', async () => {
+    it('lets the visitor tick cards to offer the sharer on WhatsApp instead of a contact bar', async () => {
       api.handlers.set(wantedKey, () => ({ ...WANTED, contactWhatsapp: '5553999990000' }));
       renderPage(undefined, undefined, MISSING_TOKEN);
 
-      expect(await screen.findAllByRole('button', { name: /^Oferecer / })).toHaveLength(2);
+      expect(await screen.findAllByRole('checkbox', { name: /^Marcar / })).toHaveLength(2);
       expect(screen.queryByTestId('shared-contact-pill')).not.toBeInTheDocument();
       expect(screen.queryByTestId('shared-contact-bar')).not.toBeInTheDocument();
     });

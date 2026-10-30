@@ -102,7 +102,7 @@ describe('SharedMissingPage', () => {
     const storeSummary = screen.getByText('3 cópias · R$ 289,98 · envia para todo o Brasil');
     const copy = screen.getByRole('button', { name: 'Copiar lista em texto' });
     const footer = screen.getByTestId('shared-deck-footer');
-    const inOrder = [eyebrow, title, deckName, hint, giveTitle, giveHint, storeButton, storeSummary, copy, footer];
+    const inOrder = [eyebrow, title, deckName, hint, giveTitle, giveHint, copy, storeButton, storeSummary, footer];
     inOrder.slice(1).forEach((node, index) => {
       expect(inOrder[index]!.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING, `block ${index + 1} follows block ${index}`).toBeTruthy();
     });
@@ -117,7 +117,8 @@ describe('SharedMissingPage', () => {
     expect(within(rows[0]!).getByText('3 cópias')).toBeInTheDocument();
     expect(within(rows[1]!).getByText('1 cópia')).toBeInTheDocument();
     expect(within(rows[2]!).getByText('1 cópia')).toBeInTheDocument();
-    for (const row of rows) expect(within(row).getByRole('button', { name: /^Oferecer / })).toBeInTheDocument();
+    for (const row of rows) expect(within(row).getByRole('checkbox', { name: /^Marcar / })).not.toBeChecked();
+    expect(screen.queryByTestId('offer-bar')).not.toBeInTheDocument();
     expect(screen.queryByText(/Você tem/)).not.toBeInTheDocument();
     expect(screen.queryByTestId('shared-signup-prompt')).not.toBeInTheDocument();
 
@@ -151,7 +152,7 @@ describe('SharedMissingPage', () => {
     expect(within(rows[0]!).getByText('Você tem 3')).toBeInTheDocument();
     expect(within(rows[1]!).getByText('Você tem 1')).toBeInTheDocument();
     expect(within(rows[2]!).queryByText(/Você tem/)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Oferecer as 2 cartas que você tem' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Oferecer/ })).not.toBeInTheDocument();
   });
 
   it('a signed-in visitor sees what they have and what is spare', () => {
@@ -173,8 +174,7 @@ describe('SharedMissingPage', () => {
     expect(rows[1]).toHaveTextContent('Você tem 3 · 1 sobrando');
     expect(rows[2]).toHaveTextContent('Bloodrush Bellow (Amarelo)');
     expect(within(rows[2]!).queryByText(/Você tem/)).not.toBeInTheDocument();
-    // One button for the cards the visitor has.
-    expect(screen.getByRole('button', { name: 'Oferecer as 2 cartas que você tem' })).toBeInTheDocument();
+    expect(screen.getAllByRole('checkbox')).toHaveLength(3);
   });
 
   it('asks the spare-rule question before any count appears', async () => {
@@ -193,7 +193,7 @@ describe('SharedMissingPage', () => {
     expect(await screen.findByText('Antes de mostrar o que você tem')).toBeInTheDocument();
     expect(screen.getByText('Sobram 20 cópias')).toBeInTheDocument();
     expect(screen.queryByText(/Você tem 3/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Oferecer/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
   it('the owner sees no offer on their own page', () => {
@@ -203,7 +203,7 @@ describe('SharedMissingPage', () => {
     );
 
     expect(screen.getAllByTestId('shared-card')).toHaveLength(3);
-    expect(screen.queryByRole('button', { name: /Oferecer/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     expect(screen.queryByText(/Você tem/)).not.toBeInTheDocument();
   });
 

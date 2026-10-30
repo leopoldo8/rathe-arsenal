@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/useAuth';
 import type { ISharedDeckResponse } from '../../api/shared-decks';
 import { SharedDeckFooter } from './SharedDeckFooter';
+import { SharedGlossaryLink } from './SharedGlossaryLink';
 import { SharedMissingGallery } from './SharedMissingGallery';
 import { buildMissingText } from './sharedDeckModel';
 import { SharedTopBar } from './SharedTopBar';
@@ -40,33 +41,47 @@ export function SharedMissingPage({ deck }: ISharedMissingPageProps): React.Reac
     resetTimer.current = setTimeout(() => setCopyState('idle'), COPIED_FEEDBACK_MS);
   }
 
+  const glossaryBackLabel = t('glossary.page.backToSharedList', { name: deck.sharerName });
+  const intro = (
+    <header className={styles.header}>
+      <p className={styles.eyebrow}>{t('sharing.missingPage.eyebrow')}</p>
+      <h1 className={styles.title}>{t('sharing.missingPage.title', { name: deck.sharerName })}</h1>
+      <p className={styles.deckName}>{deck.name}</p>
+      <p className={styles.pitchHint}>{t('sharing.missingPage.pitchHint')}</p>
+    </header>
+  );
+
   return (
     <div className={styles.page}>
       <SharedTopBar shareToken={deck.token} isSignedIn={user !== null} offerSignUp={false} />
       <main className={styles.main}>
-        <header className={styles.header}>
-          <p className={styles.eyebrow}>{t('sharing.missingPage.eyebrow')}</p>
-          <h1 className={styles.title}>{t('sharing.missingPage.title', { name: deck.sharerName })}</h1>
-          <p className={styles.deckName}>{deck.name}</p>
-          <p className={styles.pitchHint}>{t('sharing.missingPage.pitchHint')}</p>
-        </header>
         {deck.missing.length === 0 ? (
-          <p className={styles.empty}>{t('sharing.wanted.empty')}</p>
+          <div className={styles.emptyColumn}>
+            {intro}
+            <p className={styles.empty}>{t('sharing.wanted.empty')}</p>
+          </div>
         ) : (
-          <>
-            <SharedMissingGallery deck={deck} />
-            <button type="button" className={styles.copy} onClick={() => void handleCopy()} data-testid="shared-copy-list">
-              {copyState === 'copied' ? t('sharing.wanted.copied') : t('sharing.wanted.copyList')}
-            </button>
-            <p className={styles.status} role="status">
-              {copyState === 'failed' ? t('sharing.wanted.copyFailed') : ''}
-            </p>
-          </>
+          <SharedMissingGallery
+            deck={deck}
+            intro={intro}
+            railActions={
+              <div className={styles.railActions}>
+                <button type="button" className={styles.copy} onClick={() => void handleCopy()} data-testid="shared-copy-list">
+                  {copyState === 'copied' ? t('sharing.wanted.copied') : t('sharing.wanted.copyList')}
+                </button>
+                <p className={styles.status} role="status">
+                  {copyState === 'failed' ? t('sharing.wanted.copyFailed') : ''}
+                </p>
+                <SharedGlossaryLink glossaryBackLabel={glossaryBackLabel} />
+              </div>
+            }
+          />
         )}
       </main>
       <SharedDeckFooter
         note={t('sharing.missingPage.footNote')}
-        glossaryBackLabel={t('glossary.page.backToSharedList', { name: deck.sharerName })}
+        glossaryBackLabel={glossaryBackLabel}
+        contained
       />
     </div>
   );

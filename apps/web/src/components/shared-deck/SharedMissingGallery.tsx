@@ -6,12 +6,9 @@ import { formatBrl } from '../../utils/format-brl';
 import { useSpareQuery } from '../../api/spare';
 import { SpareRuleSheet } from '../spare/SpareRuleSheet';
 import { OfferButton } from './OfferButton';
+import { EMPTY_SELECTION, giveRowKey, offerItems, setRowCopies, toggleRow, totalCopies, type TOfferSelection } from './offerSelection';
 import { giveRows, inventorySplit, storeRows, type IGiveRow } from './sharedMissingModel';
 import styles from './SharedMissingGallery.module.css';
-
-interface ISharedMissingGalleryProps {
-  readonly deck: ISharedDeckResponse;
-}
 
 const PITCH_CLASS: Readonly<Record<number, string>> = {
   1: styles.pitchRed ?? '',
@@ -45,12 +42,65 @@ function copiesText(row: IGiveRow, t: TTranslate): string {
   return split === null ? copies : `${copies} · ${t('sharing.missingPage.split', { deck: split.deck, inventory: split.inventory })}`;
 }
 
-function GiveRow({ row, deck, askRule }: { readonly row: IGiveRow; readonly deck: ISharedDeckResponse; readonly askRule: boolean }): React.ReactElement {
+interface IGiveRowProps {
+  readonly row: IGiveRow;
+  readonly askRule: boolean;
+  /** Whether the visitor can tick this card (everyone but the owner, once the rule question is answered). */
+  readonly selectable: boolean;
+  /** Copies the visitor offers; undefined when the card is not ticked. */
+  readonly selectedCopies: number | undefined;
+  readonly onToggle: () => void;
+  readonly onCopies: (copies: number) => void;
+}
+
+function CopiesStepper({ row, label, copies, onCopies }: { readonly row: IGiveRow; readonly label: string; readonly copies: number; readonly onCopies: (copies: number) => void }): React.ReactElement {
+  const { t } = useTranslation();
+  return (
+    <div className={styles.stepper} data-testid="offer-stepper">
+      <button
+        type="button"
+        className={styles.stepButton}
+        aria-label={t('sharing.missingPage.copiesLess', { name: label })}
+        disabled={copies <= 1}
+        onClick={() => onCopies(copies - 1)}
+      >
+        <span aria-hidden="true">&minus;</span>
+      </button>
+      <span className={styles.stepValue} data-testid="offer-copies" aria-live="polite">
+        {copies}
+      </span>
+      <button
+        type="button"
+        className={styles.stepButton}
+        aria-label={t('sharing.missingPage.copiesMore', { name: label })}
+        disabled={copies >= row.copies}
+        onClick={() => onCopies(copies + 1)}
+      >
+        <span aria-hidden="true">+</span>
+      </button>
+      <span className={styles.stepOf}>{t('sharing.missingPage.copiesOf', { count: row.copies })}</span>
+    </div>
+  );
+}
+
+function GiveRow({ row, askRule, selectable, selectedCopies, onToggle, onCopies }: IGiveRowProps): React.ReactElement {
   const { t } = useTranslation();
   const label = cardName(row.card.name, row.card.pitch, (key) => t(key));
-  const offerCount = row.offerable > 0 ? row.offerable : row.copies;
+  const selected = selectedCopies !== undefined;
   return (
-    <li className={styles.row} data-testid="shared-card">
+    <li className={selected ? `${styles.row} ${styles.rowSelected}` : styles.row} data-testid="shared-card">
+      {selectable && (
+        <label className={styles.check}>
+          <input
+            type="checkbox"
+            className={styles.checkInput}
+            checked={selected}
+            onChange={onToggle}
+            aria-label={t('sharing.missingPage.selectAria', { name: label })}
+          />
+          <span className={styles.checkBox} aria-hidden="true" />
+        </label>
+      )}
       <CardThumb card={row.card} label={label} />
       <div className={styles.rowText}>
         <NameLine card={row.card} label={label} />
@@ -72,17 +122,7 @@ function GiveRow({ row, deck, askRule }: { readonly row: IGiveRow; readonly deck
           <span>{copiesText(row, t)}</span>
         </p>
       </div>
-      {!deck.isOwner && !askRule && (
-        <OfferButton
-          token={deck.token}
-          sharerName={deck.sharerName}
-          whatsapp={deck.contactWhatsapp}
-          items={[{ name: row.card.name, pitch: row.card.pitch, count: offerCount }]}
-          variant="single"
-          label={t('sharing.missingPage.offer')}
-          ariaLabel={t('sharing.missingPage.offerAria', { name: label })}
-        />
-      )}
+      {selected && <CopiesStepper row={row} label={label} copies={selectedCopies} onCopies={onCopies} />}
     </li>
   );
 }
@@ -214,51 +254,111 @@ function StoreSection({ deck }: { readonly deck: ISharedDeckResponse }): React.R
   );
 }
 
-/**
- * The missing-cards page body: what people can give first, one "Oferecer" per card, and the store's priced rows
- * collapsed after it. The owner sees the same page with no offer buttons and no counts of their own.
- */
-export function SharedMissingGallery({ deck }: ISharedMissingGalleryProps): React.ReactElement {
+interface IOfferBarProps {
+  readonly deck: ISharedDeckResponse;
+  readonly rows: readonly IGiveRow[];
+  readonly selection: TOfferSelection;
+  readonly onClear: () => void;
+}
+
+/** Sticks to the bottom once a card is ticked: what is selected, "Limpar", and the button that opens the message. */
+function OfferBar({ deck, rows, selection, onClear }: IOfferBarProps): React.ReactElement {
   const { t } = useTranslation();
+  const items = offerItems(rows, selection);
+  return (
+    <div className={styles.offerBar} data-testid="offer-bar">
+      <p className={styles.offerSummary} role="status">
+        {t('sharing.missingPage.selectedCards', { count: items.length })} · {t('sharing.missingPage.selectedCopies', { count: totalCopies(items) })}
+      </p>
+      <div className={styles.offerActions}>
+        <OfferButton
+          token={deck.token}
+          sharerName={deck.sharerName}
+          whatsapp={deck.contactWhatsapp}
+          items={items}
+          variant="all"
+          label={t('sharing.missingPage.offerSelected')}
+        />
+        <button type="button" className={styles.clear} onClick={onClear}>
+          {t('sharing.missingPage.clearSelection')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface ISharedMissingGalleryProps {
+  readonly deck: ISharedDeckResponse;
+  /** The page's title block: the left column on a desktop, above the list on a phone. */
+  readonly intro?: React.ReactNode;
+  /** What closes the left column: the copy button and the glossary link. */
+  readonly railActions?: React.ReactNode;
+}
+
+/**
+ * The missing-cards page body. The left column holds the title, the count and the page's actions; the right one the
+ * list people tick what they have from, the bar that offers it, and the store's priced rows collapsed after it. The owner
+ * sees the same page with no checkboxes and no counts of their own.
+ */
+export function SharedMissingGallery({ deck, intro, railActions }: ISharedMissingGalleryProps): React.ReactElement {
+  const { t } = useTranslation();
+  const [selection, setSelection] = useState<TOfferSelection>(EMPTY_SELECTION);
   const rows = giveRows(deck.missing);
   const askRule = !deck.isOwner && deck.spareNeedsRule === true;
+  const selectable = !deck.isOwner && !askRule;
   const owned = rows.filter((row) => row.offerable > 0);
-  const showVisitor = !deck.isOwner && !askRule && owned.length > 0;
+  const showVisitor = selectable && owned.length > 0;
   const ownedCopies = owned.reduce((sum, row) => sum + row.offerable, 0);
   const giveCopies = rows.reduce((sum, row) => sum + row.copies, 0);
+  const hasSelection = Object.keys(selection).length > 0;
 
   return (
-    <div className={styles.gallery} data-testid="shared-missing">
-      {askRule && <VisitorRuleQuestion />}
-      {showVisitor && (
-        <>
+    <div className={styles.layout} data-testid="shared-missing">
+      <aside className={styles.rail}>
+        {intro}
+        {showVisitor && (
           <p className={styles.summary} data-testid="shared-owned-summary">
             {t('sharing.missingPage.summaryOwned', { count: ownedCopies, cards: owned.length, name: deck.sharerName })}
           </p>
-        </>
-      )}
-      {rows.length > 0 && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>{t('sharing.missingPage.giveTitle', { name: deck.sharerName })}</h2>
-          <p className={styles.sectionHint}>{t('sharing.missingPage.giveHint', { count: giveCopies })}</p>
-          {showVisitor && (
-            <OfferButton
-              token={deck.token}
-              sharerName={deck.sharerName}
-              whatsapp={deck.contactWhatsapp}
-              items={owned.map((row) => ({ name: row.card.name, pitch: row.card.pitch, count: row.offerable }))}
-              variant="all"
-              label={t('sharing.missingPage.offerAll', { count: owned.length })}
-            />
-          )}
-          <ul className={styles.list}>
-            {rows.map((row) => (
-              <GiveRow key={`${row.card.cardIdentifier}::${row.card.slot}`} row={row} deck={deck} askRule={askRule} />
-            ))}
-          </ul>
-        </section>
-      )}
-      <StoreSection deck={deck} />
+        )}
+        {rows.length > 0 && (
+          <div className={styles.giveIntro}>
+            <h2 className={styles.sectionTitle}>{t('sharing.missingPage.giveTitle', { name: deck.sharerName })}</h2>
+            <p className={styles.sectionHint}>{t('sharing.missingPage.giveHint', { count: giveCopies })}</p>
+          </div>
+        )}
+        {railActions}
+      </aside>
+      <div className={styles.gallery}>
+        {askRule && <VisitorRuleQuestion />}
+        {rows.length > 0 && (
+          <section className={styles.section}>
+            {selectable && (
+              <p className={styles.selectHint}>
+                <strong>{t('sharing.missingPage.selectHintLead')}</strong> {t('sharing.missingPage.selectHintRest')}
+              </p>
+            )}
+            <ul className={styles.list}>
+              {rows.map((row) => {
+                const key = giveRowKey(row);
+                return (
+                  <GiveRow
+                    key={key}
+                    row={row}
+                    askRule={askRule}
+                    selectable={selectable}
+                    selectedCopies={selection[key]}
+                    onToggle={() => setSelection((current) => toggleRow(current, row))}
+                    onCopies={(copies) => setSelection((current) => setRowCopies(current, row, copies))}
+                  />
+                );
+              })}
+            </ul>
+            {hasSelection && <OfferBar deck={deck} rows={rows} selection={selection} onClear={() => setSelection(EMPTY_SELECTION)} />}
+          </section>
+        )}
+        <StoreSection deck={deck} />
+      </div>
     </div>
   );
 }
