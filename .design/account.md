@@ -76,12 +76,14 @@ Persona rounds: `panel-round-1.md`, `panel-round-2.md`. Round 1's alternatives (
 3. Every screen that waits for an e-mail shows the address and "Errei o e-mail".
 4. The e-mail that confirms an account is called by its button: "Toque no botão do e-mail que mandamos para ...". The 7 days are said once, where sharing is blocked.
 5. Staying in, said once where the account is made, in a form with no gender (the app does not know the visitor's): "A conta fica aberta neste celular até você tocar em Sair. Sem senha, mandamos um código só quando você entrar de novo." ("neste computador" on a computer). The screens drew "Você continua conectada"; this line replaces it.
-6. The LSS notice verbatim (`apps/web/src/i18n/locales/pt-BR/about.ts`) with "Sobre" at the foot of every signed-out screen.
+6. The LSS notice verbatim (`apps/web/src/i18n/locales/pt-BR/about.ts`) with "Sobre" at the foot of every signed-out screen: under the text in the phone card, at the right edge of the bar on a computer.
 7. pt-BR, no em or en dashes, no raw codes, nothing pre-filled except the address remembered on this device.
 
 ### Start: one field (Lucas, Bia)
 
-Screens: `r3-arrive-phone`, `r2-typo-phone`.
+Screens: `r3-arrive-phone`, `r2-typo-phone`, `a3-entrance-desktop`.
+
+`a3-entrance-desktop` (owner pick, 2026-10-30; mockup `a3.html` of the entrance alternatives, in the 2026-10-30 session scratchpad, not kept in the repo): from 720 px wide, every step of this flow (e-mail, password, code, new account) uses the split layout of `AuthLayout`. The left half is an art panel with the brand row, the brand `Deckbox` at 270 px and the tagline "Seus decks, sua coleção." at 49 px; the right half holds the same screen as the phone, 400 px wide, with the pitch headline set in the display face. The notice runs along the foot with "Sobre" at the right edge. Under 720 px nothing changes: the one-column card.
 
 | State | What the visitor sees |
 |---|---|

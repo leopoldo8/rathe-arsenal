@@ -86,6 +86,28 @@ describe('AuthLayout — happy path >=720px', () => {
   });
 });
 
+describe('AuthLayout — hidden title', () => {
+  beforeEach(() => mockMatchMedia(false));
+
+  it('keeps the h1 for screen readers only when hideTitle is set', () => {
+    render(
+      <AuthLayout title="Rathe Arsenal" hideTitle>
+        <form />
+      </AuthLayout>,
+    );
+    expect(screen.getByRole('heading', { level: 1 })).toHaveClass('sr-only');
+  });
+
+  it('shows the h1 by default', () => {
+    render(
+      <AuthLayout title="Sign in">
+        <form />
+      </AuthLayout>,
+    );
+    expect(screen.getByRole('heading', { level: 1 })).not.toHaveClass('sr-only');
+  });
+});
+
 describe('AuthLayout — brand mark seam (AUTH-01)', () => {
   beforeEach(() => mockMatchMedia(false));
 

@@ -66,7 +66,7 @@ export function EmailStep({ initialEmail, fromSharedPage, origin, onResolved, co
         )
       ) : (
         <>
-          <p className={styles.lead}>{t('account.headline')}</p>
+          <p className={`${styles.lead} ${styles.headline}`}>{t('account.headline')}</p>
           <ul className={styles.pitch}>
             {(['pitchLine1', 'pitchLine2', 'pitchLine3'] as const).map((key) => (
               <li key={key} className={styles.pitchLine}>

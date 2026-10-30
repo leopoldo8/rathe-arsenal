@@ -1504,7 +1504,9 @@ describe('Phase 8 — AuthLayout split (AUTH-01, handoff §1)', () => {
   it('drops the 448px floor in the narrow zone where the art panel is unmounted', () => {
     const narrow = atRuleBody(AUTH_LAYOUT_CSS_WITH_MEDIA, '@media (max-width: 719px)');
     expect(narrow).toContain('.form { min-inline-size: 0; }');
-    expect(AUTH_LAYOUT_TSX).toContain("'(max-width: 719px)'");
+    // The breakpoint lives in one hook, shared with the account screens.
+    expect(AUTH_LAYOUT_TSX).toContain('useIsPhone()');
+    expect(fs.readFileSync(path.join(SRC_ROOT, 'components/auth/useIsPhone.ts'), 'utf-8')).toContain("'(max-width: 719px)'");
   });
 
   it('keeps the dark gradient out of the light theme', () => {
@@ -1516,23 +1518,19 @@ describe('Phase 8 — AuthLayout split (AUTH-01, handoff §1)', () => {
     expect(ruleBody(AUTH_LAYOUT_CSS, '.formInner')).toContain('max-width: 400px');
   });
 
-  it('sizes the brand slot at 170 by 170', () => {
+  it('sizes the brand slot at 270 by 270 (mockup a3 of the entrance)', () => {
     const body = ruleBody(AUTH_LAYOUT_CSS, '.artMark');
-    expect(body).toContain('inline-size: 170px');
-    expect(body).toContain('block-size: 170px');
+    expect(body).toContain('inline-size: 270px');
+    expect(body).toContain('block-size: 270px');
   });
 
-  it('sets the tagline as Newsreader 500 38px at 1.08 and the copy at 15.5px/1.65 capped at 440px', () => {
+  it('sets the tagline as Newsreader 500 49px at 1.08 (1.3 times the earlier 38px), with no paragraph under it', () => {
     const tagline = ruleBody(AUTH_LAYOUT_CSS, '.artTaglineText');
     expect(tagline).toContain('font-family: var(--ra-font-display)');
-    expect(tagline).toContain('font-size: 38px');
+    expect(tagline).toContain('font-size: 49px');
     expect(tagline).toContain('font-weight: var(--ra-weight-medium)');
     expect(tagline).toContain('line-height: 1.08');
-    const copy = ruleBody(AUTH_LAYOUT_CSS, '.artCopy');
-    expect(copy).toContain('font-size: 15.5px');
-    expect(copy).toContain('line-height: 1.65');
-    expect(copy).toContain('max-inline-size: 440px');
-    expect(copy).toContain('color: var(--ra-fg-tertiary)');
+    expect(AUTH_LAYOUT_CSS).not.toContain('.artCopy');
   });
 
   it('sets the brand row as a 30px seal with 7px radius and a 22px UnifrakturCook wordmark', () => {
@@ -1549,6 +1547,10 @@ describe('Phase 8 — AuthLayout split (AUTH-01, handoff §1)', () => {
     expect(AUTH_LAYOUT_TSX).toContain('brandMark ?? <Deckbox variant="brand" />');
     expect(AUTH_LAYOUT_TSX).not.toContain('DeckboxDecoration');
     expect(fs.existsSync(path.join(SRC_ROOT, 'components/shell/DeckboxDecoration.tsx'))).toBe(false);
+  });
+
+  it('puts "Sobre" at the right edge of the disclaimer bar', () => {
+    expect(ruleBody(AUTH_LAYOUT_CSS, '.disclaimerLink')).toContain('margin-inline-start: auto');
   });
 
   it('carries no invented quote on the art panel', () => {
@@ -1837,5 +1839,14 @@ describe('Owner design feedback round 2 — calm missing panel, aggregate in the
     expect(ruleBody(AGGREGATE, '.line')).not.toContain('background');
     expect(ruleBody(AGGREGATE, '.dot')).toContain('inline-size: 7px');
     expect(ruleBody(AGGREGATE, '.cost')).toContain('color: var(--ra-accent-body)');
+  });
+});
+
+describe('"Sobre" link at the right edge of every footer that has it', () => {
+  it.each([
+    ['the signed-in app footer', 'components/shell/Footer.module.css', '.link'],
+    ['the glossary page footer', 'routes/termos.module.css', '.about'],
+  ] as const)('%s pushes the link to the end of its row', (_name, file, selector) => {
+    expect(ruleBody(readCss(file), selector)).toContain('margin-inline-start: auto');
   });
 });

@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { Deckbox } from '../deckbox/Deckbox';
+import { useIsPhone } from '../auth/useIsPhone';
 import { AuthBrandMark } from './AuthBrandMark';
 import styles from './AuthLayout.module.css';
 
 interface IAuthLayoutProps {
   readonly title: string;
+  /** Keeps the one `<h1>` for screen readers only, when the screen's own content opens the page. */
+  readonly hideTitle?: boolean;
   readonly subtitle?: string;
   readonly tagline?: string;
   /** Inline error shown as a styled alert below the heading (for invalid credentials etc.) */
@@ -17,8 +20,6 @@ interface IAuthLayoutProps {
   /** Mark shown in the left panel; defaults to the cardless brand Deckbox. */
   readonly brandMark?: React.ReactNode;
 }
-
-const NARROW_QUERY = '(max-width: 719px)';
 
 /**
  * AuthLayout — split-panel layout for auth routes.
@@ -39,6 +40,7 @@ const NARROW_QUERY = '(max-width: 719px)';
  */
 export function AuthLayout({
   title,
+  hideTitle = false,
   subtitle,
   tagline,
   error,
@@ -47,18 +49,7 @@ export function AuthLayout({
   brandMark,
 }: IAuthLayoutProps): React.ReactElement {
   const { t } = useTranslation();
-  const [isNarrow, setIsNarrow] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia(NARROW_QUERY).matches;
-  });
-
-  useEffect(() => {
-    const mql = window.matchMedia(NARROW_QUERY);
-    const handler = (e: MediaQueryListEvent): void => setIsNarrow(e.matches);
-    mql.addEventListener('change', handler);
-    setIsNarrow(mql.matches);
-    return () => mql.removeEventListener('change', handler);
-  }, []);
+  const isNarrow = useIsPhone();
 
   return (
     <div className={styles.page}>
@@ -75,9 +66,6 @@ export function AuthLayout({
                 <p className={styles.artTaglineText}>
                   {tagline ?? t('auth.decorationDefaultTagline')}
                 </p>
-                <p className={styles.artCopy}>
-                  {t('auth.decorationCopy')}
-                </p>
               </div>
             </div>
           </div>
@@ -86,7 +74,7 @@ export function AuthLayout({
         {/* Right form panel */}
         <div className={styles.form}>
           <div className={styles.formInner}>
-            <h1 className={styles.heading}>{title}</h1>
+            <h1 className={hideTitle ? 'sr-only' : styles.heading}>{title}</h1>
             {subtitle != null && <p className={styles.sub}>{subtitle}</p>}
 
             {error != null && error !== '' && (

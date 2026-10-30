@@ -3,28 +3,13 @@ import { Outlet, createRootRoute, useRouterState } from '@tanstack/react-router'
 import { AppShell } from '../components/shell/AppShell';
 import { NotFoundState } from '../components/shell/NotFoundState';
 import { fitsViewport } from '../components/shell/viewport-fit';
+import { isAuthShellPath, isSignedInAppPath } from '../components/shell/shell-routes';
 import { SignInSheet } from '../components/auth/SignInSheet';
 
 export const Route = createRootRoute({
   component: RootLayout,
   notFoundComponent: NotFoundPage,
 });
-
-// Routes that render the authenticated shell (AppShell wraps Outlet)
-const AUTH_SHELL_PREFIXES = [
-  '/home',
-  '/library',
-  '/library-csv-sources',
-  '/lists',
-  '/add-cards',
-  '/settings',
-  '/decks',
-  '/onboarding',
-  '/chat',
-];
-
-// Authenticated routes that take the whole screen; checked before the shell prefixes.
-const FULL_SCREEN_PATHS = ['/add-cards/scan'];
 
 // Auth routes render their own full-page layout (AuthLayout per-route)
 const AUTH_PAGE_PREFIXES = ['/entrar', '/sign-in', '/sign-up', '/verify-email', '/check-your-email'];
@@ -41,10 +26,7 @@ function RootLayout(): React.ReactElement {
 function RootContent(): React.ReactElement {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const isFullScreen = FULL_SCREEN_PATHS.includes(pathname);
-
-  const isAuthShell =
-    !isFullScreen && AUTH_SHELL_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
+  const isAuthShell = isAuthShellPath(pathname);
 
   const isAuthPage = AUTH_PAGE_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(prefix + '/'),
@@ -79,9 +61,7 @@ function RootContent(): React.ReactElement {
 function NotFoundPage(): React.ReactElement {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const isAuthShell = AUTH_SHELL_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(prefix + '/'),
-  );
+  const isAuthShell = isSignedInAppPath(pathname);
 
   if (isAuthShell) {
     return (

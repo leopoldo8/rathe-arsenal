@@ -30,7 +30,7 @@
 .artContent {
   display: flex;
   flex-direction: column;
-  gap: var(--ra-space-8);
+  gap: 40px;
 }
 
 :global([data-theme='light']) .art {
@@ -40,8 +40,19 @@
 .artMark {
   display: flex;
   justify-content: flex-start;
-  inline-size: 170px;
-  block-size: 170px;
+  /* The brand Deckbox is drawn in a 170px box; it is scaled up from the slot's top-left corner to fill 270px. */
+  position: relative;
+  flex: none;
+  inline-size: 270px;
+  block-size: 270px;
+}
+
+.artMark > :first-child {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  transform-origin: 0 0;
+  transform: scale(1.4294);
 }
 
 .artTagline {
@@ -52,21 +63,12 @@
 
 .artTaglineText {
   font-family: var(--ra-font-display);
-  font-size: 38px;
+  font-size: 49px;
   font-weight: var(--ra-weight-medium);
   letter-spacing: -0.01em;
   color: var(--ra-fg-primary);
   margin: 0;
   line-height: 1.08;
-}
-
-.artCopy {
-  font-family: var(--ra-font-ui);
-  font-size: 15.5px;
-  color: var(--ra-fg-tertiary);
-  line-height: 1.65;
-  max-inline-size: 440px;
-  margin: 0;
 }
 
 /* Right form panel */
@@ -127,6 +129,12 @@
   color: var(--ra-fg-secondary);
 }
 
+@media (max-width: 1100px) {
+  .art {
+    padding: 48px 40px;
+  }
+}
+
 /* Ensure form usable at 320px — no horizontal scroll */
 @media (max-width: 719px) {
   .form {
@@ -157,9 +165,8 @@
 
 .disclaimerText {
   margin: 0;
-  flex: 1 1 auto;
-  min-inline-size: 240px;
-  max-inline-size: 640px;
+  flex: 1 1 240px;
+  max-inline-size: 760px;
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-secondary);
@@ -168,6 +175,8 @@
 
 .disclaimerLink {
   flex-shrink: 0;
+  /* "Sobre" sits at the bar's right edge, beside the text or, when the text fills the line, under it. */
+  margin-inline-start: auto;
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-secondary);
