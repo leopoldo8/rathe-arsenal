@@ -1,4 +1,5 @@
 export const settings = {
+  sectionsLabel: 'Account sections',
   languageHeading: 'Language',
   languageToggleAria: 'Select language',
   // Page heading

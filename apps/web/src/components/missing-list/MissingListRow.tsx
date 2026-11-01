@@ -15,6 +15,14 @@ interface IMissingListRowProps {
   readonly deckId: number;
   readonly line: IMissingLine;
   readonly layout?: TRowLayout;
+  /** When the page owns the Alternativas panel, the row only asks it to open. */
+  readonly onOpenAlternatives?: (line: IMissingLine, trigger: HTMLElement) => void;
+  readonly alternativesOpen?: boolean;
+}
+
+interface IRowPanelProps {
+  readonly onOpenAlternatives: IMissingListRowProps['onOpenAlternatives'];
+  readonly alternativesOpen: boolean;
 }
 
 const PITCH_CLASS: Readonly<Record<number, string>> = {
@@ -115,12 +123,18 @@ function StoreLink({ line, name, className }: { readonly line: IMissingLine; rea
 }
 
 /** "Alternativas" under the name of a row: opens the sheet of stand-ins for that card and the copies it still needs. */
-function AlternativesLink({ deckId, line, name }: { readonly deckId: number; readonly line: IMissingLine; readonly name: string }): React.ReactElement {
+function AlternativesLink({ deckId, line, name, onOpenAlternatives, alternativesOpen }: { readonly deckId: number; readonly line: IMissingLine; readonly name: string } & IRowPanelProps): React.ReactElement {
   const { t } = useTranslation();
   const [sheetOpen, setSheetOpen] = useState(false);
   return (
     <>
-      <button type="button" className={styles.alternatives} aria-label={t('alternatives.openAria', { name })} onClick={() => setSheetOpen(true)}>
+      <button
+        type="button"
+        className={styles.alternatives}
+        aria-label={t('alternatives.openAria', { name })}
+        aria-expanded={onOpenAlternatives === undefined ? undefined : alternativesOpen}
+        onClick={(event) => (onOpenAlternatives === undefined ? setSheetOpen(true) : onOpenAlternatives(line, event.currentTarget))}
+      >
         {t('alternatives.open')}
       </button>
       {sheetOpen && (
@@ -130,7 +144,7 @@ function AlternativesLink({ deckId, line, name }: { readonly deckId: number; rea
   );
 }
 
-function CardRow({ deckId, line }: { readonly deckId: number; readonly line: IMissingLine }): React.ReactElement {
+function CardRow({ deckId, line, onOpenAlternatives, alternativesOpen }: { readonly deckId: number; readonly line: IMissingLine } & IRowPanelProps): React.ReactElement {
   const { t } = useTranslation();
   const [stepperOpen, setStepperOpen] = useState(false);
   const name = cardName(line.name, line.pitch, t);
@@ -141,7 +155,7 @@ function CardRow({ deckId, line }: { readonly deckId: number; readonly line: IMi
   const inlineLink = line.state === 'no_price' || line.state === 'not_on_site';
 
   return (
-    <li className={styles.card} data-testid="missing-row" data-state={line.state}>
+    <li className={styles.card} data-testid="missing-row" data-state={line.state} data-alternatives-open={alternativesOpen ? 'true' : undefined}>
       <div className={styles.top}>
         <CardImage line={line} />
         <div className={styles.main}>
@@ -168,7 +182,7 @@ function CardRow({ deckId, line }: { readonly deckId: number; readonly line: IMi
               </>
             )}
           </p>
-          {open && <AlternativesLink deckId={deckId} line={line} name={name} />}
+          {open && <AlternativesLink deckId={deckId} line={line} name={name} onOpenAlternatives={onOpenAlternatives} alternativesOpen={alternativesOpen} />}
         </div>
       </div>
       {flags.length > 0 && (
@@ -195,7 +209,7 @@ function CardRow({ deckId, line }: { readonly deckId: number; readonly line: IMi
   );
 }
 
-function TableRow({ deckId, line }: { readonly deckId: number; readonly line: IMissingLine }): React.ReactElement {
+function TableRow({ deckId, line, onOpenAlternatives, alternativesOpen }: { readonly deckId: number; readonly line: IMissingLine } & IRowPanelProps): React.ReactElement {
   const { t } = useTranslation();
   const name = cardName(line.name, line.pitch, t);
   const flags = flagsWithShortfall(line, t);
@@ -205,7 +219,7 @@ function TableRow({ deckId, line }: { readonly deckId: number; readonly line: IM
   const priced = line.state === 'priced' && needed > 0;
 
   return (
-    <tr className={styles.tableRow} data-testid="missing-row" data-state={line.state}>
+    <tr className={styles.tableRow} data-testid="missing-row" data-state={line.state} data-alternatives-open={alternativesOpen ? 'true' : undefined}>
       <td>
         <div className={styles.cardCell}>
           <CardImage line={line} />
@@ -217,7 +231,7 @@ function TableRow({ deckId, line }: { readonly deckId: number; readonly line: IM
               </span>
             ))}
             {!priced && price !== null && <span className={styles.meta}>{price}</span>}
-            {needed > 0 && <AlternativesLink deckId={deckId} line={line} name={name} />}
+            {needed > 0 && <AlternativesLink deckId={deckId} line={line} name={name} onOpenAlternatives={onOpenAlternatives} alternativesOpen={alternativesOpen} />}
           </div>
         </div>
       </td>
@@ -241,6 +255,7 @@ function TableRow({ deckId, line }: { readonly deckId: number; readonly line: IM
   );
 }
 
-export function MissingListRow({ deckId, line, layout = 'card' }: IMissingListRowProps): React.ReactElement {
-  return layout === 'table' ? <TableRow deckId={deckId} line={line} /> : <CardRow deckId={deckId} line={line} />;
+export function MissingListRow({ deckId, line, layout = 'card', onOpenAlternatives, alternativesOpen = false }: IMissingListRowProps): React.ReactElement {
+  const panel = { onOpenAlternatives, alternativesOpen };
+  return layout === 'table' ? <TableRow deckId={deckId} line={line} {...panel} /> : <CardRow deckId={deckId} line={line} {...panel} />;
 }

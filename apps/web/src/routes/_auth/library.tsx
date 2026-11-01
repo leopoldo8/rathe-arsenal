@@ -126,8 +126,10 @@ export function LibraryPageInner({
     return (
       <div className={styles.page}>
         <header className={styles.pageHeader}>
-          <p className={styles.eyebrow}>{t('library.collectionEyebrow')}</p>
-          <h1 className={styles.title}>{t('library.libraryTitle')}</h1>
+          <div className={styles.headerText}>
+            <p className={styles.eyebrow}>{t('library.collectionEyebrow')}</p>
+            <h1 className={styles.title}>{t('library.libraryTitle')}</h1>
+          </div>
         </header>
         {/* The recently-added banner is mounted on the empty path too so
             an import that didn't resolve to any countable cards still

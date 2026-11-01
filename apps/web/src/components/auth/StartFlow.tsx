@@ -85,7 +85,7 @@ export function StartFlow({ buttonToken, next: nextPage, codeEmail }: IStartFlow
 
   if (redeeming) {
     return (
-      <AccountLayout title={t('account.brandName')} hideTitle>
+      <AccountLayout title={t('account.brandName')} hideTitle titleIsBrand>
         <p role="status">{t('account.buttonSigningIn')}</p>
       </AccountLayout>
     );
@@ -127,7 +127,7 @@ export function StartFlow({ buttonToken, next: nextPage, codeEmail }: IStartFlow
       );
     case 'email':
       return (
-        <AccountLayout title={t('account.brandName')} hideTitle={shareReturn !== null}>
+        <AccountLayout title={t('account.brandName')} hideTitle={shareReturn !== null} titleIsBrand>
           {buttonFailed && (
             <p className={styles.note} role="status">
               {t('account.buttonUsedOrExpired')}

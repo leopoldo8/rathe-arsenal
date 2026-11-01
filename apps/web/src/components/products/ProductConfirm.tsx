@@ -6,6 +6,8 @@ import { useImportProductMutation, type IProduct } from '../../api/products';
 import { cardName } from '../../lib/card-name';
 import { DEFAULT_LIBRARY_SEARCH } from '../../routes/_auth/-library.helpers';
 import { recordRecentlyAddedSource } from '../library/RecentlyAddedBanner.helpers';
+import { RailLayout } from '../ui/RailLayout';
+import { ProductSteps } from './ProductSteps';
 import styles from './Products.module.css';
 
 interface IProductSwitchProps {
@@ -79,11 +81,17 @@ export function ProductConfirm({ product }: { readonly product: IProduct }): Rea
       : new Intl.DateTimeFormat(i18n.language, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(repeatedOn));
 
   return (
-    <div className={styles.page}>
-      <Link to="/add-cards/product" className={styles.back}>
-        <span aria-hidden="true">‹ </span>
-        {t('products.chooseAnother')}
-      </Link>
+    <RailLayout
+      className={styles.wide}
+      railLabel={t('products.stepsLabel')}
+      rail={<ProductSteps current="confirm" />}
+      head={
+        <Link to="/add-cards/product" className={styles.back}>
+          <span aria-hidden="true">‹ </span>
+          {t('products.chooseAnother')}
+        </Link>
+      }
+    >
       <section className={styles.head}>
         {product.hero.imageUrl === null ? (
           <span className={styles.thumb} aria-hidden="true" />
@@ -130,6 +138,6 @@ export function ProductConfirm({ product }: { readonly product: IProduct }): Rea
       >
         {importProduct.isPending ? t('products.adding') : repeatedOn !== null ? t('products.addAnother') : t('products.add')}
       </button>
-    </div>
+    </RailLayout>
   );
 }

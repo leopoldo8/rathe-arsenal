@@ -72,3 +72,12 @@
   outline-offset: 2px;
   border-radius: var(--ra-radius-sm);
 }
+
+/* The screen beside the art panel (mockup a3): a little more air between the steps of the form than in the phone card. */
+.onComputer > form {
+  gap: var(--ra-space-4);
+}
+
+.onComputer ul {
+  gap: 10px;
+}

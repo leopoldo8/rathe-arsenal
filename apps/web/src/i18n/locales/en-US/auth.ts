@@ -1,7 +1,6 @@
 export const auth = {
   // --- AuthLayout decoration panel (default copy) ---
   decorationDefaultTagline: 'Your decks, your collection.',
-  decorationCopy: 'Import your Flesh and Blood decks and see which cards you already own, which swaps cover the gaps, and what it costs to finish.',
 
   // --- Shared ---
   backToSignIn: 'Back to sign in',

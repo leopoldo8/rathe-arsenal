@@ -1,33 +1,15 @@
 import React from 'react';
-import { Outlet, createRootRoute, useRouterState } from '@tanstack/react-router';
+import { createRootRoute, useRouterState } from '@tanstack/react-router';
 import { AppShell } from '../components/shell/AppShell';
 import { NotFoundState } from '../components/shell/NotFoundState';
-import { fitsViewport } from '../components/shell/viewport-fit';
+import { RootContent } from '../components/shell/RootContent';
+import { isSignedInAppPath } from '../components/shell/shell-routes';
 import { SignInSheet } from '../components/auth/SignInSheet';
 
 export const Route = createRootRoute({
   component: RootLayout,
   notFoundComponent: NotFoundPage,
 });
-
-// Routes that render the authenticated shell (AppShell wraps Outlet)
-const AUTH_SHELL_PREFIXES = [
-  '/home',
-  '/library',
-  '/library-csv-sources',
-  '/lists',
-  '/add-cards',
-  '/settings',
-  '/decks',
-  '/onboarding',
-  '/chat',
-];
-
-// Authenticated routes that take the whole screen; checked before the shell prefixes.
-const FULL_SCREEN_PATHS = ['/add-cards/scan'];
-
-// Auth routes render their own full-page layout (AuthLayout per-route)
-const AUTH_PAGE_PREFIXES = ['/entrar', '/sign-in', '/sign-up', '/verify-email', '/check-your-email'];
 
 function RootLayout(): React.ReactElement {
   return (
@@ -36,36 +18,6 @@ function RootLayout(): React.ReactElement {
       <SignInSheet />
     </>
   );
-}
-
-function RootContent(): React.ReactElement {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-
-  const isFullScreen = FULL_SCREEN_PATHS.includes(pathname);
-
-  const isAuthShell =
-    !isFullScreen && AUTH_SHELL_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
-
-  const isAuthPage = AUTH_PAGE_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(prefix + '/'),
-  );
-
-  // Authenticated _auth routes: wrap in AppShell
-  if (isAuthShell) {
-    return (
-      <AppShell fitViewport={fitsViewport(pathname)}>
-        <Outlet />
-      </AppShell>
-    );
-  }
-
-  // Auth pages (sign-in, sign-up, etc.): each route renders its own AuthLayout
-  if (isAuthPage) {
-    return <Outlet />;
-  }
-
-  // Landing / unknown routes: plain outlet (no shell, no auth layout)
-  return <Outlet />;
 }
 
 /**
@@ -79,9 +31,7 @@ function RootContent(): React.ReactElement {
 function NotFoundPage(): React.ReactElement {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const isAuthShell = AUTH_SHELL_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(prefix + '/'),
-  );
+  const isAuthShell = isSignedInAppPath(pathname);
 
   if (isAuthShell) {
     return (

@@ -116,11 +116,11 @@ export function HomePage(): React.ReactElement {
 
   if (trackedDecks.length === 0) {
     return (
-      <>
+      <div className={styles.emptyPage}>
         <UnconfirmedEmailLine />
         <EducationalEmptyState collectionCardCount={collectionCardCount} />
         <DeletedDecksRow />
-      </>
+      </div>
     );
   }
 

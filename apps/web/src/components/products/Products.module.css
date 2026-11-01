@@ -241,3 +241,17 @@
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
 }
+
+/* ---- desktop: the pages sit in a rail layout ---- */
+@media (min-width: 960px) {
+  .wide .results {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wide .primary {
+    inline-size: auto;
+    align-self: flex-start;
+    padding-inline: var(--ra-space-8);
+  }
+}

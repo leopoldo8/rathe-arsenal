@@ -94,3 +94,32 @@
 .error:empty {
   display: none;
 }
+
+/* Desktop: the field's label and the hint at the left, the number and the buttons at the right. */
+@media (min-width: 960px) {
+  .form,
+  .form > div:first-child {
+    display: contents;
+  }
+
+  .form > div:first-child > :nth-child(n + 2) {
+    grid-column: 2;
+    max-inline-size: 520px;
+  }
+
+  .hint {
+    grid-column: 1;
+  }
+
+  .actions,
+  .ok,
+  .error {
+    grid-column: 2;
+  }
+}
+
+@media (min-width: 960px) {
+  .form > div:first-child > :first-child {
+    padding-block-start: var(--ra-space-3);
+  }
+}

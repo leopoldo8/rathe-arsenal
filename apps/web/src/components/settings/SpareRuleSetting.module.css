@@ -44,3 +44,14 @@
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
 }
+
+/* Desktop: the rule at the left, the button that changes it at the right. */
+@media (min-width: 960px) {
+  .row {
+    display: contents;
+  }
+
+  .button {
+    justify-self: start;
+  }
+}

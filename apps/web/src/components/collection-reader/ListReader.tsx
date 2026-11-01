@@ -10,6 +10,8 @@ import { buildImportBody, cardOf, countItems, groupOf, isReady, readyCopies, typ
 import { lineMark, readyTitle } from './lineParts';
 import { ReaderLineBody } from './ReaderLineView';
 import { useReaderItems, type IReaderItems } from './useReaderItems';
+import { RailLayout } from '../ui/RailLayout';
+import { AddSteps } from './AddSteps';
 import styles from './CollectionReader.module.css';
 
 type TVersionChoice = 'unknown' | 'plain' | 'perLine';
@@ -139,12 +141,20 @@ export function ListReader(): React.ReactElement {
   }
 
   return (
-    <div className={styles.page}>
-      <Link to="/add-cards" className={styles.back}>
-        <span aria-hidden="true">‹ </span>
-        {t('collectionReader.back')}
-      </Link>
-      <h1 className={styles.title}>{t('collectionReader.listTitle')}</h1>
+    <RailLayout
+      className={styles.wide}
+      railLabel={t('collectionReader.stepsLabel')}
+      rail={<AddSteps current={create.isPending ? 'add' : items.length > 0 ? 'read' : 'choose'} chooseKey="collectionReader.stepPasteList" />}
+      head={
+        <>
+          <Link to="/add-cards" className={styles.back}>
+            <span aria-hidden="true">‹ </span>
+            {t('collectionReader.back')}
+          </Link>
+          <h1 className={styles.title}>{t('collectionReader.listTitle')}</h1>
+        </>
+      }
+    >
       <textarea
         className={styles.text}
         value={text}
@@ -193,6 +203,6 @@ export function ListReader(): React.ReactElement {
           </div>
         </>
       )}
-    </div>
+    </RailLayout>
   );
 }

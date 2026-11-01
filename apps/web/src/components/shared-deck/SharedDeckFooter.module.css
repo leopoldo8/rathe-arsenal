@@ -20,3 +20,15 @@
   color: var(--ra-accent);
   text-decoration: underline;
 }
+
+.contained {
+  inline-size: 100%;
+  max-inline-size: 1180px;
+  margin-inline: auto;
+}
+
+@media (min-width: 960px) {
+  .footerContained {
+    padding-inline: var(--ra-space-6);
+  }
+}

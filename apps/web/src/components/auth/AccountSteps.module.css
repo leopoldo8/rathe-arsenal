@@ -14,6 +14,17 @@
   line-height: var(--ra-leading-normal);
 }
 
+/* On a computer the entrance headline is the page's opening line, set in the display face (mockup a3). */
+@media (min-width: 720px) {
+  .headline {
+    font-family: var(--ra-font-display);
+    font-size: 1.625rem;
+    font-weight: var(--ra-weight-medium);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+}
+
 .pitch {
   display: flex;
   flex-direction: column;

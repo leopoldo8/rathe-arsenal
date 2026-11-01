@@ -53,7 +53,6 @@ describe('locale copy rules', () => {
     const rewritten = [
       ptBR.home.emptyLead,
       ptBR.home.step2Body,
-      ptBR.auth.decorationCopy,
       ptBR.onboarding.step2BodySingle,
       ptBR.onboarding.step2BodyMultiple,
       ptBR.onboarding.congratsBody,

@@ -29,6 +29,7 @@
 
 .link {
   flex-shrink: 0;
+  margin-inline-start: auto;
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-xs);
   color: var(--ra-fg-secondary);

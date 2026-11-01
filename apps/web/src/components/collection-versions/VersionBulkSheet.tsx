@@ -13,6 +13,7 @@ import { useLibraryQuery } from '../../api/library';
 import { cardName } from '../../lib/card-name';
 import { CardVersionsSheet } from './CardVersionsSheet';
 import { EDITION_OPTIONS, describeVersion, editionLabel, finishLabel, isUnversioned } from './copy-version-labels';
+import { RailLayout } from '../ui/RailLayout';
 import styles from './CopyVersions.module.css';
 
 /** The three groups of "Marcar de uma vez": a chosen value, or `''` for "Não sei", or nothing yet. */
@@ -60,15 +61,13 @@ export function VersionBulkSheet({ sourceId, label }: IVersionBulkSheetProps): R
     : undefined;
 
   return (
-    <div className={styles.page}>
-      <Link to="/library-csv-sources" className={styles.back}>
-        <span aria-hidden="true">‹ </span>
-        {t('copyVersions.bulkBack')}
-      </Link>
-      <h1 className={styles.title}>{t('copyVersions.bulkTitle')}</h1>
-      {copiesQuery.isError && <p role="alert" className={styles.error}>{t('copyVersions.bulkLoadError')}</p>}
-      {copies && (
-        <>
+    <RailLayout
+      className={styles.bulkPage}
+      railOnPhone="above"
+      railLabel={t('copyVersions.bulkMarkAll')}
+      rail={
+        copies && (
+          <>
           <p className={styles.subtitle}>
             {t('copyVersions.bulkSubtitle', { label, copies: t('copyVersions.copiesCount', { count: copies.copies }) })}
           </p>
@@ -108,6 +107,22 @@ export function VersionBulkSheet({ sourceId, label }: IVersionBulkSheetProps): R
             <p className={styles.note}>{t('copyVersions.bulkApplyNote')}</p>
             {markMutation.isError && <p role="alert" className={styles.error}>{t('copyVersions.bulkError')}</p>}
           </section>
+          </>
+        )
+      }
+      head={
+        <>
+          <Link to="/library-csv-sources" className={styles.back}>
+            <span aria-hidden="true">‹ </span>
+            {t('copyVersions.bulkBack')}
+          </Link>
+          <h1 className={styles.title}>{t('copyVersions.bulkTitle')}</h1>
+        </>
+      }
+    >
+      {copiesQuery.isError && <p role="alert" className={styles.error}>{t('copyVersions.bulkLoadError')}</p>}
+      {copies && (
+        <>
           {skipped !== null && skipped.length > 0 && (
             <section className={styles.panel} aria-label={t('copyVersions.bulkSkippedTitle')}>
               <p className={styles.groupLabel}>{t('copyVersions.bulkSkippedTitle')}</p>
@@ -175,7 +190,7 @@ export function VersionBulkSheet({ sourceId, label }: IVersionBulkSheetProps): R
           }
         />
       )}
-    </div>
+    </RailLayout>
   );
 }
 

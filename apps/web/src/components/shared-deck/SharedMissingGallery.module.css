@@ -1,7 +1,42 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-5);
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-5);
+  min-inline-size: 0;
+}
+
+.giveIntro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+}
+
 .gallery {
   display: flex;
   flex-direction: column;
   gap: var(--ra-space-5);
+  min-inline-size: 0;
+}
+
+/* From desktop width the title and actions stay at the left while the list scrolls. */
+@media (min-width: 960px) {
+  .layout {
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr);
+    gap: var(--ra-space-12);
+    align-items: start;
+  }
+
+  .rail {
+    position: sticky;
+    inset-block-start: var(--ra-space-6);
+  }
 }
 
 .summary {
@@ -239,4 +274,194 @@
 .view {
   align-self: flex-start;
   background: transparent;
+}
+
+.selectHint {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.selectHint strong {
+  color: var(--ra-fg-primary);
+  font-weight: var(--ra-weight-semibold);
+}
+
+.rowSelected {
+  background: var(--ra-accent-soft-bg);
+  box-shadow: inset 3px 0 0 var(--ra-accent);
+}
+
+.check {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 44px;
+  block-size: 44px;
+  flex: none;
+  margin-inline-start: calc(-1 * var(--ra-space-2));
+  cursor: pointer;
+}
+
+.checkInput {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.checkBox {
+  display: grid;
+  place-items: center;
+  inline-size: 24px;
+  block-size: 24px;
+  border: 1.5px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-xs);
+  background: var(--ra-bg-surface-2);
+  color: var(--ra-accent-ink-on);
+}
+
+.checkInput:checked + .checkBox {
+  border-color: var(--ra-accent);
+  background: var(--ra-accent);
+}
+
+.checkInput:checked + .checkBox::after {
+  content: '';
+  inline-size: 6px;
+  block-size: 11px;
+  margin-block-end: 2px;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkInput:focus-visible + .checkBox {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.stepper {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--ra-space-2);
+}
+
+.stepButton {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  background: var(--ra-bg-raised);
+  color: var(--ra-fg-primary);
+  font-size: var(--ra-text-h3);
+  cursor: pointer;
+}
+
+.stepButton:disabled {
+  color: var(--ra-fg-subtle);
+  cursor: not-allowed;
+}
+
+.stepButton:focus-visible,
+.clear:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.stepValue {
+  min-inline-size: 2ch;
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h3);
+  font-weight: var(--ra-weight-semibold);
+  text-align: center;
+}
+
+.stepOf {
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  white-space: nowrap;
+}
+
+.offerBar {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+  margin-block-start: var(--ra-space-3);
+  padding: var(--ra-space-3) 0 var(--ra-space-4);
+  border-block-start: 1px solid var(--ra-border);
+  background: var(--ra-bg-canvas);
+}
+
+.offerSummary {
+  margin: 0;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-semibold);
+}
+
+.offerActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+}
+
+.clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 48px;
+  padding-inline: var(--ra-space-5);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  background: var(--ra-bg-raised);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-semibold);
+  cursor: pointer;
+}
+
+@media (min-width: 960px) {
+  .offerBar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .offerActions {
+    flex-direction: row-reverse;
+    align-items: center;
+  }
+
+  .offerActions > :first-child {
+    inline-size: auto;
+    padding-inline: var(--ra-space-5);
+  }
+}
+
+/* Phone: the row's text, then the stepper under it. */
+@media (max-width: 959px) {
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .stepper {
+    flex-basis: 100%;
+    padding-inline-start: calc(44px + 40px + 2 * var(--ra-space-3) - var(--ra-space-2));
+  }
 }

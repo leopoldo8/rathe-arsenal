@@ -1,15 +1,11 @@
 /* Settings page: four panels (Profile / Appearance / Language / Danger zone), handoff 11 */
 
 .page {
-  max-inline-size: var(--ra-page-max-inline);
-  inline-size: 100%;
-  margin-inline: auto;
+  /* The rail layout draws the frame; on a phone the sections stay as wide as the form was. */
+  --rail-phone-max-inline: var(--ra-page-form-inline);
+  --rail-gap: 0;
   padding-block: 0 var(--ra-space-12);
   box-sizing: border-box;
-}
-
-.page > * {
-  max-inline-size: var(--ra-page-form-inline);
 }
 
 /* ---- Page heading ---- */
@@ -257,5 +253,42 @@
 @media (max-width: 639px) {
   .pageHeading {
     font-size: var(--ra-text-h2);
+  }
+}
+
+/* ---- desktop: each section is a card of rows, label at the left and control at the right ---- */
+@media (min-width: 960px) {
+  .page {
+    --rail-phone-max-inline: var(--ra-page-max-inline);
+  }
+
+  .pageHeading {
+    margin-block-end: var(--ra-space-6);
+  }
+
+  .section {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    column-gap: var(--ra-space-8);
+    row-gap: var(--ra-space-4);
+    align-items: start;
+  }
+
+  .section > * {
+    grid-column: 1 / -1;
+  }
+
+  .section > .sectionHeading {
+    margin: 0;
+    padding-block-end: var(--ra-space-3);
+    border-block-end: 1px solid var(--ra-border);
+  }
+
+  .accountSection > .dangerCopy {
+    grid-column: 1;
+  }
+
+  .accountSection > .accountActions {
+    grid-column: 2;
   }
 }

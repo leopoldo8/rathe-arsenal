@@ -2,6 +2,9 @@ import type { TTranslationResources } from '../pt-BR';
 
 export const products: TTranslationResources['products'] = {
   back: 'Add cards',
+  stepChoose: 'Choose the deck',
+  stepConfirm: 'Confirm and add',
+  stepsLabel: 'Steps',
   searchTitle: 'Which deck did you buy?',
   searchSubtitle: 'Armory Deck, Blitz Deck or Silver Age.',
   searchAria: 'Search the deck by product or hero name',

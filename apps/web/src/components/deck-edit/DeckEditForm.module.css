@@ -118,3 +118,40 @@
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
 }
+
+/* Desktop: each field is a row, its label at the left and its control at the right. */
+@media (min-width: 960px) {
+  .field {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    column-gap: var(--ra-space-8);
+    align-items: start;
+  }
+
+  .field > :first-child {
+    grid-column: 1;
+    padding-block-start: var(--ra-space-3);
+  }
+
+  .field > :not(:first-child) {
+    grid-column: 2;
+  }
+
+  /* The format picker brings its own label and trigger: they take the two columns of the row. */
+  .field > :only-child {
+    grid-column: 1 / -1;
+    padding-block-start: 0;
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    column-gap: var(--ra-space-8);
+    align-items: start;
+  }
+
+  .field > :only-child > :first-child {
+    padding-block-start: var(--ra-space-3);
+  }
+
+  .actions {
+    padding-inline-start: calc(260px + var(--ra-space-8));
+  }
+}

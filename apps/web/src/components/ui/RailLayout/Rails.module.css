@@ -1,0 +1,129 @@
+/* Rail contents (steps, section index) and the label/control row of settings and forms. */
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+  padding: 10px var(--ra-space-3);
+  border-radius: var(--ra-radius-md);
+  color: var(--ra-fg-tertiary);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-medium);
+}
+
+.step[aria-current='step'] {
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-fg-primary);
+}
+
+.stepNumber {
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 26px;
+  block-size: 26px;
+  border: 1px solid var(--ra-border-strong);
+  border-radius: 50%;
+  font-size: var(--ra-text-xs);
+  font-weight: var(--ra-weight-semibold);
+}
+
+.step[aria-current='step'] .stepNumber {
+  background: var(--ra-accent);
+  border-color: var(--ra-accent);
+  color: var(--ra-accent-ink-on);
+}
+
+.step[data-done='true'] {
+  color: var(--ra-fg-secondary);
+}
+
+.index ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.indexLink {
+  display: flex;
+  align-items: center;
+  min-block-size: 40px;
+  padding: 0 var(--ra-space-3);
+  border-radius: var(--ra-radius-md);
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-medium);
+  text-decoration: none;
+}
+
+.indexLink:hover {
+  color: var(--ra-fg-primary);
+}
+
+.indexLink:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.indexLink[aria-current='location'] {
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-accent-body);
+}
+
+.indexLink[data-tone='danger'] {
+  margin-block-start: var(--ra-space-2);
+  color: var(--ra-ready-low);
+}
+
+.row {
+  display: grid;
+  gap: var(--ra-space-3);
+  min-inline-size: 0;
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+  min-inline-size: 0;
+}
+
+.rowLabel {
+  color: var(--ra-fg-primary);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-semibold);
+}
+
+.rowDescription {
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-xs);
+  line-height: var(--ra-leading-normal);
+}
+
+.rowControl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+  min-inline-size: 0;
+}
+
+@media (min-width: 960px) {
+  .row {
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: var(--ra-space-8);
+    align-items: start;
+  }
+
+  .rowControl {
+    max-inline-size: 520px;
+  }
+}

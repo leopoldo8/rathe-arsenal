@@ -73,14 +73,39 @@
   border: 1px solid var(--ra-border);
   border-radius: var(--ra-radius-lg);
   background: var(--ra-bg-surface);
-  overflow: hidden;
 }
 
 .row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--ra-space-3);
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-areas:
+    'art text'
+    'actions actions';
+  align-items: start;
+  gap: var(--ra-space-2) var(--ra-space-3);
   padding: var(--ra-space-3) var(--ra-space-4);
+}
+
+.row:not(:has(.art)) {
+  grid-template-areas:
+    'text text'
+    'actions actions';
+}
+
+.art {
+  grid-area: art;
+}
+
+.rowText {
+  grid-area: text;
+}
+
+.actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-2);
 }
 
 .row + .row {
@@ -299,4 +324,96 @@
 .barSell:focus-visible {
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-4);
+}
+
+/* Below 1100 px the panel is not a box of its own: its controls sit on top of the list and the sell bar sticks to the bottom. */
+.panel,
+.panelTop {
+  display: contents;
+}
+
+.list {
+  order: 1;
+}
+
+.bar {
+  order: 2;
+}
+
+/* The row menu buttons are positioned, so without a layer of its own the sticky bar would let them show through. */
+@media (min-width: 720px) {
+  .bar {
+    z-index: 1;
+  }
+}
+
+/* From 720 to 959 px the shell's fixed tab bar (60 px) sits at the bottom, so the sell bar sticks above it. */
+@media (min-width: 720px) and (max-width: 959px) {
+  .bar {
+    inset-block-end: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 1100px) {
+  .pageWide {
+    max-inline-size: var(--ra-page-max-inline);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-areas: 'list panel';
+    align-items: start;
+    gap: var(--ra-space-6);
+  }
+
+  .list,
+  .empty {
+    grid-area: list;
+    order: 0;
+  }
+
+  .panel {
+    grid-area: panel;
+    position: sticky;
+    inset-block-start: var(--ra-space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ra-space-4);
+  }
+
+  .panelTop {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ra-space-4);
+  }
+
+  .bar {
+    position: static;
+    padding: var(--ra-space-4);
+    border: 1px solid var(--ra-border);
+    border-radius: var(--ra-radius-lg);
+    background: var(--ra-bg-surface);
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    min-block-size: 76px;
+  }
+
+  .rowText {
+    flex: 1;
+  }
+
+  .actions {
+    flex: none;
+    justify-content: flex-end;
+  }
 }

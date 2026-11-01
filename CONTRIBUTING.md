@@ -17,6 +17,7 @@ You need no third-party account.
 
 - **Tests and typecheck are always green.** If `pnpm lint`, `pnpm typecheck` or a test suite fails when you run it, fix it, including a failure that was there before your change.
 - **Visible UI changes need mockups first.** Show at least two alternatives and wait for the owner to pick one before you build.
+- **Every screen works on the phone and on the desktop.** Mockups and design documents show each screen at 390 px and at 1440 px. A phone column centred on a wide page is not a desktop layout. Check your change at 390, 1024 and 1440 px before calling it done.
 - **App copy is pt-BR first, with en-US.** Both locale files change together. No em dashes in copy.
 - **Never invent Flesh and Blood facts.** Rules, card data and rule numbers come from the repository's catalog and documents, or from the official sources they cite.
 - **Never commit secrets.** Keep keys in `.env` (git-ignored); `.env.example` holds placeholders only.

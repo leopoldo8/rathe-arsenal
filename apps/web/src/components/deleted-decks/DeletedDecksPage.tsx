@@ -9,6 +9,7 @@ import {
 } from '../../api/deleted-decks';
 import { deletedDeckMeta } from './deletedDeckMeta';
 import { PermanentDeleteDialog } from './PermanentDeleteDialog';
+import { RailLayout } from '../ui/RailLayout';
 import styles from './DeletedDecksPage.module.css';
 
 /** "Excluídos recentemente": each deleted deck with "Restaurar" and, as a plain link, "Excluir de vez". */
@@ -29,12 +30,20 @@ export function DeletedDecksPage(): React.ReactElement {
   }
 
   return (
-    <div className={styles.page}>
-      <Link to="/home" search={{ tag: [] }} className={styles.back}>
-        {t('home.deletedBack')}
-      </Link>
-      <h1 className={styles.title}>{t('home.deletedTitle')}</h1>
-      <p className={styles.intro}>{t('home.deletedIntro')}</p>
+    <RailLayout
+      className={styles.page}
+      railOnPhone="above"
+      railLabel={t('home.deletedTitle')}
+      rail={<p className={styles.intro}>{t('home.deletedIntro')}</p>}
+      head={
+        <>
+          <Link to="/home" search={{ tag: [] }} className={styles.back}>
+            {t('home.deletedBack')}
+          </Link>
+          <h1 className={styles.title}>{t('home.deletedTitle')}</h1>
+        </>
+      }
+    >
       {query.isError && (
         <p className={styles.error} role="alert">
           {t('home.deletedLoadFailed')}
@@ -74,6 +83,6 @@ export function DeletedDecksPage(): React.ReactElement {
         ))}
       </ul>
       <PermanentDeleteDialog deckName={asking?.name ?? null} onConfirm={confirmPermanent} onCancel={() => setAsking(null)} />
-    </div>
+    </RailLayout>
   );
 }

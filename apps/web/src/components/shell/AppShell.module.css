@@ -34,3 +34,8 @@
   padding: 0;
   overflow: hidden;
 }
+
+/* The page alone, full screen: the wrappers take no box, so the page lays out as if they were not there. */
+.bare {
+  display: contents;
+}

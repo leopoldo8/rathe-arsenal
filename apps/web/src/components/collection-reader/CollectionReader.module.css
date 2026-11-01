@@ -489,3 +489,34 @@
   font-weight: var(--ra-weight-semibold);
   cursor: pointer;
 }
+
+/* ---- desktop: the page sits in a rail layout, so the controls stop stretching ---- */
+@media (min-width: 960px) {
+  .wide .dropZone {
+    min-block-size: 300px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: var(--ra-bg-surface);
+  }
+
+  .wide .chooseLabel,
+  .wide .primary {
+    inline-size: auto;
+    padding-inline: var(--ra-space-8);
+  }
+
+  .wide .footer {
+    align-items: flex-start;
+  }
+
+  .wide .footnote {
+    text-align: start;
+  }
+}
+
+@media (min-width: 960px) {
+  .wide .text {
+    min-block-size: 240px;
+  }
+}

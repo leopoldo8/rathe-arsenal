@@ -34,7 +34,7 @@ export function MissingSummary({ summary, lines }: IMissingSummaryProps): React.
 
   return (
     <div className={styles.summary} data-testid="missing-summary">
-      <h1 className={styles.title}>
+      <h1 className={styles.title} tabIndex={-1}>
         {summary.buyCopies > 0
           ? t('missingList.buyTitle', { count: summary.buyCopies, price: formatBrl(summary.buyCents) })
           : t('missingList.buyTitleNothing')}

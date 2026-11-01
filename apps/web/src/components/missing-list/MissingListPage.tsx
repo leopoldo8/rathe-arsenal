@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useDeckDetailQuery } from '../../api/deck-detail';
 import { useMissingListQuery, type IMissingLine } from '../../api/missing-list';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { AlternativesSheet } from '../deck-detail/AlternativesSheet';
 import { ShareDialog } from '../deck-detail/ShareDialog';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
 import { useToast } from '../ui/Toast/useToast';
+import { cardName } from '../../lib/card-name';
 import { formatBrl } from '../../utils/format-brl';
 import { MissingChips } from './MissingChips';
 import { MissingListRow } from './MissingListRow';
@@ -22,6 +24,7 @@ import {
   type TSide,
 } from './missingListModel';
 import { buildShoppingListText } from './shoppingListText';
+import { useRowFocusKeeper } from './useRowFocusKeeper';
 import styles from './MissingListPage.module.css';
 
 interface IMissingListPageProps {
@@ -29,6 +32,8 @@ interface IMissingListPageProps {
 }
 
 const PHONE_QUERY = '(max-width: 719px)';
+/** From this width the Alternativas panel docks beside the list; below it, the panel covers the list. */
+const DOCK_QUERY = '(min-width: 1100px)';
 const PHONE_VISIBLE_ROWS = 6;
 const SIDES: readonly TSide[] = ['all', 'deck', 'inventory'];
 const SIDE_LABEL_KEY: Readonly<Record<TSide, string>> = {
@@ -109,12 +114,16 @@ export function MissingListPage({ deckId }: IMissingListPageProps): React.ReactE
   const { t } = useTranslation();
   const { show } = useToast();
   const phone = useMediaQuery(PHONE_QUERY);
+  const docked = useMediaQuery(DOCK_QUERY);
+  const [alternatives, setAlternatives] = useState<{ readonly line: IMissingLine; readonly trigger: HTMLElement } | null>(null);
   const query = useMissingListQuery(deckId);
   const deckQuery = useDeckDetailQuery(String(deckId));
   const [chip, setChip] = useState<TChip | null>(null);
   const [side, setSide] = useState<TSide>('all');
   const [expanded, setExpanded] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [pageElement, setPageElement] = useState<HTMLDivElement | null>(null);
+  const focusKeeper = useRowFocusKeeper(pageElement);
 
   if (query.isLoading) {
     return (
@@ -155,9 +164,32 @@ export function MissingListPage({ deckId }: IMissingListPageProps): React.ReactE
 
   const actions = <ListActions onShare={() => setShareOpen(true)} onCopy={() => void handleCopy()} shareFirst={phone} />;
   const pricedCards = pricedLines(lines).length;
+  const openAlternatives = (target: IMissingLine, trigger: HTMLElement): void => {
+    focusKeeper.remember(trigger);
+    setAlternatives({ line: target, trigger });
+  };
+  const openIdentifier = alternatives?.line.cardIdentifier ?? null;
+  const panelLayout = docked ? 'docked' : phone ? 'sheet' : 'overlay';
+  const panel =
+    alternatives === null ? null : (
+      <AlternativesSheet
+        key={alternatives.line.cardIdentifier}
+        deckId={deckId}
+        target={{
+          cardIdentifier: alternatives.line.cardIdentifier,
+          name: cardName(alternatives.line.name, alternatives.line.pitch, t),
+          slot: alternatives.line.slot,
+        }}
+        layout={panelLayout}
+        restoreFocusTo={alternatives.trigger}
+        focusFallback={focusKeeper.fallbackTarget}
+        onClose={() => setAlternatives(null)}
+      />
+    );
 
   return (
-    <div className={styles.page} data-testid="missing-list-page" data-layout={phone ? 'phone' : 'desktop'}>
+    <div className={styles.workspace} data-testid="missing-workspace" data-panel={alternatives !== null && docked ? 'docked' : undefined}>
+    <div className={styles.page} ref={setPageElement} data-testid="missing-list-page" data-layout={phone ? 'phone' : 'desktop'}>
       <header className={styles.summaryBar}>
         <MissingSummary summary={summary} lines={lines} />
         {!phone && actions}
@@ -175,7 +207,7 @@ export function MissingListPage({ deckId }: IMissingListPageProps): React.ReactE
           ) : phone ? (
             <ul className={styles.cardList}>
               {shown.map((line) => (
-                <MissingListRow key={line.cardIdentifier} deckId={deckId} line={line} layout="card" />
+                <MissingListRow key={line.cardIdentifier} deckId={deckId} line={line} layout="card" onOpenAlternatives={openAlternatives} alternativesOpen={openIdentifier === line.cardIdentifier} />
               ))}
               {hidden > 0 && (
                 <li className={styles.more}>
@@ -191,7 +223,7 @@ export function MissingListPage({ deckId }: IMissingListPageProps): React.ReactE
                 <TableHead />
                 <tbody>
                   {rows.map((line) => (
-                    <MissingListRow key={line.cardIdentifier} deckId={deckId} line={line} layout="table" />
+                    <MissingListRow key={line.cardIdentifier} deckId={deckId} line={line} layout="table" onOpenAlternatives={openAlternatives} alternativesOpen={openIdentifier === line.cardIdentifier} />
                   ))}
                 </tbody>
                 {activeChip === 'buy' && summary.buyCopies > 0 && (
@@ -225,6 +257,8 @@ export function MissingListPage({ deckId }: IMissingListPageProps): React.ReactE
         initialIntent="missing"
         onOpenChange={setShareOpen}
       />
+    </div>
+    {panel}
     </div>
   );
 }

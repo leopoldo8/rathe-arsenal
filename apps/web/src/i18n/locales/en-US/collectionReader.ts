@@ -3,6 +3,11 @@ import type { TTranslationResources } from '../pt-BR';
 export const collectionReader: TTranslationResources['collectionReader'] = {
   pasteLink: 'Paste a list',
   back: 'Add cards',
+  stepChooseFile: 'Choose the file',
+  stepPasteList: 'Paste the list',
+  stepRead: 'See what was read',
+  stepAdd: 'Add the ready ones',
+  stepsLabel: 'Steps',
 
   // ListReader (r3-list-phone)
   listTitle: 'Pasted list',

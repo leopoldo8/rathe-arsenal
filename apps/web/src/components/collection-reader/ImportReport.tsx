@@ -17,6 +17,8 @@ import {
 } from './readerState';
 import { ReaderLineBody } from './ReaderLineView';
 import { useReaderItems } from './useReaderItems';
+import { RailLayout } from '../ui/RailLayout';
+import { AddSteps } from './AddSteps';
 import styles from './CollectionReader.module.css';
 
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
@@ -145,11 +147,17 @@ export function ImportReport({ file, onChooseAnother }: IImportReportProps): Rea
   }
 
   return (
-    <div className={styles.page}>
-      <Link to="/add-cards" className={styles.back}>
-        <span aria-hidden="true">‹ </span>
-        {t('collectionReader.back')}
-      </Link>
+    <RailLayout
+      className={styles.wide}
+      railLabel={t('collectionReader.stepsLabel')}
+      rail={<AddSteps current={create.isPending ? 'add' : 'read'} chooseKey="collectionReader.stepChooseFile" />}
+      head={
+        <Link to="/add-cards" className={styles.back}>
+          <span aria-hidden="true">‹ </span>
+          {t('collectionReader.back')}
+        </Link>
+      }
+    >
       {readError !== null && (
         <div className={styles.panel}>
           <p role="alert" className={styles.error}>{readError}</p>
@@ -205,6 +213,6 @@ export function ImportReport({ file, onChooseAnother }: IImportReportProps): Rea
           </div>
         </>
       )}
-    </div>
+    </RailLayout>
   );
 }
