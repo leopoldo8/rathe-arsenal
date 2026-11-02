@@ -1,9 +1,10 @@
 import { ICatalog } from '@rathe-arsenal/engine';
 import { RECOMMENDATION_STRENGTHS, TRecommendationStrength } from '../database/entities/recommendation.entity';
 import { IGeminiEntry } from './gemini-client';
-import { IDeckListCard, slotForCard } from './recommendation-prompt';
+import { IDeckListCard, RECOMMENDATION_ASK_COUNT, slotForCard } from './recommendation-prompt';
 
-export const RECOMMENDATIONS_KEPT = 10;
+// Every ranked card the model is asked for is stored, so ranks past the panel's first screen stay readable.
+export const RECOMMENDATIONS_KEPT = RECOMMENDATION_ASK_COUNT;
 
 export interface IKeptRecommendation {
   readonly cardIdentifier: string;
