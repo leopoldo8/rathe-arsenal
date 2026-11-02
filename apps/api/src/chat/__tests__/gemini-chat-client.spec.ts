@@ -179,3 +179,19 @@ describe('withProviderRetry', () => {
     expect(slept).toEqual([]);
   });
 });
+
+describe('Gemini chat client HTTP errors', () => {
+  it('logs the provider message, truncated, and never the key', async () => {
+    const key = 'AIzaSyFAKEKEY1234567';
+    const body = JSON.stringify({ error: { message: `API key ${key} is invalid ${'y'.repeat(1000)}` } });
+    const fetch: TGeminiFetch = async () => ({ ok: false, status: 400, json: async () => JSON.parse(body), text: async () => body });
+
+    const outcome = await callGeminiChat(key, REQUEST, fetch);
+
+    expect(outcome).toMatchObject({ kind: 'failed', code: 'PROVIDER_ERROR' });
+    const detail = (outcome as { detail: string }).detail;
+    expect(detail.startsWith('HTTP 400: API key [redacted] is invalid yyy')).toBe(true);
+    expect(detail.length).toBeLessThanOrEqual('HTTP 400: '.length + 300);
+    expect(detail).not.toContain(key);
+  });
+});

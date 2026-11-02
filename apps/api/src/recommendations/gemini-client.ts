@@ -1,5 +1,6 @@
 import { TRecommendationFailureCode } from '../database/entities/recommendation-run.entity';
 import { IRecommendationPrompt } from './recommendation-prompt';
+import { readProviderFailureDetail } from './provider-failure-detail';
 
 export const GEMINI_MODEL = 'gemini-3.8-flash';
 export const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
@@ -23,7 +24,7 @@ export function parseThinkingLevel(value: string | undefined): TGeminiThinkingLe
 export type TGeminiFetch = (
   url: string,
   init: { method: string; headers: Record<string, string>; body: string; signal: AbortSignal },
-) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
+) => Promise<{ ok: boolean; status: number; json(): Promise<unknown>; text?(): Promise<string> }>;
 
 export interface IGeminiEntry {
   readonly card: string;
@@ -171,7 +172,7 @@ export async function postRecommendation(post: IRecommendationPost, fetchImpl: T
       });
       const retryCode = RETRYABLE_STATUSES.get(response.status);
       if (retryCode) return { kind: 'retry', status: response.status, code: retryCode };
-      if (!response.ok) return { kind: 'failed', code: 'PROVIDER_ERROR', detail: `HTTP ${response.status}` };
+      if (!response.ok) return { kind: 'failed', code: 'PROVIDER_ERROR', detail: await readProviderFailureDetail(response, post.headers) };
       return post.classify(await response.json());
     } catch (error) {
       return { kind: 'failed', code: 'PROVIDER_ERROR', detail: (error as Error).message };
