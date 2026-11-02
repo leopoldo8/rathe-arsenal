@@ -22,7 +22,7 @@ export interface ICardSummary {
 
 /**
  * The model's picks in order, as the production list would hold them: unknown or out-of-pool identifiers and repeats are
- * dropped, but nothing is cut at the stored count, so a card ranked 11th to 25th is still seen.
+ * dropped, but nothing is cut, so a card ranked 11th to 25th is still seen.
  */
 export function rankedPicks(entries: readonly { readonly card: string }[], pool: ReadonlySet<string>): string[] {
   const picks: string[] = [];

@@ -222,7 +222,7 @@ Groups and their membership never change; only the order inside one does (card-a
 Each scenario is a hero, a format and a deck; its expected cards are never hand-picked: they are the cards at least 80% of the scenario's reference decks play, that the deck lacks and that the candidate pool holds.
 Reference decks are a committed snapshot of public Fabrary decks (`recommendation-eval-reference-decks.ts`).
 Scenarios: the owner's Kayo Living Legend deck (deck 21 on staging), which must get Berserk, and four ablations that take the best placed recent tournament deck of a hero, remove its three most played staples and expect them back.
-The score is the share of runs that rank each expected card in the top 10 (the stored list), with top 5, top 25 and the rank per run, read from the full ranked answer rather than the stored top 10.
+The score is the share of runs that rank each expected card in the top 10, with top 5, top 25 and the rank per run, read from the full ranked answer of 25 cards.
 
 Run it (paid, about one cent per call, never in CI; the key is read from the environment and never printed):
 
