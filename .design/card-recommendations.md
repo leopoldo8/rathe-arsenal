@@ -216,6 +216,26 @@ Groups and their membership never change; only the order inside one does (card-a
 
 1. A stale run still orders alternatives - synergy with a slightly older list beats no synergy, and the panel already flags staleness.
 
+## Quality eval
+
+`apps/api/src/recommendations/eval/` measures whether the model ranks the cards that players actually run.
+Each scenario is a hero, a format and a deck; its expected cards are never hand-picked: they are the cards at least 80% of the scenario's reference decks play, that the deck lacks and that the candidate pool holds.
+Reference decks are a committed snapshot of public Fabrary decks (`recommendation-eval-reference-decks.ts`).
+Scenarios: the owner's Kayo Living Legend deck (deck 21 on staging), which must get Berserk, and four ablations that take the best placed recent tournament deck of a hero, remove its three most played staples and expect them back.
+The score is the share of runs that rank each expected card in the top 10 (the stored list), with top 5, top 25 and the rank per run, read from the full ranked answer rather than the stored top 10.
+
+Run it (paid, about one cent per call, never in CI; the key is read from the environment and never printed):
+
+```
+pnpm --filter @rathe-arsenal/api build
+OPENROUTER_API_KEY=... pnpm --filter @rathe-arsenal/api recommendations:eval --runs 5 --max-usd 1 [--only kayo-ll-owner-deck] [--effort high] [--model openrouter/id]
+pnpm --filter @rathe-arsenal/api recommendations:eval:snapshot   # refresh the reference decks from Fabrary
+```
+
+Baseline on 2026-11-02, `openai/gpt-6-luna` with no reasoning effort, as the worker runs it: 12 of 70 expected cards in the top 10 over five runs per scenario (17%).
+Berserk reached the top 10 in 2 of 5 runs and was not ranked at all in the other 3.
+With `--effort high` (three runs per scenario) the total stayed at 17%, while each call took about twice as long.
+
 ## Migration
 
 Three new tables and a replaced CHECK on `card_replacement.pickedFrom`; no backfill - no deck has runs, and no existing row uses the new origin.
