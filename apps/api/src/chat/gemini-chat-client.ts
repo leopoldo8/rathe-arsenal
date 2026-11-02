@@ -1,4 +1,5 @@
 import { GEMINI_MODEL, GEMINI_URL, TGeminiFetch, TGeminiThinkingLevel } from '../recommendations/gemini-client';
+import { readProviderFailureDetail } from '../recommendations/provider-failure-detail';
 import { TChatTurnFailureCode } from '../database/entities/chat-message.entity';
 
 export const CHAT_MODEL = GEMINI_MODEL;
@@ -6,7 +7,6 @@ export const CHAT_CALL_TIMEOUT_MS = 180_000;
 export const CHAT_MAX_OUTPUT_TOKENS = 16_000;
 // Google answers 503 "high demand" and 429 in short spikes and asks callers to retry with a growing wait.
 export const CHAT_RETRY_DELAYS_MS: readonly number[] = [2_000, 5_000, 10_000];
-const PROVIDER_MESSAGE_MAX_LENGTH = 300;
 const TOOL_RESULT_AS_TEXT_MAX = 12_000;
 
 export interface IGeminiPart {
@@ -147,17 +147,6 @@ export async function withProviderRetry(call: () => Promise<TChatCallOutcome>, o
   return outcome;
 }
 
-export async function readFailureDetail(response: { status: number; json(): Promise<unknown> }): Promise<string> {
-  const status = `HTTP ${response.status}`;
-  try {
-    const body = (await response.json()) as { error?: { message?: unknown } } | null;
-    const message = body?.error?.message;
-    return typeof message === 'string' ? `${status}: ${message.slice(0, PROVIDER_MESSAGE_MAX_LENGTH)}` : status;
-  } catch {
-    return status;
-  }
-}
-
 export function classifyStatus(status: number): TChatTurnFailureCode {
   if (status === 429) return 'RATE_LIMITED';
   if (status === 500 || status === 503 || status === 504) return 'PROVIDER_UNAVAILABLE';
@@ -217,7 +206,7 @@ export async function postChat(post: IChatPost, fetchImpl: TGeminiFetch, timeout
         body: JSON.stringify(post.body),
         signal: controller.signal,
       });
-      if (!response.ok) return { kind: 'failed', code: classifyStatus(response.status), detail: await readFailureDetail(response) };
+      if (!response.ok) return { kind: 'failed', code: classifyStatus(response.status), detail: await readProviderFailureDetail(response, post.headers) };
       return post.classify(await response.json());
     } catch (error) {
       return { kind: 'failed', code: 'PROVIDER_ERROR', detail: (error as Error).message };
