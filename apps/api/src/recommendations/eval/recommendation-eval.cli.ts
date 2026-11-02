@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { catalog } from '@rathe-arsenal/engine';
 import { Client } from 'pg';
 import { parseThinkingLevel, TGeminiFetch, TGeminiThinkingLevel } from '../gemini-client';
@@ -10,6 +10,7 @@ import { buildEvalScenario, IEvalScenario, STAPLE_INCLUSION } from './recommenda
 import { EVAL_TOP_N, IRunScore, rankedPicks, scoreRun, summarizeCard } from './recommendation-eval-score';
 import { EVAL_SPECS } from './recommendation-eval-specs';
 import { applyEvalVariant, usageHoldout } from './recommendation-eval-variant';
+import { usageDatabaseTls, withoutTlsParams } from './usage-database-tls';
 
 /** The model the recommendation worker runs in production (RECOMMENDATION_OPENROUTER_MODEL). */
 export const DEFAULT_EVAL_MODEL = 'openai/gpt-6-luna';
@@ -243,8 +244,9 @@ async function main(): Promise<void> {
 async function readUsages(specs: readonly (typeof EVAL_SPECS)[number][]): Promise<Array<IUsageSignal | null>> {
   const url = process.env['USAGE_DATABASE_URL']?.trim();
   if (!url) throw new Error('--usage needs USAGE_DATABASE_URL, the database holding the synced tournament decks');
-  // Railway's public proxy presents a certificate Node does not trust; this client only reads.
-  const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+  const ssl = usageDatabaseTls(process.env, { readFile: (path) => readFileSync(path, 'utf8'), warn: (message) => console.error(message) });
+  // TLS settings in the URL would override `ssl` inside pg, so they are dropped and only `ssl` decides.
+  const client = new Client({ connectionString: withoutTlsParams(url), ssl });
   await client.connect();
   try {
     const now = new Date();
