@@ -183,6 +183,50 @@ describe('recommendation worker (e2e)', () => {
     }
   });
 
+  it('without tournament decks sends the share of public Fabrary decks, one per player, and names that source', async () => {
+    // Arrange
+    await deckWithManualRun();
+    const ulids = Array.from({ length: 5 }, (_, index) => `01JPVBL1CDECKSTESTXXXXXXX${index}`);
+    try {
+      for (const [index, fabraryUlid] of ulids.entries()) {
+        const [{ id }] = await fixture.dataSource.query(
+          `INSERT INTO public_deck ("fabraryUlid", "heroIdentifier", format, "authorKey", "deckUpdatedAt", "fetchedAt")
+           VALUES ($1, 'katsu-the-wanderer', 'Classic Constructed', $2, now() - interval '30 days', now()) RETURNING id`,
+          [fabraryUlid, `author-${index}`],
+        );
+        const cards: Array<[string, number]> = index < 4 ? [[POOL[0], 3], [FLEX, 40]] : [[FLEX, 40]];
+        for (const [cardIdentifier, quantity] of cards) {
+          await fixture.dataSource.query(`INSERT INTO public_deck_card ("publicDeckId", "cardIdentifier", quantity) VALUES ($1, $2, $3)`, [id, cardIdentifier, quantity]);
+        }
+      }
+      const stub = stubFetch(200, geminiBody([{ card: POOL[0] }]));
+
+      // Act
+      await fixture.drain(stub.fetch);
+
+      // Assert
+      const prompt = promptOf(stub);
+      expect(prompt).not.toMatch(/tournament/);
+      const usageSection = prompt.split('Share of the 5 most recent public decks on Fabrary for this hero and format, one per player,')[1]!.split('\n\nRank the')[0]!;
+      expect(usageSection).toContain(`${POOL[0]}: 80%`);
+      expect(usageSection).toContain(`${FLEX}: 100% (in the deck)`);
+    } finally {
+      await fixture.dataSource.query(`DELETE FROM public_deck WHERE "fabraryUlid" = ANY($1)`, [ulids]);
+    }
+  });
+
+  it('without any usage data keeps other pitches of deck cards in the pool', async () => {
+    await deckWithManualRun();
+    const stub = stubFetch(200, geminiBody([{ card: POOL[0] }]));
+
+    await fixture.drain(stub.fetch);
+
+    const prompt = promptOf(stub);
+    expect(prompt).not.toMatch(/Share of the/);
+    const poolIds = prompt.split('Candidate pool')[1]!.split('\n').slice(1).map((line) => line.split(' | ')[0]);
+    expect(poolIds).toContain('flex-yellow');
+  });
+
   it('a missing key fails without a call', async () => {
     for (const apiKey of [null, '  ']) {
       const { runId } = await deckWithManualRun();

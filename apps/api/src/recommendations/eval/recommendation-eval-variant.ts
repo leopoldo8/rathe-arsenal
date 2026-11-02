@@ -29,6 +29,47 @@ export function usageHoldout(spec: IEvalSpec, referenceDecks: readonly IReferenc
   };
 }
 
+export interface IPublicHoldout {
+  readonly excludeFabraryUlids: readonly string[];
+  readonly excludeAuthorKeys: readonly string[];
+  /** Reference decks whose author the live index no longer shows; only their id is held out. */
+  readonly unknownAuthors: number;
+}
+
+/**
+ * Public decks share Fabrary's index with community references, so every reference deck is left out by id, and every
+ * deck of a reference author too: the same player's other list would carry the same choices into the signal.
+ * `authorByDeck` maps a reference deck id to its author key (`authorKeyOf`), read from the live index.
+ */
+export function publicHoldout(referenceDecks: readonly IReferenceDeck[], authorByDeck: ReadonlyMap<string, string>): IPublicHoldout {
+  const authors = referenceDecks.flatMap((deck) => {
+    const author = authorByDeck.get(deck.id);
+    return author === undefined ? [] : [author];
+  });
+  return {
+    excludeFabraryUlids: referenceDecks.map((deck) => deck.id),
+    excludeAuthorKeys: [...new Set(authors)],
+    unknownAuthors: referenceDecks.length - authors.length,
+  };
+}
+
+/**
+ * Two folds of the reference decks that share no author: authors in order of their first deck id, alternately to the
+ * first and the second fold. A deck with no known author is its own author.
+ */
+export function authorFolds(
+  referenceDecks: readonly IReferenceDeck[],
+  authorByDeck: ReadonlyMap<string, string>,
+): readonly [IReferenceDeck[], IReferenceDeck[]] {
+  const byAuthor = new Map<string, IReferenceDeck[]>();
+  for (const deck of [...referenceDecks].sort((a, b) => a.id.localeCompare(b.id))) {
+    const author = authorByDeck.get(deck.id) ?? `deck:${deck.id}`;
+    byAuthor.set(author, [...(byAuthor.get(author) ?? []), deck]);
+  }
+  const groups = [...byAuthor.values()];
+  return [groups.filter((_, index) => index % 2 === 0).flat(), groups.filter((_, index) => index % 2 === 1).flat()];
+}
+
 /** The pool and usage a run sends. Expected cards come from the baseline pool, so every variant scores the same cards. */
 export function applyEvalVariant(
   scenario: IEvalScenario,

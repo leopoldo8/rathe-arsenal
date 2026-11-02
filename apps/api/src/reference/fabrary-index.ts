@@ -29,6 +29,8 @@ export interface IIndexDeck {
   readonly hasResults?: boolean;
   readonly hasMatchups?: boolean;
   readonly hasNotes?: boolean;
+  /** Fabrary's id of the deck's author; public decks count one deck per author. */
+  readonly userId?: string;
 }
 
 export interface IIndexRequest {
@@ -122,7 +124,7 @@ export class FabraryIndexClient {
       query: request.query ?? '',
       filters: request.filters,
       hitsPerPage: String(request.hitsPerPage),
-      attributesToRetrieve: JSON.stringify(['deckId', 'name', 'format', 'heroIdentifier', 'updatedAt', 'hasResults', 'hasMatchups', 'hasNotes']),
+      attributesToRetrieve: JSON.stringify(['deckId', 'name', 'format', 'heroIdentifier', 'updatedAt', 'hasResults', 'hasMatchups', 'hasNotes', 'userId']),
       attributesToHighlight: '[]',
       ...(request.facets ? { facets: JSON.stringify(request.facets), maxValuesPerFacet: '1000' } : {}),
     });

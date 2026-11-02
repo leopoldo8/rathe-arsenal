@@ -124,3 +124,12 @@ export function buildEvalScenario(spec: IEvalSpec, referenceDecks: readonly IRef
   const pool = poolOf(deck);
   return { id: spec.id, deck, heroCard, pool, expected: removed.filter(inPool(pool)), referenceDecks: others.length, inputFrom: `reference deck ${ablated.id}` };
 }
+
+/**
+ * The same deck and pool, with the expected cards taken only from `decks`. The public deck folds use it: the signal
+ * comes from one fold's decks and the expected cards from the other's, so no deck is on both sides. A fold is smaller
+ * than `MIN_REFERENCE_DECKS`, so its result is a diagnostic, not a scenario of its own.
+ */
+export function withExpectedFrom(scenario: IEvalScenario, id: string, decks: readonly IReferenceDeck[]): IEvalScenario {
+  return { ...scenario, id, expected: staples(inclusionRates(decks)).filter(inPool(scenario.pool)), referenceDecks: decks.length };
+}

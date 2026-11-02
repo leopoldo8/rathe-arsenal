@@ -98,6 +98,12 @@ export async function bootRecommendationsFixture(options: { readonly throttle?: 
   const { dataSource, app } = base;
   // Synced tournament decks of the fixture's hero would add a usage signal to every prompt; tests that want one seed it.
   await dataSource.query(`DELETE FROM tournament_deck WHERE "heroIdentifier" = 'katsu-the-wanderer' AND format = 'Classic Constructed'`);
+  // Public Fabrary decks are the fallback source; a fresh refresh with no decks keeps every run off the network.
+  await dataSource.query(`DELETE FROM public_deck WHERE "heroIdentifier" = 'katsu-the-wanderer' AND format = 'Classic Constructed'`);
+  await dataSource.query(
+    `INSERT INTO public_deck_refresh ("heroIdentifier", format, "refreshedAt", decks) VALUES ('katsu-the-wanderer', 'Classic Constructed', now(), 0)
+     ON CONFLICT ("heroIdentifier", format) DO UPDATE SET "refreshedAt" = now(), decks = 0`,
+  );
   const server = app.getHttpServer();
   const queue = app.get(RecommendationQueueService);
   const runner = app.get(RecommendationRunnerService);
