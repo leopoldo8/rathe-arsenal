@@ -10,8 +10,25 @@ const CI_WORKFLOW = readFileSync(join(__dirname, '../../../../../../.github/work
 
 describe('recommendation eval CLI', () => {
   it('defaults to the production model, three runs and a one dollar cap', () => {
-    expect(readEvalOptions([])).toEqual({ runs: 3, concurrency: 3, only: [], model: DEFAULT_EVAL_MODEL, maxUsd: DEFAULT_EVAL_MAX_USD, out: 'recommendation-eval-report', effort: undefined, usage: false, dropSiblings: false });
-    expect(readEvalOptions(['--usage', '--drop-siblings'])).toMatchObject({ usage: true, dropSiblings: true });
+    expect(readEvalOptions([])).toEqual({
+      runs: 3,
+      concurrency: 3,
+      only: [],
+      model: DEFAULT_EVAL_MODEL,
+      maxUsd: DEFAULT_EVAL_MAX_USD,
+      out: 'recommendation-eval-report',
+      effort: undefined,
+      usage: false,
+      dropSiblings: false,
+      publicFolds: false,
+      promptsOnly: false,
+    });
+    expect(readEvalOptions(['--usage', '--drop-siblings', '--public-folds', '--prompts-only'])).toMatchObject({
+      usage: true,
+      dropSiblings: true,
+      publicFolds: true,
+      promptsOnly: true,
+    });
     expect(DEFAULT_EVAL_MODEL).toBe('openai/gpt-6-luna');
     expect(readEvalOptions(['--runs', '5', '--only', 'a,b', '--max-usd', '0.5']).only).toEqual(['a', 'b']);
   });

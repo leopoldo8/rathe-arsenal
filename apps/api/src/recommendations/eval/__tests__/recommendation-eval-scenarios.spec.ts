@@ -9,6 +9,7 @@ import {
   parseDeckCards,
   pickAblationDeck,
   STAPLE_INCLUSION,
+  withExpectedFrom,
 } from '../recommendation-eval-scenarios';
 import { EVAL_SPECS, IEvalSpec } from '../recommendation-eval-specs';
 
@@ -92,6 +93,26 @@ describe('recommendation eval scenarios', () => {
     expect(deckIdentifiers).toEqual(expect.arrayContaining(['pulping-red', 'beast-within-yellow', 'mandible-claw']));
     expect(scenario.deck.cards.find((card) => card.cardIdentifier === 'mandible-claw')?.slot).toBe('weapon');
     expect(scenario.pool.some((card) => card.cardIdentifier === 'berserk-yellow')).toBe(true);
+  });
+
+  it('recomputes the expected cards of a fixed deck from other decks, for a fold that held its signal decks apart', () => {
+    // Arrange
+    const spec: IEvalSpec = { ...KAYO_LL, input: { kind: 'deck', provenance: 'test', cards: 'pulping-red:3 savage-feast-red:3' } };
+    const scenario = buildEvalScenario(spec, kayoDecks(), catalog);
+    const fold = kayoDecks().slice(0, 4);
+
+    // Act
+    const folded = withExpectedFrom(scenario, 'kayo-test:fold-1', fold);
+
+    // Assert
+    expect(folded.id).toBe('kayo-test:fold-1');
+    expect(folded.referenceDecks).toBe(4);
+    expect(folded.expected).toEqual([
+      { cardIdentifier: 'berserk-yellow', inclusion: 1 },
+      { cardIdentifier: 'wild-ride-red', inclusion: 1 },
+    ]);
+    expect(folded.deck).toBe(scenario.deck);
+    expect(folded.pool).toBe(scenario.pool);
   });
 
   it('refuses a scenario with too few reference decks to trust an inclusion rate', () => {

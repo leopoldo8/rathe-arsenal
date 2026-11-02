@@ -1,14 +1,16 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { catalog } from '@rathe-arsenal/engine';
 import { Client } from 'pg';
+import { EnvDto } from '../../config/env.dto';
 import { parseThinkingLevel, TGeminiFetch, TGeminiThinkingLevel } from '../gemini-client';
 import { callOpenRouterRecommendation } from '../openrouter-recommendation-client';
 import { buildRecommendationPrompt } from '../recommendation-prompt';
 import { IUsageSignal, loadUsageSignal } from '../usage-signal';
+import { publicFoldScenarios, readHeldOutPublicUsage } from './recommendation-eval-public';
 import { REFERENCE_DECKS, REFERENCE_SNAPSHOT_DATE } from './recommendation-eval-reference-decks';
 import { buildEvalScenario, IEvalScenario, STAPLE_INCLUSION } from './recommendation-eval-scenarios';
 import { EVAL_TOP_N, IRunScore, rankedPicks, scoreRun, summarizeCard } from './recommendation-eval-score';
-import { EVAL_SPECS } from './recommendation-eval-specs';
+import { EVAL_SPECS, IEvalSpec } from './recommendation-eval-specs';
 import { applyEvalVariant, usageHoldout } from './recommendation-eval-variant';
 import { usageDatabaseTls, withoutTlsParams } from './usage-database-tls';
 
@@ -30,6 +32,10 @@ export interface IRecommendationEvalOptions {
   readonly usage: boolean;
   /** Leave other pitch versions of deck cards out of the pool. */
   readonly dropSiblings: boolean;
+  /** Also run the author-disjoint public deck folds of community scenarios (`publicFoldScenarios`). */
+  readonly publicFolds: boolean;
+  /** Write the prompts each scenario would send to `<out>.prompts.json` and call no model. */
+  readonly promptsOnly: boolean;
 }
 
 function positive(flag: string, raw: string | undefined, fallback: number, integer: boolean): number {
@@ -64,6 +70,8 @@ export function readEvalOptions(argv: readonly string[]): IRecommendationEvalOpt
     effort: readEffort(value('--effort')),
     usage: argv.includes('--usage'),
     dropSiblings: argv.includes('--drop-siblings'),
+    publicFolds: argv.includes('--public-folds'),
+    promptsOnly: argv.includes('--prompts-only'),
   };
 }
 
@@ -172,11 +180,14 @@ async function runOnce(apiKey: string, options: IRecommendationEvalOptions, prep
 }
 
 /**
- * `recommendations:eval [--model openrouter/id] [--effort low|medium|high] [--runs N] [--concurrency N] [--only id,id] [--max-usd N] [--out path] [--usage] [--drop-siblings]`:
+ * `recommendations:eval [--model openrouter/id] [--effort low|medium|high] [--runs N] [--concurrency N] [--only id,id] [--max-usd N] [--out path] [--usage] [--drop-siblings] [--public-folds] [--prompts-only]`:
  * sends each scenario's production prompt to the real model through OpenRouter (OPENROUTER_API_KEY) and scores where
  * the cards that most reference decks play land in its ranking. Paid, so it never runs in CI.
- * `--usage` reads the synced tournament decks from the database at USAGE_DATABASE_URL (staging), holding out the
- * eval's reference decks (`usageHoldout`); the URL is never written to the report.
+ * `--usage` reads the usage signal as production does: the synced tournament decks from the database at
+ * USAGE_DATABASE_URL (staging), and, where those are too few, public decks read live from Fabrary; the eval's
+ * reference decks are held out of both (`usageHoldout`, `publicHoldout`). The URL is never written to the report.
+ * `--public-folds` adds, for each community scenario, the two author-disjoint fold diagnostics (`publicFoldScenarios`).
+ * `--prompts-only` writes the prompts to `<out>.prompts.json` and calls no model, to compare variants for free.
  */
 async function main(): Promise<void> {
   let options: IRecommendationEvalOptions;
@@ -187,27 +198,26 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   const apiKey = process.env['OPENROUTER_API_KEY']?.trim();
-  if (!apiKey) {
+  if (!apiKey && !options.promptsOnly) {
     console.error('recommendations:eval needs OPENROUTER_API_KEY');
     process.exit(1);
   }
   const specs = EVAL_SPECS.filter((spec) => options.only.length === 0 || options.only.includes(spec.id));
-  const scenarios = specs.map((spec) => buildEvalScenario(spec, REFERENCE_DECKS[spec.id] ?? [], catalog));
   let prepared: IPreparedScenario[];
   const notes: Record<string, string> = {};
   try {
-    const usages = options.usage ? await readUsages(specs) : specs.map(() => null);
-    prepared = scenarios.map((scenario, index) => {
-      const usage = usages[index] ?? null;
-      notes[scenario.id] = [
-        options.usage ? (usage ? `Usage: ${usage.decks} held-out tournament decks.` : 'Usage: too few held-out tournament decks, none sent.') : '',
-        options.dropSiblings ? 'Pitch versions of deck cards dropped from the pool.' : '',
-      ].filter(Boolean).join(' ');
-      return { scenario, ...applyEvalVariant(scenario, { dropPitchSiblings: options.dropSiblings, usage }, catalog) };
-    });
+    prepared = await prepareScenarios(specs, options, notes);
   } catch (error) {
     console.error((error as Error).message);
     process.exit(1);
+  }
+  if (options.promptsOnly) {
+    const prompts = Object.fromEntries(
+      prepared.map((entry) => [entry.scenario.id, buildRecommendationPrompt(entry.scenario.deck, entry.scenario.heroCard, entry.pool, catalog, entry.usage)]),
+    );
+    writeFileSync(`${options.out}.prompts.json`, JSON.stringify({ notes, prompts }, null, 2));
+    console.error(`prompts at ${options.out}.prompts.json`);
+    process.exit(0);
   }
   const queue = prepared.flatMap((scenario) => Array.from({ length: options.runs }, (_, index) => ({ scenario, run: index + 1 })));
   const planned = queue.length;
@@ -219,14 +229,14 @@ async function main(): Promise<void> {
         console.error(`stopped: $${spent().toFixed(4)} spent, the cap is $${options.maxUsd}`);
         return;
       }
-      const result = await runOnce(apiKey, options, next.scenario, next.run);
+      const result = await runOnce(apiKey!, options, next.scenario, next.run);
       results.push(result);
       console.error(`${result.scenario} #${result.run}: ${result.status}${result.score ? `, ${result.score.hits}/${next.scenario.scenario.expected.length} in the top ${EVAL_TOP_N}` : ''}`);
     }
   };
   await Promise.all(Array.from({ length: options.concurrency }, worker));
   const ordered = [...results].sort((a, b) => a.scenario.localeCompare(b.scenario) || a.run - b.run);
-  const variant = { usage: options.usage, dropSiblings: options.dropSiblings };
+  const variant = { usage: options.usage, dropSiblings: options.dropSiblings, publicFolds: options.publicFolds };
   writeFileSync(
     `${options.out}.json`,
     JSON.stringify({ model: options.model, effort: options.effort ?? null, variant, notes, snapshot: REFERENCE_SNAPSHOT_DATE, results: ordered }, null, 2),
@@ -241,7 +251,34 @@ async function main(): Promise<void> {
   process.exit(ordered.length === planned && ordered.every((result) => result.score !== null) ? 0 : 1);
 }
 
-async function readUsages(specs: readonly (typeof EVAL_SPECS)[number][]): Promise<Array<IUsageSignal | null>> {
+function variantNote(options: IRecommendationEvalOptions, usageNote: string): string {
+  return [usageNote, options.dropSiblings ? 'Pitch versions of deck cards dropped from the pool when usage data exists.' : ''].filter(Boolean).join(' ');
+}
+
+/** Each scenario with the pool and usage the variant sends, plus the public fold diagnostics when asked. */
+async function prepareScenarios(specs: readonly IEvalSpec[], options: IRecommendationEvalOptions, notes: Record<string, string>): Promise<IPreparedScenario[]> {
+  const now = new Date();
+  const env = Object.assign(new EnvDto(), process.env) as EnvDto;
+  const tournament = options.usage ? await readUsages(specs) : specs.map(() => null);
+  const prepared: IPreparedScenario[] = [];
+  for (const [index, spec] of specs.entries()) {
+    const referenceDecks = REFERENCE_DECKS[spec.id] ?? [];
+    const scenario = buildEvalScenario(spec, referenceDecks, catalog);
+    let usage = tournament[index] ?? null;
+    let usageNote = usage ? `Usage: ${usage.decks} held-out tournament decks.` : '';
+    if (options.usage && !usage) ({ usage, note: usageNote } = await readHeldOutPublicUsage(spec, referenceDecks, env, now));
+    notes[scenario.id] = variantNote(options, usageNote);
+    prepared.push({ scenario, ...applyEvalVariant(scenario, { dropPitchSiblings: options.dropSiblings, usage }, catalog) });
+    if (!options.publicFolds || spec.reference.source !== 'community' || spec.input.kind !== 'deck') continue;
+    for (const fold of await publicFoldScenarios(spec, scenario, referenceDecks, now)) {
+      notes[fold.scenario.id] = variantNote(options, fold.note);
+      prepared.push({ scenario: fold.scenario, ...applyEvalVariant(fold.scenario, { dropPitchSiblings: options.dropSiblings, usage: fold.usage }, catalog) });
+    }
+  }
+  return prepared;
+}
+
+async function readUsages(specs: readonly IEvalSpec[]): Promise<Array<IUsageSignal | null>> {
   const url = process.env['USAGE_DATABASE_URL']?.trim();
   if (!url) throw new Error('--usage needs USAGE_DATABASE_URL, the database holding the synced tournament decks');
   const ssl = usageDatabaseTls(process.env, { readFile: (path) => readFileSync(path, 'utf8'), warn: (message) => console.error(message) });

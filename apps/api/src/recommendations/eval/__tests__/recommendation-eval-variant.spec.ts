@@ -3,7 +3,8 @@ import { IUsageSignal } from '../../usage-signal';
 import { buildEvalScenario, IReferenceDeck } from '../recommendation-eval-scenarios';
 import { EVAL_SPECS, IEvalSpec } from '../recommendation-eval-specs';
 import { REFERENCE_DECKS } from '../recommendation-eval-reference-decks';
-import { applyEvalVariant, usageHoldout } from '../recommendation-eval-variant';
+import { authorKeyOf } from '../../public-deck-usage';
+import { applyEvalVariant, authorFolds, publicHoldout, usageHoldout } from '../recommendation-eval-variant';
 
 const spec = (id: string): IEvalSpec => EVAL_SPECS.find((candidate) => candidate.id === id)!;
 const deck = (id: string, date: string): IReferenceDeck => ({ id, date, placement: null, cards: 'berserk-yellow:3' });
@@ -26,6 +27,52 @@ describe('usage holdout', () => {
 
     expect(holdout.excludeFabraryUlids).toEqual(['01A']);
     expect(holdout.createdBefore).toBeUndefined();
+  });
+});
+
+describe('public deck holdout', () => {
+  it('leaves out every reference deck and every deck of their authors', () => {
+    // Arrange
+    const references = [deck('01A', '2025-01-01'), deck('01B', '2025-02-01'), deck('01C', '2025-03-01')];
+    const authors = new Map([
+      ['01A', authorKeyOf('ann', '01A')],
+      ['01B', authorKeyOf('bob', '01B')],
+    ]);
+
+    // Act
+    const holdout = publicHoldout(references, authors);
+
+    // Assert
+    expect(holdout.excludeFabraryUlids).toEqual(['01A', '01B', '01C']);
+    expect(holdout.excludeAuthorKeys).toEqual([authorKeyOf('ann', '01A'), authorKeyOf('bob', '01B')]);
+    expect(holdout.unknownAuthors).toBe(1);
+  });
+});
+
+describe('author folds', () => {
+  it('splits the reference decks into two folds that share no author, alternating authors by their first deck id', () => {
+    // Arrange
+    const references = [deck('01E', '2025-01-01'), deck('01A', '2025-01-01'), deck('01C', '2025-01-01'), deck('01B', '2025-01-01'), deck('01D', '2025-01-01')];
+    const authors = new Map([
+      ['01A', 'ann'],
+      ['01B', 'bob'],
+      ['01C', 'ann'],
+      ['01D', 'cid'],
+      ['01E', 'dan'],
+    ]);
+
+    // Act
+    const [first, second] = authorFolds(references, authors);
+
+    // Assert
+    expect(first.map((reference) => reference.id)).toEqual(['01A', '01C', '01D']);
+    expect(second.map((reference) => reference.id)).toEqual(['01B', '01E']);
+  });
+
+  it('gives a deck whose author is unknown a fold of its own author', () => {
+    const [first, second] = authorFolds([deck('01A', '2025-01-01'), deck('01B', '2025-01-01')], new Map());
+
+    expect([first.length, second.length]).toEqual([1, 1]);
   });
 });
 

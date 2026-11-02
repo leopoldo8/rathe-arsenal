@@ -77,8 +77,9 @@ export function renderReferenceModule(snapshotDate: string, decks: Readonly<Reco
   return lines.join('\n');
 }
 
-async function searchIndex(spec: IEvalSpec): Promise<IIndexDeck[]> {
-  const filters = `${SOURCE_FILTERS[spec.reference.source]} AND format:${quoted(spec.format)} AND heroIdentifier:${quoted(spec.heroIdentifier)}`;
+/** Every deck of the spec's hero and format in Fabrary's public index, from the given source. */
+export async function searchIndex(spec: Pick<IEvalSpec, 'heroIdentifier' | 'format'>, source: TReferenceSource): Promise<IIndexDeck[]> {
+  const filters = `${SOURCE_FILTERS[source]} AND format:${quoted(spec.format)} AND heroIdentifier:${quoted(spec.heroIdentifier)}`;
   const response = await fetch(FABRARY_INDEX_URL, {
     method: 'POST',
     headers: { 'X-Algolia-Application-Id': FABRARY_INDEX_APP_ID, 'X-Algolia-API-Key': FABRARY_INDEX_API_KEY },
@@ -89,16 +90,27 @@ async function searchIndex(spec: IEvalSpec): Promise<IIndexDeck[]> {
   return body.results[0]?.hits ?? [];
 }
 
-async function fetchDeckCards(deckId: string, env: EnvDto): Promise<string | null> {
+export interface IFetchedDeckRow {
+  readonly cardIdentifier: string;
+  readonly quantity: number;
+}
+
+/** The deck's card rows with a playable quantity (the inventory left out), or null when Fabrary does not answer with them. */
+export async function fetchDeckRows(deckId: string, env: EnvDto): Promise<IFetchedDeckRow[] | null> {
   const response = await fetch(env.AWS_APPSYNC_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': env.FABRARY_APPSYNC_API_KEY, 'User-Agent': env.FABRARY_USER_AGENT ?? BROWSER_USER_AGENT },
     body: JSON.stringify({ query: GET_DECK_QUERY, variables: { deckId } }),
   });
-  const body = (await response.json().catch(() => null)) as { data?: { getDeck?: { deckCards?: { cardIdentifier: string; quantity: number }[] } | null } } | null;
+  const body = (await response.json().catch(() => null)) as { data?: { getDeck?: { deckCards?: IFetchedDeckRow[] } | null } } | null;
   const cards = body?.data?.getDeck?.deckCards;
-  if (!response.ok || !cards) return null;
-  return formatDeckCards(new Map(cards.filter((card) => card.quantity > 0).map((card) => [card.cardIdentifier, card.quantity])));
+  if (!response.ok || !Array.isArray(cards)) return null;
+  return cards.filter((card) => typeof card.cardIdentifier === 'string' && typeof card.quantity === 'number' && card.quantity > 0);
+}
+
+async function fetchDeckCards(deckId: string, env: EnvDto): Promise<string | null> {
+  const rows = await fetchDeckRows(deckId, env);
+  return rows ? formatDeckCards(new Map(rows.map((card) => [card.cardIdentifier, card.quantity]))) : null;
 }
 
 /**
@@ -110,7 +122,7 @@ async function main(): Promise<void> {
   const now = new Date();
   const decks: Record<string, IReferenceDeck[]> = {};
   for (const spec of EVAL_SPECS) {
-    const listed = selectReferenceDecks(await searchIndex(spec), spec, spec.reference, now);
+    const listed = selectReferenceDecks(await searchIndex(spec, spec.reference.source), spec, spec.reference, now);
     decks[spec.id] = [];
     for (const deck of listed) {
       const cards = await fetchDeckCards(deck.hit.deckId, env);
