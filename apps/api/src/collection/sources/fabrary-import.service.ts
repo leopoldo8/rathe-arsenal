@@ -84,7 +84,8 @@ export class FabraryImportService {
     } catch (error) {
       if (
         error instanceof FabraryImportError &&
-        (error.code === EFabraryErrorCode.INVALID_PAYLOAD ||
+        (error.code === EFabraryErrorCode.DECK_UNAVAILABLE ||
+          error.code === EFabraryErrorCode.INVALID_PAYLOAD ||
           error.code === EFabraryErrorCode.INVALID_URL ||
           error.code === EFabraryErrorCode.INVALID_ULID)
       ) {

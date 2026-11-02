@@ -198,6 +198,16 @@ describe('TestDeckService', () => {
       ).rejects.toBeInstanceOf(BadGatewayException);
     });
 
+    it('maps a deck Fabrary refuses (missing or private) to 404 FABRARY_DECK_NOT_FOUND', async () => {
+      fabraryService.fetchDeck.mockRejectedValue(
+        new FabraryImportError(EFabraryErrorCode.DECK_UNAVAILABLE, 'refused'),
+      );
+
+      await expect(
+        service.run({ url: FABRARY_URL }, { userId: USER_ID }),
+      ).rejects.toMatchObject({ status: 404, response: { code: 'FABRARY_DECK_NOT_FOUND' } });
+    });
+
     it('does not persist anything when fetch fails', async () => {
       fabraryService.fetchDeck.mockRejectedValue(
         new FabraryImportError(EFabraryErrorCode.FETCH_FAILED, 'boom'),

@@ -212,6 +212,15 @@ describe('FabraryImportService', () => {
     );
   });
 
+  it('translates a deck Fabrary refuses (missing or private) into BadRequest', async () => {
+    fabraryService.fetchDeck.mockRejectedValue(
+      new FabraryImportError(EFabraryErrorCode.DECK_UNAVAILABLE, 'refused'),
+    );
+    await expect(service.importFromUrl(USER_ID, VALID_URL)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
   it('rejects an empty deck (no importable cards)', async () => {
     fabraryService.fetchDeck.mockResolvedValue(
       buildDeck({

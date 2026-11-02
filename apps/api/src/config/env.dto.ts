@@ -71,13 +71,16 @@ export class EnvDto {
   AWS_APPSYNC_ENDPOINT: string =
     'https://42xrd23ihbd47fjvsrt27ufpfe.appsync-api.us-east-2.amazonaws.com/graphql';
 
+  /**
+   * Fabrary's public AppSync API key. It is not a secret: Fabrary serves it to every browser in the
+   * `aws_appsync_apiKey` field of the index-*.js bundle on https://fabrary.net. AppSync keys expire
+   * and Fabrary rotates them, so when imports start failing with API_KEY_REJECTED, copy the
+   * current value from that bundle into this variable (no redeploy needed) and update the default.
+   */
   @IsOptional()
   @IsString()
-  COGNITO_IDENTITY_POOL_ID: string = 'us-east-2:e50f3ed7-32ed-4b22-a05e-10b3e7e03fe0';
-
-  @IsOptional()
-  @IsString()
-  COGNITO_REGION: string = 'us-east-2';
+  @IsNotEmpty()
+  FABRARY_APPSYNC_API_KEY: string = 'da2-ddvxcqgprncwtdpokajstcnjha';
 
   @IsOptional()
   @IsString()
@@ -88,7 +91,7 @@ export class EnvDto {
    * User-Agent sent with Fabrary AppSync requests. Fabrary's WAF Bot Control
    * rejects non-browser clients (HTTP 403 WAFForbiddenException), so this must
    * look like a real browser. Overridable to rotate it without a redeploy if
-   * Bot Control tightens. Default lives in AwsIamTransport.
+   * Bot Control tightens. Default lives in FabraryAppSyncTransport.
    */
   @IsOptional()
   @IsString()

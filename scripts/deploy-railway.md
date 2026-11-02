@@ -57,7 +57,7 @@ The API refuses to start when a required variable is missing or invalid.
 | `SENTRY_DSN` | both | no | Absent, API Sentry is off |
 | `VITE_SENTRY_DSN` | web (build) | no | Absent, web Sentry is off |
 | `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | web (build) | no | Source-map upload at build; the build succeeds without them |
-| `AWS_APPSYNC_ENDPOINT`, `COGNITO_IDENTITY_POOL_ID`, `COGNITO_REGION`, `FABRARY_ALLOW_HOSTS` | both | no | Fabrary deck import on the web service, and the worker's reference-data step; the defaults in code are correct, override only to change them |
+| `AWS_APPSYNC_ENDPOINT`, `FABRARY_APPSYNC_API_KEY`, `FABRARY_ALLOW_HOSTS` | both | no | Fabrary deck import on the web service, and the worker's reference-data step; the defaults in code are correct, override only to change them. When imports fail with `API_KEY_REJECTED` in the logs, Fabrary rotated its public key: copy `aws_appsync_apiKey` from the `index-*.js` bundle on https://fabrary.net into `FABRARY_APPSYNC_API_KEY`. `COGNITO_IDENTITY_POOL_ID` and `COGNITO_REGION` are no longer read and can be deleted |
 | `FABRARY_USER_AGENT` | both | no | Override of the browser-like User-Agent Fabrary's firewall requires; override only to rotate it |
 | `PRICE_SYNC_ENABLED` | one of them | no | `true` turns on the hourly in-process read of TCGplayer prices for the sets on sell lists; default off. Any process that boots the application module runs it (the worker too), so set it on one service only |
 | `GEMINI_API_KEY` | worker | no | Read only by the worker; absent, recommendation and Tutor runs fail |

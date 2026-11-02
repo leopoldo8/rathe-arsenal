@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -47,7 +48,7 @@ import {
  * CTAs on the result screen.
  *
  * All outbound HTTP happens inside `FabraryService.fetchDeck`, which
- * goes through `AwsIamTransport` -> `FetchGuardService.guardedFetch`.
+ * goes through `FabraryAppSyncTransport` -> `FetchGuardService.guardedFetch`.
  * This service contains **zero direct `fetch(` calls**; the SSRF
  * allow-list, redirect-blocking, size cap, and 10s timeout from the
  * Phase 0 S5 guard all apply unchanged to this new attack surface.
@@ -169,9 +170,14 @@ export class TestDeckService {
           code: error.code,
           message: error.message,
         });
+      case EFabraryErrorCode.DECK_UNAVAILABLE:
+        return new NotFoundException({
+          code: 'FABRARY_DECK_NOT_FOUND',
+          message: 'The deck does not exist or is private',
+        });
       case EFabraryErrorCode.INVALID_PAYLOAD:
       case EFabraryErrorCode.FETCH_FAILED:
-      case EFabraryErrorCode.CREDENTIAL_EXPIRED:
+      case EFabraryErrorCode.API_KEY_REJECTED:
       default:
         return new BadGatewayException({
           code: 'FABRARY_UNREACHABLE',

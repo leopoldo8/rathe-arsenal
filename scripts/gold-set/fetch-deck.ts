@@ -1,12 +1,5 @@
-import {
-  CognitoIdentityClient,
-  GetIdCommand,
-  GetCredentialsForIdentityCommand,
-} from '@aws-sdk/client-cognito-identity';
-import aws4 from 'aws4';
-
-const IDENTITY_POOL_ID = 'us-east-2:e50f3ed7-32ed-4b22-a05e-10b3e7e03fe0';
-const REGION = 'us-east-2';
+// Same public key and endpoint as the API (see FABRARY_APPSYNC_API_KEY in apps/api/src/config/env.dto.ts).
+const API_KEY = process.env.FABRARY_APPSYNC_API_KEY ?? 'da2-ddvxcqgprncwtdpokajstcnjha';
 const APPSYNC_HOST =
   '42xrd23ihbd47fjvsrt27ufpfe.appsync-api.us-east-2.amazonaws.com';
 
@@ -43,68 +36,18 @@ export interface IRawDeck {
   deckCards: IRawDeckCard[];
 }
 
-let cachedCreds: {
-  accessKeyId: string;
-  secretAccessKey: string;
-  sessionToken: string;
-  expiration: Date;
-} | null = null;
-
-async function getCredentials(): Promise<typeof cachedCreds & object> {
-  if (cachedCreds && cachedCreds.expiration.getTime() - Date.now() > 60_000) {
-    return cachedCreds;
-  }
-
-  const client = new CognitoIdentityClient({ region: REGION });
-  const idRes = await client.send(
-    new GetIdCommand({ IdentityPoolId: IDENTITY_POOL_ID }),
-  );
-
-  const credRes = await client.send(
-    new GetCredentialsForIdentityCommand({ IdentityId: idRes.IdentityId }),
-  );
-
-  const creds = credRes.Credentials!;
-  cachedCreds = {
-    accessKeyId: creds.AccessKeyId!,
-    secretAccessKey: creds.SecretKey!,
-    sessionToken: creds.SessionToken!,
-    expiration: creds.Expiration!,
-  };
-
-  return cachedCreds;
-}
-
 export async function fetchDeck(ulid: string): Promise<IRawDeck> {
-  const creds = await getCredentials();
-
   const body = JSON.stringify({
     operationName: 'getDeck',
     query: QUERY,
     variables: { deckId: ulid },
   });
 
-  const opts = {
-    host: APPSYNC_HOST,
-    path: '/graphql',
-    method: 'POST',
-    service: 'appsync',
-    region: REGION,
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  };
-
-  aws4.sign(opts, {
-    accessKeyId: creds.accessKeyId,
-    secretAccessKey: creds.secretAccessKey,
-    sessionToken: creds.sessionToken,
-  });
-
   const response = await fetch(`https://${APPSYNC_HOST}/graphql`, {
     method: 'POST',
-    // Unsigned header added after signing: Fabrary's WAF Bot Control 403s
-    // requests that carry no browser-like User-Agent (see AwsIamTransport).
-    headers: { ...(opts.headers as Record<string, string>), 'User-Agent': BROWSER_USER_AGENT },
+    // Fabrary's WAF Bot Control 403s requests that carry no browser-like
+    // User-Agent (see FabraryAppSyncTransport).
+    headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'User-Agent': BROWSER_USER_AGENT },
     body,
   });
 
