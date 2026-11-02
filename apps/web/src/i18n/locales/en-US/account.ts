@@ -25,7 +25,7 @@ export const account = {
   newTitle: 'Create your account',
   newFirstTime: 'First time here? Let us create your account with',
   wrongEmail: 'Wrong email',
-  createAndEnter: 'Create account and sign in',
+  createAndEnter: 'Create account without a password',
   creating: 'Creating…',
   preferPassword: 'I would rather set a password',
   passwordLabel: 'Password',

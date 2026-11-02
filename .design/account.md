@@ -98,7 +98,7 @@ Screens: `r3-new-account-phone`, `r3-new-account-password-phone`, `r3-home-uncon
 
 | State | What the visitor sees |
 |---|---|
-| The address has no account | "Primeira vez aqui? Vamos criar sua conta com bia.souza@gmail.com." with "Errei o e-mail"; one button "Criar conta e entrar"; the link "Prefiro criar uma senha"; the staying-in line |
+| The address has no account | "Primeira vez aqui? Vamos criar sua conta com bia.souza@gmail.com." with "Errei o e-mail"; one button "Criar conta sem senha"; the link "Prefiro criar uma senha"; the staying-in line |
 | "Prefiro criar uma senha" | the field opens in place, empty and focused, "Pelo menos 10 caracteres.", "Com senha, você entra sem abrir o e-mail.", the button "Criar conta com senha e entrar", and "Criar sem senha" to close it; a rule message only after a submit that breaks it |
 | Account made, no shared page | journey 2's "Como você quer começar?" with the toast "Conta criada. Toque no botão do e-mail que mandamos para bia.souza@gmail.com para confirmar." |
 | Account made from a shared page | back on that page, signed in, with "Conta criada. Você voltou para o deck da Bia." and what the link offers a signed-in visitor (coverage of a deck, copies owned on a missing-cards list); an empty collection says how to put cards in (journey 2's entries) |

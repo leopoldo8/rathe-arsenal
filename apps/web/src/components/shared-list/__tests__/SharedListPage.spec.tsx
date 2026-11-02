@@ -194,7 +194,7 @@ describe('SharedListPage', () => {
 
         await userEvent.type(await screen.findByLabelText('Seu e-mail'), 'pedro.amigo@gmail.com');
         await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
-        await userEvent.click(await screen.findByRole('button', { name: 'Criar conta e entrar' }));
+        await userEvent.click(await screen.findByRole('button', { name: 'Criar conta sem senha' }));
 
         await vi.waitFor(() => expect(routerPush).toHaveBeenCalledWith(`/l/${TOKEN}`));
         expect(signUp).toHaveBeenCalledWith(expect.objectContaining({ email: 'pedro.amigo@gmail.com', returnPath: `/l/${TOKEN}`, shareToken: TOKEN }));

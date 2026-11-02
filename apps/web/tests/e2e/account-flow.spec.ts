@@ -76,7 +76,7 @@ test('an account made from a shared deck comes back to it', async ({ page }) => 
   await page.getByLabel('Seu e-mail').fill(email);
   await page.getByRole('button', { name: 'Continuar' }).click();
   const signUpRequest = page.waitForRequest('**/api/auth/sign-up');
-  await page.getByRole('button', { name: 'Criar conta e entrar' }).click();
+  await page.getByRole('button', { name: 'Criar conta sem senha' }).click();
   expect((await signUpRequest).postDataJSON()).toMatchObject({ email, returnPath: `/d/${token}`, shareToken: token });
 
   await expect(page).toHaveURL(new RegExp(`/d/${token}$`));
@@ -238,7 +238,7 @@ test('share waits for the confirmation and works after it', async ({ page, brows
   await page.getByLabel('Seu e-mail').fill(email);
   await page.getByRole('button', { name: 'Continuar' }).click();
   const signedUp = page.waitForResponse('**/api/auth/sign-up');
-  await page.getByRole('button', { name: 'Criar conta e entrar' }).click();
+  await page.getByRole('button', { name: 'Criar conta sem senha' }).click();
   const link = ((await (await signedUp).json()) as { _devVerificationLink: string })._devVerificationLink;
 
   expect((await page.request.patch('/api/users/me/display-name', { data: { displayName: 'Bia' } })).status()).toBe(200);
@@ -281,7 +281,7 @@ test('a code-only account creates a password and signs in with it', async ({ pag
   await page.goto('/entrar');
   await page.getByLabel('Seu e-mail').fill(email);
   await page.getByRole('button', { name: 'Continuar' }).click();
-  await page.getByRole('button', { name: 'Criar conta e entrar' }).click();
+  await page.getByRole('button', { name: 'Criar conta sem senha' }).click();
   await expect(page).toHaveURL(/\/onboarding/);
 
   await page.goto('/settings');
