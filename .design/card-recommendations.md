@@ -78,7 +78,7 @@ Derivable from the repository, left to the plan: localized copy and error codes 
 | Deck list changes on a deck not `retired` | An automatic job is created, or the pending one is pushed back to 5 minutes from now | nothing - the panel shows the previous run, flagged stale |
 | Owner presses Generate | A manual job is created to run as soon as the worker is free; a pending automatic job is promoted to it | `202` with the run, `status: pending` |
 | A job for the deck is already running | No second job; the request returns the running one | `202` with that run |
-| Model answers | Ranked cards stored (at most 10), each with its label, reason and suggested cut; run `done` | panel shows the new list |
+| Model answers | Ranked cards stored (at most 25), each with its label, reason and suggested cut; run `done` | panel shows the new list |
 | Model refuses, times out or answers off-schema | Run `failed` with the reason; the previous `done` run stays current | panel keeps the old list and shows the failure |
 | Provider rate limit | Job back to `pending` with a later start, at most 3 attempts | nothing until it runs or fails |
 | Deck changes while its run is running | The finished run is stored, then flagged stale; the pending automatic job runs after it | stale flag |
@@ -108,7 +108,7 @@ Table `recommendation`.
 | `id` | uuid | no | | primary key |
 | `runId` | uuid | no | `recommendation_run.id` | cascade delete |
 | `cardIdentifier` | varchar(128) | no | | the recommended card |
-| `rank` | int | no | | 1 to 10; unique with `runId` |
+| `rank` | int | no | | 1 to 25 (runs stored before 2026-11-02 hold 1 to 10); unique with `runId` |
 | `strength` | varchar(16) | no | | `clear_upgrade` \| `consider`, varchar plus CHECK |
 | `cutCardIdentifier` | varchar(128) | yes | | the deck card the model would replace; null when absent or invalid (Key decision 7) |
 | `cutSlot` | varchar(64) | yes | | slot of the suggested cut |
@@ -138,7 +138,7 @@ Alternatives considered: Google's Batch API at half price - wins if runs stop be
 
 1. Coalescing delay - 5 minutes after the last deck-list change.
 2. Provider - Gemini 3.8 Flash called directly on Google's API with an AI Studio key, free tier first, billing linked only if its limits bite; the key lives only in the worker's environment.
-3. Ranked cards kept per run - 10, the size the spike measured.
+3. Ranked cards kept per run - all 25 the model is asked for (owner's call, 2026-11-02). It was 10, the size the spike measured, until ranks 11 to 25 turned out to be lost with no way to see them; the panel lists every stored card in its sideways rail.
 
 ### Recommendations panel
 

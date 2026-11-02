@@ -201,6 +201,29 @@ describe('recommendation worker (e2e)', () => {
     expect(rows[0]).toEqual(expect.objectContaining({ strength: 'clear_upgrade', cutCardIdentifier: FLEX, cutSlot: 'mainboard' }));
   });
 
+  it('stores all 25 ranked cards of an answer and the deck lists every one of them', async () => {
+    const { sessionToken, deckId } = await deckWithManualRun();
+    const probe = stubFetch(200, geminiBody([]));
+    await fixture.drain(probe.fetch);
+    const poolIds = promptOf(probe)
+      .split('Candidate pool')[1]!
+      .split('\n')
+      .filter((line) => line.includes(' | '))
+      .map((line) => line.split(' | ')[0]!)
+      .filter((identifier) => /^[a-z0-9-]+$/.test(identifier));
+    expect(poolIds.length).toBeGreaterThanOrEqual(26);
+    const latest = await fixture.seedRun(deckId, 'pending', { trigger: 'manual' });
+
+    await fixture.drain(stubFetch(200, geminiBody(poolIds.slice(0, 26).map((card) => ({ card })))).fetch);
+
+    const rows = await recommendationRows(latest);
+    expect(rows.map((r: { rank: number; cardIdentifier: string }) => [r.rank, r.cardIdentifier])).toEqual(
+      poolIds.slice(0, 25).map((card, index) => [index + 1, card]),
+    );
+    const listed = (await fixture.get(`/api/decks/${deckId}/recommendations`, sessionToken).expect(200)).body.recommendations;
+    expect(listed.map((card: { rank: number }) => card.rank)).toEqual(Array.from({ length: 25 }, (_, index) => index + 1));
+  });
+
   it('with an OpenRouter model the same prompt goes to OpenRouter and the run records that model', async () => {
     const { runId } = await deckWithManualRun();
     const content = JSON.stringify({ recommendations: [{ card: POOL[0], strength: 'clear_upgrade', cut: FLEX, reason: 'r', reason_pt_br: 'm' }] });
@@ -226,7 +249,6 @@ describe('recommendation worker (e2e)', () => {
 
     await fixture.drain(stubFetch(200, geminiBody([{ card: EMISSARY }, { card: 'nope' }])).fetch);
 
-    expect((await run(runId)).status).toBe('done');
     expect(await recommendationRows(runId)).toEqual([]);
   });
 

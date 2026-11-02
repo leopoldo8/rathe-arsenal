@@ -29,7 +29,8 @@ describe('recommendation schema (e2e)', () => {
     const insertRecommendation = (rank: number, strength: string) =>
       query(`INSERT INTO recommendation ("runId", "cardIdentifier", rank, strength, reason) VALUES ($1, 'flex-red', $2, $3, 'r')`, [runId, rank, strength]);
     await expect(insertRecommendation(0, 'consider')).rejects.toThrow(/CHK_recommendation_rank_range/);
-    await expect(insertRecommendation(11, 'consider')).rejects.toThrow(/CHK_recommendation_rank_range/);
+    await insertRecommendation(25, 'consider');
+    await expect(insertRecommendation(26, 'consider')).rejects.toThrow(/CHK_recommendation_rank_range/);
     await expect(insertRecommendation(1, 'great')).rejects.toThrow(/CHK_recommendation_strength_valid/);
     await insertRecommendation(1, 'consider');
     await expect(insertRecommendation(1, 'consider')).rejects.toThrow(/IDX_recommendation_run_rank/);

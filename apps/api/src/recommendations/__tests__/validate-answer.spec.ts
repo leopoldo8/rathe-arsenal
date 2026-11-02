@@ -1,7 +1,8 @@
 import { catalog } from '@rathe-arsenal/engine';
 import { IGeminiEntry } from '../gemini-client';
 import { IDeckListCard } from '../recommendation-prompt';
-import { selectRecommendations } from '../validate-answer';
+import { RECOMMENDATION_ASK_COUNT } from '../recommendation-prompt';
+import { RECOMMENDATIONS_KEPT, selectRecommendations } from '../validate-answer';
 
 const deckCards: IDeckListCard[] = [
   { cardIdentifier: 'emissary-of-tides-red', slot: 'mainboard', quantity: 2 },
@@ -29,7 +30,27 @@ function entry(card: string, overrides: Partial<IGeminiEntry> = {}): IGeminiEntr
 }
 
 describe('selectRecommendations', () => {
-  it('keeps the first 10 valid entries in order', () => {
+  it('keeps every ranked card the model is asked for', () => {
+    expect(RECOMMENDATIONS_KEPT).toBe(RECOMMENDATION_ASK_COUNT);
+    expect(RECOMMENDATIONS_KEPT).toBe(25);
+  });
+
+  it('keeps up to 25 valid entries in order, ranked densely from 1', () => {
+    const identifiers = catalog.cards
+      .map((card) => card.cardIdentifier)
+      .filter((identifier) => !deckCards.some((card) => card.cardIdentifier === identifier))
+      .slice(0, 27);
+    const entries = [entry('not-in-pool-1'), ...identifiers.map((identifier) => entry(identifier))];
+
+    const { kept, dropped } = selectRecommendations(entries, new Set(identifiers), deckCards, catalog);
+
+    expect(kept.map((row) => [row.rank, row.cardIdentifier])).toEqual(
+      identifiers.slice(0, 25).map((identifier, index) => [index + 1, identifier]),
+    );
+    expect(dropped).toBe(1);
+  });
+
+  it('keeps every valid entry in order, ranked densely after drops', () => {
     const entries = [
       entry(POOL_CARDS[0], { strength: 'clear_upgrade' }),
       entry('not-in-pool-1'),
@@ -61,6 +82,7 @@ describe('selectRecommendations', () => {
       [8, POOL_CARDS[8]],
       [9, POOL_CARDS[9]],
       [10, POOL_CARDS[10]],
+      [11, POOL_CARDS[2]],
     ]);
     expect(kept[0]!.strength).toBe('clear_upgrade');
     expect(kept[0]!.reason).toBe(`reason for ${POOL_CARDS[0]}`);
