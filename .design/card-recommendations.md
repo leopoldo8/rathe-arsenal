@@ -51,8 +51,9 @@ The heavier alternative scores every legal card against every deck, so alternati
 5. **A dismissal is permanent for that deck and card, and dismissed cards are removed from the pool before the model sees it.** It is undone only by an explicit undo, and the next run cannot propose the card again.
 6. **Adopting a recommendation is a `card_replacement` with `pickedFrom = 'recommendation'`.** It moves every copy of the cut card in that slot to the recommended card, capped by the format's copy limit, protects those copies from engine stand-ins and is undone by revert, exactly as a picked alternative (AD-009). The "you now have the original" prompt never applies to it, because the cut card was never missing.
 7. **The run records only what the model says; the server validates it.** A recommended card outside the legal pool, already in the deck or dismissed is dropped; a suggested cut that is not in the deck is stored as no cut. The clear-upgrade label is the model's, unvalidated by the spike, and is judged by the adoption and dismissal records (Success).
-8. **The model sees how often players run each card, not only its text (AD-028, superseding the text-only part of AD-010).** When at least 5 synced tournament decks of the deck's hero and format exist (`tournament_deck`, the 40 most recent within two years), the prompt lists the share of them that play each pool and deck card (cards under 10% left out) and tells the model to weigh it with the rules text. With fewer decks the prompt is the text-only one, unchanged. Only identifiers that are in the pool or the deck reach the prompt, so nothing from Fabrary but catalog ids and numbers is written into it. A failed read runs without the signal.
-9. **Other pitch versions of a card the deck already plays are not candidates (AD-028).** The pool leaves out a card whose name the deck already plays in another pitch, unless at least half of the usage decks play that version; it is a pool rule, not a prompt rule, so the model cannot spend its list on them.
+8. **The model sees how often players run each card, not only its text (AD-028, superseding the text-only part of AD-010).** When at least 5 synced tournament decks of the deck's hero and format exist (`tournament_deck`, the 40 most recent within two years), the prompt lists the share of them that play each pool and deck card (cards under 10% left out) and tells the model to weigh it with the rules text. With fewer tournament decks, the share comes from public player decks on Fabrary (decision 10); with neither, the prompt is the text-only one, unchanged. Only identifiers that are in the pool or the deck reach the prompt, so nothing from Fabrary but catalog ids and numbers is written into it. A failed read runs without the signal.
+9. **Other pitch versions of a card the deck already plays are not candidates when usage data exists (AD-028, AD-029).** The pool leaves out a card whose name the deck already plays in another pitch, unless at least half of the usage decks play that version; it is a pool rule, not a prompt rule, so the model cannot spend its list on them. Without any usage data nothing says which pitches players run together, so no version is left out.
+10. **Public Fabrary decks are the usage source when tournament decks are too few (AD-029).** The worker reads the newest complete public player deck of each author for the deck's hero and format (not a tournament list, not a precon; at least 40 cards; edited within three years; at most 40 decks, at least 5). The prompt names the source: "public decks on Fabrary for this hero and format, one per player". The decks are cached in `public_deck`, `public_deck_card` and `public_deck_refresh` and re-read from Fabrary at most once a week per hero and format, on the first run that needs them; only decks edited since are fetched, and a failed refresh keeps the stored decks and waits an hour before asking again. Only the deck ULID, a SHA-256 of the author id, the last edit and catalog-shaped identifiers with 1 to 99 copies are stored.
 
 ## Work
 
@@ -236,7 +237,7 @@ OPENROUTER_API_KEY=... USAGE_DATABASE_URL=... USAGE_DATABASE_CA_FILE=... USAGE_D
 pnpm --filter @rathe-arsenal/api recommendations:eval:snapshot   # refresh the reference decks from Fabrary
 ```
 
-`--usage` reads the synced tournament decks at `USAGE_DATABASE_URL`, holding out the eval's reference decks.
+`--usage` reads the synced tournament decks at `USAGE_DATABASE_URL`, holding out the eval's reference decks, and, where those are too few, public decks read live from Fabrary, holding out the reference decks and their authors.
 Point it at a **read-only database role** that can only `SELECT` from `tournament_deck` and `tournament_deck_card`, never at the owner role in Railway's `DATABASE_PUBLIC_URL`.
 The connection verifies the server certificate, and TLS parameters in the URL are ignored.
 Railway's public proxy presents a certificate for `localhost` signed by the database's own CA, so pass that CA as a PEM file in `USAGE_DATABASE_CA_FILE` and `USAGE_DATABASE_TLS_SERVERNAME=localhost`; the chain is then checked against that CA and the name against `localhost`.
@@ -275,7 +276,32 @@ The strict holdout keeps only the decks before that weekend, so its signal descr
 Holding out only the reference ids reads those 14 decks too (different decks from the same weekend as the oldest reference decks), and Oscilio got 21/30 with both changes (10 runs, from a one-off script, not the committed CLI).
 The two numbers bound what production would see: 6/30 when the data trails a meta shift, 21/30 when it has caught up.
 
+Public deck fallback and pitch filter only with data (AD-029), 2026-11-02, 10 runs per scenario, main (dbb38149, built from its own tree) and this change run at the same time:
+
+| Scenario | Main | Public fallback |
+| --- | --- | --- |
+| Kayo LL, owner's deck (strict holdout: no signal on either side) | 5/20, Berserk in the top 10 in 3/10 runs | 3/20, Berserk 3/10 |
+| Oscilio CC | 3/30 | 6/30 |
+| Cindra CC | 30/30 | 27/30 |
+| Arakni CC | 30/30 | 29/30 |
+| Ira SA | 16/30 | 18/30 |
+| Total | 84/140 (60%) | 83/140 (59%) |
+| Kayo fold 1 (signal from 6 decks, expected from the other 5) | - | 36/50, Berserk 9/10 |
+| Kayo fold 2 (signal from 5 decks, expected from the other 6) | - | 16/30, Berserk 6/10 |
+
+- The four tournament scenarios send the same prompt byte for byte on both sides (checked with `--prompts-only` before any paid call), so their differences are run-to-run noise.
+- Kayo: the only change on main's inputs is that yellow Pulping is back in the pool, because no usage data exists under the holdout.
+- How the public signal is kept from seeing its own answers (`publicHoldout`): every reference deck is left out by id, and every deck of a reference author, read from the live index. All 11 public Kayo Living Legend decks are reference decks, so nothing is left.
+- The fold diagnostic (`--public-folds`, `publicFoldScenarios`) splits the reference decks into two folds with no author in common. Each fold's signal goes through the production selection and minimum; its expected cards come from the other fold only. Berserk in the top 10 is the headline, since it does not depend on how each fold's expected set comes out.
+
+```
+OPENROUTER_API_KEY=... USAGE_DATABASE_URL=... USAGE_DATABASE_CA_FILE=... USAGE_DATABASE_TLS_SERVERNAME=localhost \
+  pnpm --filter @rathe-arsenal/api recommendations:eval --runs 10 --usage --drop-siblings [--public-folds] [--prompts-only]
+```
+
 ## Migration
+
+`1778533615000-AddPublicDecks` creates `public_deck` (ULID unique, hero, format, `authorKey` SHA-256, `deckUpdatedAt`, `fetchedAt`), `public_deck_card` (cascade from the deck, unique per card, quantity 1 to 99) and `public_deck_refresh` (hero and format as the key, `refreshedAt`, decks); no existing table changes and nothing to backfill.
 
 Three new tables and a replaced CHECK on `card_replacement.pickedFrom`; no backfill - no deck has runs, and no existing row uses the new origin.
 The worker service needs the Gemini key in its environment and is redeployed with the API; until the key is set, runs fail with a clear reason and nothing else changes.
