@@ -290,7 +290,8 @@ Public deck fallback and pitch filter only with data (AD-029), 2026-11-02, 10 ru
 | Kayo fold 2 (signal from 5 decks, expected from the other 6) | - | 16/30, Berserk 6/10 |
 
 - The four tournament scenarios send the same prompt byte for byte on both sides (checked with `--prompts-only` before any paid call), so their differences are run-to-run noise.
-- Kayo: the only change on main's inputs is that yellow Pulping is back in the pool, because no usage data exists under the holdout.
+- Kayo under the strict holdout has no usage data, so every other pitch version of a deck card is back in the pool (yellow Pulping among them). They took 4.2 of the top 10 places per run, against 0 on main, which explains the drop from 5/20 to 3/20; with a fold's signal they took 0.5 and 0.2. Production has the 11 public decks for Kayo Living Legend, so it gets the filter.
+- Production code run against live Fabrary (`PublicDecksService.usage`, 2026-11-02): 11 decks from 11 authors, Berserk 91%, Apex Bonebreaker 82%, yellow Pulping 73%.
 - How the public signal is kept from seeing its own answers (`publicHoldout`): every reference deck is left out by id, and every deck of a reference author, read from the live index. All 11 public Kayo Living Legend decks are reference decks, so nothing is left.
 - The fold diagnostic (`--public-folds`, `publicFoldScenarios`) splits the reference decks into two folds with no author in common. Each fold's signal goes through the production selection and minimum; its expected cards come from the other fold only. Berserk in the top 10 is the headline, since it does not depend on how each fold's expected set comes out.
 
