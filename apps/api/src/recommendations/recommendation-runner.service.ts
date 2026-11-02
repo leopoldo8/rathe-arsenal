@@ -15,10 +15,13 @@ import {
 } from './recommendation-prompt';
 import { RecommendationQueueService } from './recommendation-queue.service';
 import { RecommendationsQueryService } from './recommendations-query.service';
+import { IUsageSignal, loadUsageSignal } from './usage-signal';
 import { selectRecommendations } from './validate-answer';
 
 export const MAX_RUN_ATTEMPTS = 3;
 export const RETRY_BASE_MS = 60_000;
+/** Measured with the quality eval (`.design/card-recommendations.md`, Quality eval); AD-028. */
+export const DROP_PITCH_SIBLINGS = true;
 
 export interface IRunnerDeps {
   readonly apiKey: string | null | undefined;
@@ -58,15 +61,20 @@ export class RecommendationRunnerService {
       format: deck.format,
       cards: deckCards.map((row) => ({ cardIdentifier: row.cardIdentifier, slot: row.slot, quantity: row.quantity })),
     };
-    const pool = buildRecommendationPool(deckList, heroCard, excluded.get(deck.id) ?? new Set(), catalog);
+    const usage = await this.readUsage(deck);
+    const pool = buildRecommendationPool(deckList, heroCard, excluded.get(deck.id) ?? new Set(), catalog, {
+      dropPitchSiblings: DROP_PITCH_SIBLINGS,
+      usage,
+    });
     const deckFingerprint = computeDeckFingerprint(deckList);
-    const prompt = buildRecommendationPrompt(deckList, heroCard, pool, catalog);
+    const prompt = buildRecommendationPrompt(deckList, heroCard, pool, catalog, usage);
     this.logger.log({
       event: 'recommendations.run.request',
       trackedDeckId: run.trackedDeckId,
       runId: run.id,
       model: deps.openRouterModel ?? GEMINI_MODEL,
       poolSize: pool.length,
+      usageDecks: usage?.decks ?? 0,
       promptChars: prompt.system.length + prompt.prompt.length,
       thinkingLevel: deps.thinkingLevel ?? 'default',
     });
@@ -133,6 +141,21 @@ export class RecommendationRunnerService {
       ...(detail === undefined ? {} : { detail }),
       ...(elapsedMs === undefined ? {} : { elapsedMs }),
     });
+  }
+
+  /** The usage signal is a hint: a failed read sends the prompt without it rather than failing the run. */
+  private async readUsage(deck: TrackedDeckEntity): Promise<IUsageSignal | null> {
+    if (!deck.heroIdentifier) return null;
+    try {
+      return await loadUsageSignal((sql, params) => this.dataSource.query(sql, [...params]), {
+        heroIdentifier: deck.heroIdentifier,
+        format: deck.format,
+        now: new Date(),
+      });
+    } catch (error) {
+      this.logger.warn({ event: 'recommendations.usage.failed', trackedDeckId: deck.id, error: (error as Error).message });
+      return null;
+    }
   }
 
   private findCard(cardIdentifier: string | null): ICatalogCard | null {
