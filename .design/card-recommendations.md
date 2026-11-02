@@ -269,9 +269,11 @@ How the eval keeps the usage signal from seeing its own answers (`usageHoldout`)
 - For the four tournament scenarios, every deck created on or after the oldest reference deck is left out too, so the signal only knows earlier decks.
 - Kayo's reference decks are community decks, which the tournament table never holds, so the ids are enough. Staging has no Kayo Living Legend tournament deck, so Kayo gets no signal. Its Classic Constructed decks were not used, because none of them plays Berserk.
 
-The date cutoff is stricter than production, which reads the newest decks.
-Oscilio's meta moved: its held-out decks from before 2026-06-28 play its expected cards at 14 to 22%.
-With only the ids held out, the 40 decks read (January to June 2026) play them at 48 to 55%, and Oscilio got 21/30 (both changes, 10 runs).
+The date cutoff is stricter than production, which reads the newest decks, and it cost Oscilio: 15/30 on the baseline, 6/30 with both changes.
+Oscilio's expected cards became staples on the national championships weekend of 2026-06-28: all 14 synced Oscilio decks from that weekend play Comet Collision, against 5 of the 26 before it.
+The strict holdout keeps only the decks before that weekend, so its signal describes the old meta (Comet Collision at 14%).
+Holding out only the reference ids reads those 14 decks too (different decks from the same weekend as the oldest reference decks), and Oscilio got 21/30 with both changes (10 runs, from a one-off script, not the committed CLI).
+The two numbers bound what production would see: 6/30 when the data trails a meta shift, 21/30 when it has caught up.
 
 ## Migration
 
