@@ -57,20 +57,22 @@
   animation: toast-fade-out var(--ra-duration) var(--ra-ease) both;
 }
 
-/* ---------- Variants ---------- */
+/* ---------- Variants ----------
+   The tone tints are translucent in the dark theme, so each one is layered over the
+   opaque raised surface: the toast stays readable over whatever page content sits below. */
 .toast--error {
   border-color: var(--ra-ready-low-border);
-  background-color: var(--ra-ready-low-bg);
+  background: linear-gradient(var(--ra-ready-low-bg), var(--ra-ready-low-bg)), var(--ra-bg-raised);
 }
 
 .toast--success {
   border-color: var(--ra-ready-high-border);
-  background-color: var(--ra-ready-high-bg);
+  background: linear-gradient(var(--ra-ready-high-bg), var(--ra-ready-high-bg)), var(--ra-bg-raised);
 }
 
 .toast--info {
   border-color: var(--ra-info-border);
-  background-color: var(--ra-info-bg);
+  background: linear-gradient(var(--ra-info-bg), var(--ra-info-bg)), var(--ra-bg-raised);
 }
 
 /* ---------- Content ---------- */
