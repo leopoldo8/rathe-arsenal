@@ -11,6 +11,13 @@ const PACK_HUNT_YELLOW = 'pack-hunt-yellow';
 const PACK_HUNT_BLUE = 'pack-hunt-blue';
 const UNKNOWN_UUID = '0f1e2d3c-4b5a-4968-8776-655443322110';
 
+/** A `chat_proposal` row as the tests read it; the payload fields are the ones they assert on. */
+interface IStoredProposal {
+  readonly id: string;
+  readonly kind: string;
+  readonly payload: Record<string, unknown> & { readonly missingBefore?: number; readonly missingAfter?: number };
+}
+
 interface IProposalSeed {
   readonly kind: 'deck' | 'swap';
   readonly payload: Record<string, unknown>;
@@ -97,7 +104,7 @@ describe('chat proposals (E2E)', () => {
     const swap = { deckId, originalCardIdentifier: PACK_HUNT_RED, slot: 'mainboard', replacementCardIdentifier: WOUNDING_BLOW_RED, reason: 'legal and cheap', ...args };
     const stub = scriptedFetch([callAnswer([{ id: 's1', name: 'propose_swap', args: swap }]), textAnswer('Posso trocar uma cópia.')]);
     await fixture.drain(stub.fetch);
-    const [proposal] = (await fixture.dataSource.query(`SELECT * FROM chat_proposal WHERE "messageId" = $1`, [assistantMessageId])) as Array<Record<string, any>>;
+    const [proposal] = (await fixture.dataSource.query(`SELECT * FROM chat_proposal WHERE "messageId" = $1`, [assistantMessageId])) as Array<IStoredProposal>;
     if (!proposal) throw new Error('the turn stored no proposal');
     return { conversationId, messageId: assistantMessageId, proposal };
   }
