@@ -51,6 +51,8 @@ The heavier alternative scores every legal card against every deck, so alternati
 5. **A dismissal is permanent for that deck and card, and dismissed cards are removed from the pool before the model sees it.** It is undone only by an explicit undo, and the next run cannot propose the card again.
 6. **Adopting a recommendation is a `card_replacement` with `pickedFrom = 'recommendation'`.** It moves every copy of the cut card in that slot to the recommended card, capped by the format's copy limit, protects those copies from engine stand-ins and is undone by revert, exactly as a picked alternative (AD-009). The "you now have the original" prompt never applies to it, because the cut card was never missing.
 7. **The run records only what the model says; the server validates it.** A recommended card outside the legal pool, already in the deck or dismissed is dropped; a suggested cut that is not in the deck is stored as no cut. The clear-upgrade label is the model's, unvalidated by the spike, and is judged by the adoption and dismissal records (Success).
+8. **The model sees how often players run each card, not only its text (AD-028, superseding the text-only part of AD-010).** When at least 5 synced tournament decks of the deck's hero and format exist (`tournament_deck`, the 40 most recent within two years), the prompt lists the share of them that play each pool and deck card (cards under 10% left out) and tells the model to weigh it with the rules text. With fewer decks the prompt is the text-only one, unchanged. Only identifiers that are in the pool or the deck reach the prompt, so nothing from Fabrary but catalog ids and numbers is written into it. A failed read runs without the signal.
+9. **Other pitch versions of a card the deck already plays are not candidates (AD-028).** The pool leaves out a card whose name the deck already plays in another pitch, unless at least half of the usage decks play that version; it is a pool rule, not a prompt rule, so the model cannot spend its list on them.
 
 ## Work
 
@@ -229,12 +231,49 @@ Run it (paid, about one cent per call, never in CI; the key is read from the env
 ```
 pnpm --filter @rathe-arsenal/api build
 OPENROUTER_API_KEY=... pnpm --filter @rathe-arsenal/api recommendations:eval --runs 5 --max-usd 1 [--only kayo-ll-owner-deck] [--effort high] [--model openrouter/id]
+OPENROUTER_API_KEY=... USAGE_DATABASE_URL=... USAGE_DATABASE_CA_FILE=... USAGE_DATABASE_TLS_SERVERNAME=localhost \
+  pnpm --filter @rathe-arsenal/api recommendations:eval --runs 10 --max-usd 1.2 [--usage] [--drop-siblings]
 pnpm --filter @rathe-arsenal/api recommendations:eval:snapshot   # refresh the reference decks from Fabrary
 ```
+
+`--usage` reads the synced tournament decks at `USAGE_DATABASE_URL`, holding out the eval's reference decks.
+Point it at a **read-only database role** that can only `SELECT` from `tournament_deck` and `tournament_deck_card`, never at the owner role in Railway's `DATABASE_PUBLIC_URL`.
+The connection verifies the server certificate, and TLS parameters in the URL are ignored.
+Railway's public proxy presents a certificate for `localhost` signed by the database's own CA, so pass that CA as a PEM file in `USAGE_DATABASE_CA_FILE` and `USAGE_DATABASE_TLS_SERVERNAME=localhost`; the chain is then checked against that CA and the name against `localhost`.
+The CA lives in the Postgres service's data directory (the `postgres-ssl` image generates it); a copy read from the server's own handshake is trust on first use, so prefer the file from the service.
+`USAGE_DATABASE_INSECURE_TLS=i-understand` turns verification off with a warning, for a one-off local run only; no other value does.
 
 Baseline on 2026-11-02, `openai/gpt-6-luna` with no reasoning effort, as the worker runs it: 12 of 70 expected cards in the top 10 over five runs per scenario (17%).
 Berserk reached the top 10 in 2 of 5 runs and was not ranked at all in the other 3.
 With `--effort high` (three runs per scenario) the total stayed at 17%, while each call took about twice as long.
+
+Usage signal and pitch-version filter (AD-028), 2026-11-02, 10 runs per scenario and variant, all four variants run at the same time:
+
+| Variant | Expected cards in the top 10 | Per-run mean (SD) | Pitch versions of deck cards in the top 10, per run |
+| --- | --- | --- | --- |
+| Baseline (main's prompt, byte for byte) | 25/140 (18%) | 17.9% (7.7) | 1.74 |
+| Usage signal | 80/140 (57%) | 57.1% (6.7) | 1.28 |
+| Pitch versions dropped | 26/140 (19%) | 18.6% (10.8) | 0 |
+| Both (shipped) | 81/140 (58%) | 57.9% (11.4) | 0.10 |
+
+| Scenario | Baseline | Usage | Pitch versions dropped | Both |
+| --- | --- | --- | --- | --- |
+| Kayo LL, owner's deck | 4/20 | 3/20 | 4/20 | 3/20 |
+| Oscilio CC | 15/30 | 5/30 | 16/30 | 6/30 |
+| Cindra CC | 5/30 | 30/30 | 4/30 | 29/30 |
+| Arakni CC | 1/30 | 30/30 | 2/30 | 28/30 |
+| Ira SA | 0/30 | 12/30 | 0/30 | 15/30 |
+
+How the eval keeps the usage signal from seeing its own answers (`usageHoldout`):
+- Every reference deck is left out of the usage data by its Fabrary id.
+- For the four tournament scenarios, every deck created on or after the oldest reference deck is left out too, so the signal only knows earlier decks.
+- Kayo's reference decks are community decks, which the tournament table never holds, so the ids are enough. Staging has no Kayo Living Legend tournament deck, so Kayo gets no signal. Its Classic Constructed decks were not used, because none of them plays Berserk.
+
+The date cutoff is stricter than production, which reads the newest decks, and it cost Oscilio: 15/30 on the baseline, 6/30 with both changes.
+Oscilio's expected cards became staples on the national championships weekend of 2026-06-28: all 14 synced Oscilio decks from that weekend play Comet Collision, against 5 of the 26 before it.
+The strict holdout keeps only the decks before that weekend, so its signal describes the old meta (Comet Collision at 14%).
+Holding out only the reference ids reads those 14 decks too (different decks from the same weekend as the oldest reference decks), and Oscilio got 21/30 with both changes (10 runs, from a one-off script, not the committed CLI).
+The two numbers bound what production would see: 6/30 when the data trails a meta shift, 21/30 when it has caught up.
 
 ## Migration
 

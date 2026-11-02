@@ -96,6 +96,8 @@ export function promptOf(stub: IStubFetch, call = 0): string {
 export async function bootRecommendationsFixture(options: { readonly throttle?: boolean } = {}): Promise<IRecommendationsFixture> {
   const base = await bootFixture(options);
   const { dataSource, app } = base;
+  // Synced tournament decks of the fixture's hero would add a usage signal to every prompt; tests that want one seed it.
+  await dataSource.query(`DELETE FROM tournament_deck WHERE "heroIdentifier" = 'katsu-the-wanderer' AND format = 'Classic Constructed'`);
   const server = app.getHttpServer();
   const queue = app.get(RecommendationQueueService);
   const runner = app.get(RecommendationRunnerService);

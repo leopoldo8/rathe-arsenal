@@ -149,6 +149,40 @@ describe('recommendation worker (e2e)', () => {
     expect(poolIds).not.toContain(EMISSARY);
   });
 
+  it('sends the share of recent tournament decks that play each card and drops other pitches of deck cards', async () => {
+    // Arrange
+    await deckWithManualRun();
+    const ulids = Array.from({ length: 5 }, (_, index) => `01USAGESIGNALTESTDECK0000${index}`);
+    try {
+      for (const [index, fabraryUlid] of ulids.entries()) {
+        const [{ id }] = await fixture.dataSource.query(
+          `INSERT INTO tournament_deck ("fabraryUlid", name, "heroIdentifier", format, "deckCreatedAt", "syncedAt")
+           VALUES ($1, 'Usage test', 'katsu-the-wanderer', 'Classic Constructed', now() - interval '1 day', now()) RETURNING id`,
+          [fabraryUlid],
+        );
+        const cards = index < 4 ? [POOL[0], FLEX] : [FLEX];
+        for (const cardIdentifier of cards) {
+          await fixture.dataSource.query(`INSERT INTO tournament_deck_card ("tournamentDeckId", "cardIdentifier", quantity) VALUES ($1, $2, 3)`, [id, cardIdentifier]);
+        }
+      }
+      const stub = stubFetch(200, geminiBody([{ card: POOL[0] }]));
+
+      // Act
+      await fixture.drain(stub.fetch);
+
+      // Assert
+      const prompt = promptOf(stub);
+      const usageSection = prompt.split('Share of the 5 most recent tournament decks')[1]!.split('\n\nRank the')[0]!;
+      expect(usageSection).toContain(`${POOL[0]}: 80%`);
+      expect(usageSection).toContain(`${FLEX}: 100% (in the deck)`);
+      const poolIds = prompt.split('Candidate pool')[1]!.split('\n').slice(1).map((line) => line.split(' | ')[0]);
+      expect(poolIds).not.toContain('flex-yellow');
+      expect(poolIds).not.toContain('emissary-of-tides-blue');
+    } finally {
+      await fixture.dataSource.query(`DELETE FROM tournament_deck WHERE "fabraryUlid" = ANY($1)`, [ulids]);
+    }
+  });
+
   it('a missing key fails without a call', async () => {
     for (const apiKey of [null, '  ']) {
       const { runId } = await deckWithManualRun();
