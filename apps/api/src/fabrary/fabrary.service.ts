@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Type } from '@rathe-arsenal/engine';
 import { CatalogService } from '../catalog/catalog.service';
 import { CardNotFoundError } from '@rathe-arsenal/engine';
-import { AwsIamTransport } from './aws-iam.transport';
+import { FabraryAppSyncTransport } from './fabrary-appsync.transport';
 import { ICommunityDeckImport, IDeckCardEntry, IDeckImportDto } from './dtos/deck-import.dto';
 import { EFabraryErrorCode, FabraryImportError } from './errors';
 import { GET_COMMUNITY_DECK_QUERY, GET_DECK_QUERY } from './queries/get-deck.query';
@@ -15,7 +15,7 @@ interface IRawDeckCard {
 
 interface IRawDeckResponse {
   readonly data?: {
-    readonly getDeck?: {
+    readonly getDeck?: null | {
       readonly deckId: string;
       readonly name: string;
       readonly format: string;
@@ -24,9 +24,12 @@ interface IRawDeckResponse {
       readonly deckCards: readonly IRawDeckCard[];
       readonly matchups?: readonly unknown[] | null;
     };
-  };
-  readonly errors?: readonly { readonly message: string }[];
+  } | null;
+  readonly errors?: readonly { readonly message: string; readonly errorType?: string }[];
 }
+
+// What Fabrary's resolver answers for a deck that does not exist or that the caller may not read.
+const DECK_REFUSED_ERROR_TYPE = 'Unauthorized';
 
 const WEAPON_SUBTYPES = new Set([
   '1H',
@@ -51,7 +54,7 @@ export class FabraryService {
   private readonly logger = new Logger(FabraryService.name);
 
   constructor(
-    private readonly transport: AwsIamTransport,
+    private readonly transport: FabraryAppSyncTransport,
     private readonly catalogService: CatalogService,
   ) {}
 
@@ -89,10 +92,15 @@ export class FabraryService {
 
     if (response.errors?.length) {
       const messages = response.errors.map((e) => e.message).join('; ');
+      const refused = response.errors.every((e) => e.errorType === DECK_REFUSED_ERROR_TYPE);
       throw new FabraryImportError(
-        EFabraryErrorCode.INVALID_PAYLOAD,
+        refused ? EFabraryErrorCode.DECK_UNAVAILABLE : EFabraryErrorCode.INVALID_PAYLOAD,
         `GraphQL errors: ${messages}`,
       );
+    }
+
+    if (response.data?.getDeck === null) {
+      throw new FabraryImportError(EFabraryErrorCode.DECK_UNAVAILABLE, 'Fabrary returned no deck for this id');
     }
 
     const deck = response.data?.getDeck;

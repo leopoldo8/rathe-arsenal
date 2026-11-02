@@ -79,7 +79,7 @@ describe('POST /api/decks/import', () => {
     const user = await fixture.signUp('failing');
     const link = `https://fabrary.net/decks/${newUlid()}`;
     fabrary.fetchDeck
-      .mockRejectedValueOnce(new FabraryImportError(EFabraryErrorCode.INVALID_PAYLOAD, 'GraphQL response missing getDeck data'))
+      .mockRejectedValueOnce(new FabraryImportError(EFabraryErrorCode.DECK_UNAVAILABLE, 'Fabrary refused the deck'))
       .mockRejectedValueOnce(new FabraryImportError(EFabraryErrorCode.FETCH_FAILED, 'timeout'));
 
     // Act

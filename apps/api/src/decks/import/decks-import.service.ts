@@ -101,12 +101,17 @@ export class DecksImportService {
     try {
       return await this.fabraryService.fetchDeck(ulid);
     } catch (error) {
-      // Fabrary answers a deck that does not exist, or is private, with an error payload; every
-      // other failure (network, credentials) means Fabrary could not be asked.
-      if (error instanceof FabraryImportError && error.code === EFabraryErrorCode.INVALID_PAYLOAD) {
+      // Only a deck Fabrary refuses is "not found"; anything else (network, a rejected API key, a
+      // response we cannot read) means we could not get the deck from Fabrary.
+      if (error instanceof FabraryImportError && error.code === EFabraryErrorCode.DECK_UNAVAILABLE) {
         throw new NotFoundException({ code: 'FABRARY_DECK_NOT_FOUND', message: 'The deck does not exist or is private' });
       }
-      this.logger.warn({ msg: 'Fabrary could not be reached', ulid, error: (error as Error).message });
+      this.logger.warn({
+        msg: 'Fabrary could not be reached',
+        ulid,
+        code: error instanceof FabraryImportError ? error.code : undefined,
+        error: (error as Error).message,
+      });
       throw new BadGatewayException({ code: 'FABRARY_UNREACHABLE', message: 'Fabrary could not be reached' });
     }
   }

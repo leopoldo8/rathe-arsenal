@@ -25,7 +25,6 @@
     "products:import": "node --enable-source-maps dist/products/products-import.cli.js"
   },
   "dependencies": {
-    "@aws-sdk/client-cognito-identity": "^3.1027.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.0",
@@ -35,7 +34,6 @@
     "@nestjs/typeorm": "^11.0.0",
     "@rathe-arsenal/engine": "workspace:^",
     "@sentry/node": "^10.62.0",
-    "aws4": "^1.13.2",
     "bcrypt": "^5.1.1",
     "cheerio": "^1.0.0",
     "class-transformer": "^0.5.1",
@@ -58,7 +56,6 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
-    "@types/aws4": "^1.11.6",
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",

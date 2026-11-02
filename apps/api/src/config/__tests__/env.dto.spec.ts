@@ -11,10 +11,19 @@ describe('validateEnv', () => {
     EMAIL_FROM: 'noreply@example.com',
     APP_BASE_URL: 'http://localhost:5173',
     AWS_APPSYNC_ENDPOINT: 'https://example.appsync-api.us-east-2.amazonaws.com/graphql',
-    COGNITO_IDENTITY_POOL_ID: 'us-east-2:abc',
-    COGNITO_REGION: 'us-east-2',
     FABRARY_ALLOW_HOSTS: 'fabrary.net',
   };
+
+  it('ships a default Fabrary AppSync API key and lets the env override it', () => {
+    expect(validateEnv(valid).FABRARY_APPSYNC_API_KEY).toMatch(/^da2-/);
+    expect(validateEnv({ ...valid, FABRARY_APPSYNC_API_KEY: 'da2-rotated' }).FABRARY_APPSYNC_API_KEY).toBe('da2-rotated');
+  });
+
+  it('still boots when a deploy keeps the retired Cognito variables', () => {
+    expect(() =>
+      validateEnv({ ...valid, COGNITO_IDENTITY_POOL_ID: 'us-east-2:abc', COGNITO_REGION: 'us-east-2' }),
+    ).not.toThrow();
+  });
 
   it('the Turnstile secret is optional', () => {
     expect(validateEnv(valid).TURNSTILE_SECRET_KEY).toBeUndefined();

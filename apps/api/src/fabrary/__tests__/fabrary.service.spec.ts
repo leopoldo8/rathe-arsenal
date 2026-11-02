@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock } from '@golevelup/ts-jest';
 import { FabraryService } from '../fabrary.service';
-import { AwsIamTransport } from '../aws-iam.transport';
+import { FabraryAppSyncTransport } from '../fabrary-appsync.transport';
 import { CatalogService } from '../../catalog/catalog.service';
 import { CardNotFoundError, Type } from '@rathe-arsenal/engine';
 import { EFabraryErrorCode, FabraryImportError } from '../errors';
@@ -9,17 +9,17 @@ import * as fixture from './fixtures/kassai-sage.json';
 
 describe('FabraryService', () => {
   let service: FabraryService;
-  let transport: jest.Mocked<AwsIamTransport>;
+  let transport: jest.Mocked<FabraryAppSyncTransport>;
   let catalogService: jest.Mocked<CatalogService>;
 
   beforeEach(async () => {
-    transport = createMock<AwsIamTransport>();
+    transport = createMock<FabraryAppSyncTransport>();
     catalogService = createMock<CatalogService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FabraryService,
-        { provide: AwsIamTransport, useValue: transport },
+        { provide: FabraryAppSyncTransport, useValue: transport },
         { provide: CatalogService, useValue: catalogService },
       ],
     }).compile();
@@ -230,6 +230,47 @@ describe('FabraryService', () => {
       });
     });
 
+    it('should throw DECK_UNAVAILABLE when Fabrary refuses the deck (missing or private)', async () => {
+      // Arrange -- the exact payload Fabrary returns for a deck id that does not exist
+      transport.post.mockResolvedValue({
+        data: null,
+        errors: [
+          {
+            path: ['getDeck'],
+            data: null,
+            errorType: 'Unauthorized',
+            errorInfo: null,
+            message: 'Not Authorized to access getDeck on type Query',
+          },
+        ],
+      });
+
+      // Act & Assert
+      await expect(service.fetchDeck('01HTXYZ1234567890ABCDEFGH')).rejects.toMatchObject({
+        code: EFabraryErrorCode.DECK_UNAVAILABLE,
+      });
+    });
+
+    it('should throw DECK_UNAVAILABLE when getDeck comes back null', async () => {
+      // Arrange
+      transport.post.mockResolvedValue({ data: { getDeck: null } });
+
+      // Act & Assert
+      await expect(service.fetchDeck('01HTXYZ1234567890ABCDEFGH')).rejects.toMatchObject({
+        code: EFabraryErrorCode.DECK_UNAVAILABLE,
+      });
+    });
+
+    it('should throw INVALID_PAYLOAD when the deck lacks hero or deckCards', async () => {
+      // Arrange
+      transport.post.mockResolvedValue({ data: { getDeck: { deckId: 'x', name: 'n', format: 'f' } } });
+
+      // Act & Assert
+      await expect(service.fetchDeck('01HTXYZ1234567890ABCDEFGH')).rejects.toMatchObject({
+        code: EFabraryErrorCode.INVALID_PAYLOAD,
+      });
+    });
+
     it('should throw INVALID_PAYLOAD when getDeck is missing', async () => {
       // Arrange
       transport.post.mockResolvedValue({ data: {} });
@@ -259,8 +300,8 @@ describe('FabraryService', () => {
     it('should re-throw FabraryImportError from transport as-is', async () => {
       // Arrange
       const originalError = new FabraryImportError(
-        EFabraryErrorCode.CREDENTIAL_EXPIRED,
-        'Credentials expired',
+        EFabraryErrorCode.API_KEY_REJECTED,
+        'API key rejected',
       );
       transport.post.mockRejectedValue(originalError);
 

@@ -217,13 +217,25 @@ describe('DecksImportService', () => {
   it('answers 404 for a missing or private deck and 502 when Fabrary cannot be reached', async () => {
     // Arrange
     (fabraryService.fetchDeck as jest.Mock)
-      .mockRejectedValueOnce(new FabraryImportError(EFabraryErrorCode.INVALID_PAYLOAD, 'GraphQL response missing getDeck data'))
+      .mockRejectedValueOnce(new FabraryImportError(EFabraryErrorCode.DECK_UNAVAILABLE, 'Fabrary refused the deck'))
       .mockRejectedValueOnce(new FabraryImportError(EFabraryErrorCode.FETCH_FAILED, 'timeout'));
 
     // Act and Assert
     await expect(service.run({ text: FABRARY_URL_1, ownsCards: true }, { userId: USER_ID })).rejects.toBeInstanceOf(NotFoundException);
     await expect(service.run({ text: FABRARY_URL_1, ownsCards: true }, { userId: USER_ID })).rejects.toBeInstanceOf(BadGatewayException);
     expect(dataSource.transaction).not.toHaveBeenCalled();
+  });
+
+  it('does not tell the player the deck is missing when Fabrary sent something it could not read', async () => {
+    // Arrange
+    (fabraryService.fetchDeck as jest.Mock).mockRejectedValueOnce(
+      new FabraryImportError(EFabraryErrorCode.INVALID_PAYLOAD, 'Deck response missing hero or deckCards'),
+    );
+
+    // Act and Assert
+    await expect(service.run({ text: FABRARY_URL_1, ownsCards: true }, { userId: USER_ID })).rejects.toMatchObject({
+      response: { code: 'FABRARY_UNREACHABLE' },
+    });
   });
 
   it('answers 400 for a text with no Fabrary link', async () => {
