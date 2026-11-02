@@ -156,7 +156,7 @@ describe('OnboardingPage — R60 redirect', () => {
     const props = { email: 'bia.souza@gmail.com', shareReturn: null, origin: null, onWrongEmail: vi.fn() };
 
     const withoutPassword = renderWithAuth(<NewAccountStep {...props} />, makeAuth());
-    await userEvent.click(screen.getByRole('button', { name: 'Criar conta e entrar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta sem senha' }));
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith({ to: '/onboarding' }));
     withoutPassword.unmount();
     navigateMock.mockClear();

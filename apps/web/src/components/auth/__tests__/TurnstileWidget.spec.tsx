@@ -30,7 +30,7 @@ describe('TurnstileWidget', () => {
 
     renderWithAuth(<NewAccountStep email="bia@gmail.com" shareReturn={null} origin={null} onWrongEmail={vi.fn()} />, makeAuth({ signUp }));
     expect(screen.queryByTestId('turnstile-widget')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Criar conta e entrar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta sem senha' }));
 
     await waitFor(() => expect(signUp).toHaveBeenCalledTimes(1));
     expect(signUp.mock.calls[0]![0]).not.toHaveProperty('turnstileToken');

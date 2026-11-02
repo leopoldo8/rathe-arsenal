@@ -54,7 +54,7 @@ test('an address typed two ways is one account', async ({ page }) => {
 
   await page.getByLabel('Seu e-mail').fill(typed);
   await page.getByRole('button', { name: 'Continuar' }).click();
-  await page.getByRole('button', { name: 'Criar conta e entrar' }).click();
+  await page.getByRole('button', { name: 'Criar conta sem senha' }).click();
   await expect(page).toHaveURL(/\/onboarding/);
 
   await page.getByRole('button', { name: 'Menu do usuário' }).click();

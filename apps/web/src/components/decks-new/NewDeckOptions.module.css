@@ -90,6 +90,10 @@
   .group > :not(.option) {
     grid-column: 2;
     grid-row: 1 / span 4;
+  }
+
+  /* The hero search drops the inline padding it has inside the open box on a phone; the Fabrary card keeps its own. */
+  .group[data-open='true'] > :not(.option) {
     padding-inline: 0;
   }
 }

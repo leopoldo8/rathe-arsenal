@@ -51,7 +51,7 @@ describe('NewAccountStep', () => {
     expect(screen.getByText(EMAIL).tagName).toBe('STRONG');
     const order = [
       screen.getByRole('button', { name: 'Errei o e-mail' }),
-      screen.getByRole('button', { name: 'Criar conta e entrar' }),
+      screen.getByRole('button', { name: 'Criar conta sem senha' }),
       screen.getByRole('button', { name: 'Prefiro criar uma senha' }),
       screen.getByText(STAYING_IN_PHONE),
     ];
@@ -67,7 +67,7 @@ describe('NewAccountStep', () => {
   it('creating the account signs in and opens the first-steps page', async () => {
     const { auth } = renderStep();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Criar conta e entrar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta sem senha' }));
 
     await waitFor(() => expect(auth.signUp).toHaveBeenCalledWith({ email: EMAIL }));
     expect(showMock).toHaveBeenCalledWith({
@@ -113,7 +113,7 @@ describe('NewAccountStep', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Criar sem senha' }));
 
     expect(screen.queryByLabelText('Senha')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Criar conta e entrar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Criar conta sem senha' })).toBeInTheDocument();
   });
 
   it('the staying-in line is said once, for a phone or a computer', () => {
@@ -138,7 +138,7 @@ describe('NewAccountStep', () => {
       origin: { kind: 'deck', name: 'Rhinar - Blitz', ownerName: 'Bia', reason: 'deck', imageUrl: null },
     });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Criar conta e entrar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta sem senha' }));
 
     await waitFor(() =>
       expect(auth.signUp).toHaveBeenCalledWith({ email: EMAIL, shareToken: 'abc123', returnPath: '/d/abc123' }),
@@ -154,7 +154,7 @@ describe('NewAccountStep', () => {
       origin: { kind: 'list', name: 'Quero estas', ownerName: 'Pedro', reason: 'cards', imageUrl: null },
     });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Criar conta e entrar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta sem senha' }));
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/l/xyz789'));
     expect(showMock).toHaveBeenCalledWith({ kind: 'success', message: 'Conta criada. Você voltou para a lista do Pedro.' });
@@ -164,7 +164,7 @@ describe('NewAccountStep', () => {
     const signUp = vi.fn().mockRejectedValue(new AuthFetchError('taken', 409, null, 'EMAIL_TAKEN'));
     renderStep({}, makeAuth({ signUp }));
 
-    await userEvent.click(screen.getByRole('button', { name: 'Criar conta e entrar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta sem senha' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Já existe uma conta com este e-mail');
     expect(navigateMock).not.toHaveBeenCalled();

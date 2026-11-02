@@ -1370,6 +1370,15 @@ describe('Phase 7 — New deck (EDIT-01, handoff §4)', () => {
     expect(body).toContain('background: var(--ra-bg-surface)');
   });
 
+  it('keeps the Fabrary card padding on desktop, where the open way fills the right column', () => {
+    // Owner feedback 2026-11-02: the panel content touched its border because the desktop rule zeroed it.
+    const css = readCssWithMedia('components/decks-new/NewDeckOptions.module.css');
+    const panel = ruleBody(css, '.group > :not(.option)');
+    expect(panel).toContain('grid-column: 2');
+    expect(panel).not.toContain('padding');
+    expect(ruleBody(css, ".group[data-open='true'] > :not(.option)")).toContain('padding-inline: 0');
+  });
+
   it('draws each way to start as a 16px surface row with a round icon', () => {
     const row = ruleBody(NEW_DECK_OPTIONS_CSS, '.option');
     expect(row).toContain('border-radius: var(--ra-radius-xl)');
@@ -1857,5 +1866,20 @@ describe('"Sobre" link at the right edge of every footer that has it', () => {
     ['the glossary page footer', 'routes/termos.module.css', '.about'],
   ] as const)('%s pushes the link to the end of its row', (_name, file, selector) => {
     expect(ruleBody(readCss(file), selector)).toContain('margin-inline-start: auto');
+  });
+});
+
+describe('Toasts stay readable over any page content', () => {
+  const TOAST_CSS = readCss('components/ui/Toast/Toast.module.css');
+
+  it.each([
+    ['.toast--error', '--ra-ready-low-bg'],
+    ['.toast--success', '--ra-ready-high-bg'],
+    ['.toast--info', '--ra-info-bg'],
+  ] as const)('%s lays its translucent tint over the opaque raised surface', (selector, tint) => {
+    // Owner feedback 2026-11-02: the dark-theme tints are rgba at 8-10%, so a tint alone let the page show through.
+    expect(ruleBody(TOAST_CSS, selector)).toContain(
+      `background: linear-gradient(var(${tint}), var(${tint})), var(--ra-bg-raised)`,
+    );
   });
 });
