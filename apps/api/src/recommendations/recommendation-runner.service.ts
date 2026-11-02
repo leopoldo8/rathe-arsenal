@@ -5,6 +5,7 @@ import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { RecommendationRunEntity, TRecommendationFailureCode } from '../database/entities/recommendation-run.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
+import { PublicDecksService } from '../reference/public-decks.service';
 import { callGemini, GEMINI_MODEL, TGeminiFetch, TGeminiThinkingLevel } from './gemini-client';
 import { callOpenRouterRecommendation } from './openrouter-recommendation-client';
 import {
@@ -15,7 +16,7 @@ import {
 } from './recommendation-prompt';
 import { RecommendationQueueService } from './recommendation-queue.service';
 import { RecommendationsQueryService } from './recommendations-query.service';
-import { IUsageSignal, loadUsageSignal } from './usage-signal';
+import { IUsageSignal, loadUsageSignal, TUsageSource } from './usage-signal';
 import { selectRecommendations } from './validate-answer';
 
 export const MAX_RUN_ATTEMPTS = 3;
@@ -38,6 +39,7 @@ export class RecommendationRunnerService {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly queue: RecommendationQueueService,
     private readonly query: RecommendationsQueryService,
+    private readonly publicDecks: PublicDecksService,
   ) {}
 
   async process(run: RecommendationRunEntity, deps: IRunnerDeps): Promise<void> {
@@ -75,6 +77,7 @@ export class RecommendationRunnerService {
       model: deps.openRouterModel ?? GEMINI_MODEL,
       poolSize: pool.length,
       usageDecks: usage?.decks ?? 0,
+      usageSource: usage?.source ?? 'none',
       promptChars: prompt.system.length + prompt.prompt.length,
       thinkingLevel: deps.thinkingLevel ?? 'default',
     });
@@ -143,17 +146,29 @@ export class RecommendationRunnerService {
     });
   }
 
-  /** The usage signal is a hint: a failed read sends the prompt without it rather than failing the run. */
+  /**
+   * Tournament decks first; with too few of them, public Fabrary decks of the same hero and format (AD-029). The usage
+   * signal is a hint: a failed read sends the prompt without it rather than failing the run.
+   */
   private async readUsage(deck: TrackedDeckEntity): Promise<IUsageSignal | null> {
-    if (!deck.heroIdentifier) return null;
+    const heroIdentifier = deck.heroIdentifier;
+    if (!heroIdentifier) return null;
+    const now = new Date();
+    const tournament = await this.readUsageFrom(deck, 'tournament', () =>
+      loadUsageSignal((sql, params) => this.dataSource.query(sql, [...params]), { heroIdentifier, format: deck.format, now }),
+    );
+    return tournament ?? this.readUsageFrom(deck, 'public', () => this.publicDecks.usage(heroIdentifier, deck.format, now));
+  }
+
+  private async readUsageFrom(
+    deck: TrackedDeckEntity,
+    source: TUsageSource,
+    read: () => Promise<IUsageSignal | null>,
+  ): Promise<IUsageSignal | null> {
     try {
-      return await loadUsageSignal((sql, params) => this.dataSource.query(sql, [...params]), {
-        heroIdentifier: deck.heroIdentifier,
-        format: deck.format,
-        now: new Date(),
-      });
+      return await read();
     } catch (error) {
-      this.logger.warn({ event: 'recommendations.usage.failed', trackedDeckId: deck.id, error: (error as Error).message });
+      this.logger.warn({ event: 'recommendations.usage.failed', trackedDeckId: deck.id, source, error: (error as Error).message });
       return null;
     }
   }
