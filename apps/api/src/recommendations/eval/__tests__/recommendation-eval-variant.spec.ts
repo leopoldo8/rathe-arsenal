@@ -31,6 +31,8 @@ describe('usage holdout', () => {
 
 describe('eval variants', () => {
   const kayo = buildEvalScenario(spec('kayo-ll-owner-deck'), REFERENCE_DECKS['kayo-ll-owner-deck']!, catalog);
+  // Usage data that lists no card: pitch siblings are dropped only when some usage data exists.
+  const noShares: IUsageSignal = { decks: 5, source: 'tournament', shares: new Map() };
 
   it('the baseline keeps the scenario pool and sends no usage', () => {
     const variant = applyEvalVariant(kayo, { dropPitchSiblings: false, usage: null }, catalog);
@@ -40,7 +42,7 @@ describe('eval variants', () => {
   });
 
   it('dropping pitch siblings shrinks the pool but keeps every expected card', () => {
-    const variant = applyEvalVariant(kayo, { dropPitchSiblings: true, usage: null }, catalog);
+    const variant = applyEvalVariant(kayo, { dropPitchSiblings: true, usage: noShares }, catalog);
     const ids = new Set(variant.pool.map((card) => card.cardIdentifier));
 
     expect(variant.pool.length).toBeLessThan(kayo.pool.length);
@@ -51,11 +53,17 @@ describe('eval variants', () => {
   it('refuses a variant whose pool loses an expected card, so variants are always scored on the same cards', () => {
     const scenario = { ...kayo, expected: [{ cardIdentifier: 'wrecker-romp-red', inclusion: 1 }] };
 
-    expect(() => applyEvalVariant(scenario, { dropPitchSiblings: true, usage: null }, catalog)).toThrow(/wrecker-romp-red/);
+    expect(() => applyEvalVariant(scenario, { dropPitchSiblings: true, usage: noShares }, catalog)).toThrow(/wrecker-romp-red/);
+  });
+
+  it('dropping pitch siblings without usage data keeps the whole pool', () => {
+    const variant = applyEvalVariant(kayo, { dropPitchSiblings: true, usage: null }, catalog);
+
+    expect(variant.pool.map((card) => card.cardIdentifier)).toEqual(kayo.pool.map((card) => card.cardIdentifier));
   });
 
   it('passes the usage signal through to the pool rule and the prompt', () => {
-    const usage: IUsageSignal = { decks: 8, shares: new Map([['wrecker-romp-red', 0.75]]) };
+    const usage: IUsageSignal = { decks: 8, source: 'tournament', shares: new Map([['wrecker-romp-red', 0.75]]) };
 
     const variant = applyEvalVariant(kayo, { dropPitchSiblings: true, usage }, catalog);
 
@@ -66,7 +74,7 @@ describe('eval variants', () => {
   it('every committed scenario keeps its expected cards when siblings are dropped', () => {
     for (const evalSpec of EVAL_SPECS) {
       const scenario = buildEvalScenario(evalSpec, REFERENCE_DECKS[evalSpec.id]!, catalog);
-      expect(() => applyEvalVariant(scenario, { dropPitchSiblings: true, usage: null }, catalog)).not.toThrow();
+      expect(() => applyEvalVariant(scenario, { dropPitchSiblings: true, usage: noShares }, catalog)).not.toThrow();
     }
   });
 });

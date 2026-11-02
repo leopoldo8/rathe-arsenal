@@ -8,9 +8,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // Only catalog-shaped identifiers count: the rows come from Fabrary through the tournament sync.
 const CARD_IDENTIFIER = /^[a-z0-9-]+$/;
 
-/** How often recent tournament decks of one hero and format play each card. */
+/** Where the decks behind a usage signal come from: synced tournament decks, or public player decks on Fabrary. */
+export type TUsageSource = 'tournament' | 'public';
+
+/** How often recent decks of one hero and format play each card. */
 export interface IUsageSignal {
   readonly decks: number;
+  readonly source: TUsageSource;
   /** Card identifier to the share of the decks that play it in the mainboard, equipment or weapons, 0 to 1. */
   readonly shares: ReadonlyMap<string, number>;
 }
@@ -45,7 +49,7 @@ const USAGE_SQL = `
    WHERE c.quantity > 0`;
 
 /** Null when fewer than `USAGE_MIN_DECKS` decks play any card. */
-export function computeUsageSignal(rows: readonly IUsageRow[]): IUsageSignal | null {
+export function computeUsageSignal(rows: readonly IUsageRow[], source: TUsageSource = 'tournament'): IUsageSignal | null {
   const cardsByDeck = new Map<string, Set<string>>();
   for (const row of rows) {
     const cards = cardsByDeck.get(row.deckId) ?? new Set<string>();
@@ -57,6 +61,7 @@ export function computeUsageSignal(rows: readonly IUsageRow[]): IUsageSignal | n
   for (const cards of cardsByDeck.values()) for (const card of cards) counts.set(card, (counts.get(card) ?? 0) + 1);
   return {
     decks: cardsByDeck.size,
+    source,
     shares: new Map([...counts.entries()].map(([card, count]) => [card, count / cardsByDeck.size])),
   };
 }

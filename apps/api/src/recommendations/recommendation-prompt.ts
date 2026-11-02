@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { findCardLegalityViolation, ICatalog, ICatalogCard, TSupportedFormat, Type } from '@rathe-arsenal/engine';
-import { IUsageSignal } from './usage-signal';
+import { IUsageSignal, TUsageSource } from './usage-signal';
 
 export const RECOMMENDATION_ASK_COUNT = 25;
 
@@ -22,10 +22,17 @@ export interface IRecommendationPrompt {
 }
 
 const TEXT_ONLY_JUDGMENT = 'Judge only from the rules text given.';
-const USAGE_JUDGMENT = [
-  'Judge from the rules text given and from how often recent tournament decks for this hero and format play each card.',
-  'A card most of those decks play has proven itself with this hero, so rank it high unless this deck already covers its job; a card no deck plays needs a clear reason in its text.',
-].join(' ');
+const USAGE_WEIGHING =
+  'A card most of those decks play has proven itself with this hero, so rank it high unless this deck already covers its job; a card no deck plays needs a clear reason in its text.';
+/** Tournament wording is the one AD-028 measured; it stays byte for byte so those decks keep their prompt. */
+const USAGE_JUDGMENT: Readonly<Record<TUsageSource, string>> = {
+  tournament: `Judge from the rules text given and from how often recent tournament decks for this hero and format play each card. ${USAGE_WEIGHING}`,
+  public: `Judge from the rules text given and from how often recent public decks that players shared on Fabrary for this hero and format play each card. ${USAGE_WEIGHING}`,
+};
+const USAGE_DECKS_DESCRIBED: Readonly<Record<TUsageSource, string>> = {
+  tournament: 'tournament decks for this hero and format',
+  public: 'public decks on Fabrary for this hero and format, one per player,',
+};
 
 const systemPrompt = (judgment: string): string =>
   [
@@ -66,7 +73,7 @@ export const PITCH_SIBLING_KEEP_SHARE = 0.5;
 export const USAGE_LISTED_MIN_SHARE = 0.1;
 
 export interface IPoolOptions {
-  /** Leave out other pitch versions of cards the deck already plays. */
+  /** Leave out other pitch versions of cards the deck already plays; applies only when `usage` is given. */
   readonly dropPitchSiblings?: boolean;
   readonly usage?: IUsageSignal | null;
 }
@@ -97,9 +104,11 @@ export function buildRecommendationPool(
 ): readonly ICatalogCard[] {
   const format = deck.format as TSupportedFormat;
   const inDeck = new Set(deck.cards.map((card) => card.cardIdentifier));
-  const deckNames = options.dropPitchSiblings ? deckCardNames(deck, catalog) : new Set<string>();
+  const deckNames = options.dropPitchSiblings && options.usage ? deckCardNames(deck, catalog) : new Set<string>();
+  const usage = options.usage ?? null;
+  // Without usage data nothing says which pitches players run together, so no sibling is dropped.
   const droppedSibling = (card: ICatalogCard): boolean =>
-    isPitchSibling(card, deckNames) && (options.usage?.shares.get(card.cardIdentifier) ?? 0) < PITCH_SIBLING_KEEP_SHARE;
+    usage !== null && isPitchSibling(card, deckNames) && (usage.shares.get(card.cardIdentifier) ?? 0) < PITCH_SIBLING_KEEP_SHARE;
   return catalog.cards.filter(
     (card) =>
       !card.types.some((type) => EXCLUDED_POOL_TYPES.has(type)) &&
@@ -132,7 +141,7 @@ function percent(share: number): string {
   return `${Math.round(share * 100)}%`;
 }
 
-/** Only pool and deck identifiers are written, so nothing from the synced decks reaches the prompt but catalog ids and numbers. */
+/** Only pool and deck identifiers are written, so nothing from the decks read on Fabrary reaches the prompt but catalog ids and numbers. */
 function usageSection(usage: IUsageSignal, deck: IDeckList, pool: readonly ICatalogCard[]): string[] {
   const inDeck = new Set(deck.cards.filter((entry) => entry.slot !== 'hero').map((entry) => entry.cardIdentifier));
   const listed = new Set([...inDeck, ...pool.map((card) => card.cardIdentifier)]);
@@ -142,7 +151,7 @@ function usageSection(usage: IUsageSignal, deck: IDeckList, pool: readonly ICata
     .map(([cardIdentifier, share]) => `${cardIdentifier}: ${percent(share)}${inDeck.has(cardIdentifier) ? ' (in the deck)' : ''}`);
   return [
     '',
-    `Share of the ${usage.decks} most recent tournament decks for this hero and format that play each card (identifier: share; cards under ${percent(USAGE_LISTED_MIN_SHARE)} left out):`,
+    `Share of the ${usage.decks} most recent ${USAGE_DECKS_DESCRIBED[usage.source]} that play each card (identifier: share; cards under ${percent(USAGE_LISTED_MIN_SHARE)} left out):`,
     ...lines,
   ];
 }
@@ -180,5 +189,5 @@ export function buildRecommendationPrompt(
     'For each give: card (its identifier), strength (clear_upgrade or consider), cut (the identifier of the deck card it should replace, or an empty string), one sentence of reason in English, and reason_pt_br, the same sentence in Brazilian Portuguese with card names kept in English.',
     'Name a deck card as the cut no more times than its quantity in the deck.',
   ].join('\n');
-  return { system: systemPrompt(usage ? USAGE_JUDGMENT : TEXT_ONLY_JUDGMENT), prompt };
+  return { system: systemPrompt(usage ? USAGE_JUDGMENT[usage.source] : TEXT_ONLY_JUDGMENT), prompt };
 }

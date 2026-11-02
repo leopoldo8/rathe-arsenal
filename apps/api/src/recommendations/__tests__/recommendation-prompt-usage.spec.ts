@@ -1,6 +1,6 @@
 import { catalog } from '@rathe-arsenal/engine';
 import { buildRecommendationPool, buildRecommendationPrompt, IDeckList, isPitchSibling, PITCH_SIBLING_KEEP_SHARE } from '../recommendation-prompt';
-import { IUsageSignal } from '../usage-signal';
+import { IUsageSignal, TUsageSource } from '../usage-signal';
 
 const KAYO = catalog.getCard('kayo-armed-and-dangerous');
 
@@ -15,8 +15,8 @@ const kayoDeck: IDeckList = {
   ],
 };
 
-function usage(decks: number, shares: Record<string, number>): IUsageSignal {
-  return { decks, shares: new Map(Object.entries(shares)) };
+function usage(decks: number, shares: Record<string, number>, source: TUsageSource = 'tournament'): IUsageSignal {
+  return { decks, source, shares: new Map(Object.entries(shares)) };
 }
 
 function poolIds(options?: Parameters<typeof buildRecommendationPool>[4]): Set<string> {
@@ -34,10 +34,10 @@ describe('pitch versions of deck cards', () => {
     expect(isPitchSibling(catalog.getCard('savage-sash'), new Set(['Savage Sash']))).toBe(false);
   });
 
-  it('the pool keeps pitch siblings unless asked to drop them', () => {
+  it('the pool keeps pitch siblings unless asked to drop them and usage data exists', () => {
     // Act
     const kept = poolIds();
-    const dropped = poolIds({ dropPitchSiblings: true });
+    const dropped = poolIds({ dropPitchSiblings: true, usage: usage(5, {}) });
 
     // Assert
     expect(kept.has('pulping-yellow')).toBe(true);
@@ -47,6 +47,29 @@ describe('pitch versions of deck cards', () => {
     expect(dropped.has('wrecker-romp-red')).toBe(false);
     expect(dropped.has('berserk-yellow')).toBe(true);
     expect(dropped.size).toBe(kept.size - 4);
+  });
+
+  it('without any usage data no pitch sibling is dropped, since nothing says which pitches players run', () => {
+    // Arrange
+    const kept = poolIds();
+
+    // Act
+    const withoutUsage = poolIds({ dropPitchSiblings: true });
+    const withNullUsage = poolIds({ dropPitchSiblings: true, usage: null });
+
+    // Assert
+    expect(withoutUsage).toEqual(kept);
+    expect(withNullUsage).toEqual(kept);
+    expect(withNullUsage.has('pulping-yellow')).toBe(true);
+  });
+
+  it('public deck usage keeps a sibling that enough public decks play, as tournament usage does', () => {
+    const signal = usage(11, { 'pulping-yellow': 8 / 11 }, 'public');
+
+    const pool = poolIds({ dropPitchSiblings: true, usage: signal });
+
+    expect(pool.has('pulping-yellow')).toBe(true);
+    expect(pool.has('pulping-blue')).toBe(false);
   });
 
   it('a sibling that enough reference decks play stays in the pool', () => {
@@ -96,5 +119,37 @@ describe('usage in the prompt', () => {
     expect(section).not.toContain('beast-within-yellow');
     expect(prompt.indexOf('Share of the 11')).toBeGreaterThan(prompt.indexOf('Candidate pool'));
     expect(prompt.indexOf('Share of the 11')).toBeLessThan(prompt.indexOf('Rank the'));
+  });
+
+  it('names public Fabrary decks as the source when the share comes from them', () => {
+    // Arrange
+    const signal = usage(6, { 'berserk-yellow': 5 / 6, 'pulping-red': 1 }, 'public');
+
+    // Act
+    const { system, prompt } = buildRecommendationPrompt(kayoDeck, KAYO, pool, catalog, signal);
+
+    // Assert
+    expect(system).not.toContain('Judge only from the rules text given.');
+    expect(system).not.toMatch(/tournament/);
+    expect(system).toContain('how often recent public decks that players shared on Fabrary for this hero and format play each card');
+    expect(prompt).not.toMatch(/tournament/);
+    expect(prompt).toContain('Share of the 6 most recent public decks on Fabrary for this hero and format, one per player, that play each card');
+    const section = prompt.slice(prompt.indexOf('Share of the 6'));
+    expect(section).toContain('pulping-red: 100% (in the deck)');
+    expect(section).toContain('berserk-yellow: 83%');
+  });
+
+  it('keeps the tournament wording unchanged, so decks with tournament data get the prompt they had', () => {
+    const signal = usage(11, { 'berserk-yellow': 10 / 11 });
+
+    const { system, prompt } = buildRecommendationPrompt(kayoDeck, KAYO, pool, catalog, signal);
+
+    expect(system).toContain(
+      'Judge from the rules text given and from how often recent tournament decks for this hero and format play each card. ' +
+        'A card most of those decks play has proven itself with this hero, so rank it high unless this deck already covers its job; a card no deck plays needs a clear reason in its text.',
+    );
+    expect(prompt).toContain(
+      'Share of the 11 most recent tournament decks for this hero and format that play each card (identifier: share; cards under 10% left out):',
+    );
   });
 });
