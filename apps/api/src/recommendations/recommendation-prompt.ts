@@ -73,8 +73,18 @@ function typeLine(card: ICatalogCard): string {
   return [...card.classes, ...card.talents, ...card.types, ...card.subtypes].join(' ');
 }
 
+function statValue(value: number | null): string {
+  return value === null ? '-' : String(value);
+}
+
+// The system prompt weighs resource cost, and many heroes and cards key on power
+// (Kayo discards cards with 6 or more power), so the model needs the printed numbers.
+function statsLine(card: ICatalogCard): string {
+  return `cost ${statValue(card.cost)}, pitch ${statValue(card.pitch)}, power ${statValue(card.power)}, defense ${statValue(card.defense)}`;
+}
+
 function cardLine(card: ICatalogCard): string {
-  return `${card.cardIdentifier} | ${card.name} | ${typeLine(card)} | ${card.functionalText ?? ''}`;
+  return `${card.cardIdentifier} | ${card.name} | ${typeLine(card)} | ${statsLine(card)} | ${card.functionalText ?? ''}`;
 }
 
 export function buildRecommendationPrompt(
@@ -98,10 +108,10 @@ export function buildRecommendationPrompt(
     `Hero: ${heroCard.name} | ${typeLine(heroCard)} | ${heroCard.functionalText ?? ''}`,
     `Format: ${deck.format}`,
     '',
-    'Deck (quantity, [slot], identifier | name | type line | rules text):',
+    'Deck (quantity, [slot], identifier | name | type line | stats | rules text):',
     ...deckLines,
     '',
-    `Candidate pool (${pool.length} cards, format: identifier | name | type line | rules text):`,
+    `Candidate pool (${pool.length} cards, format: identifier | name | type line | stats | rules text):`,
     ...pool.map(cardLine),
     '',
     `Rank the ${RECOMMENDATION_ASK_COUNT} cards from the candidate pool that would best improve this deck, best first.`,

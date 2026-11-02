@@ -68,6 +68,29 @@ describe('recommendation pool and prompt', () => {
     expect(system).toMatch(/Count only the parts of a rules text that do something in this deck/);
   });
 
+  it('every deck and pool line carries cost, pitch, power and defense, with a dash for a missing value', () => {
+    const kayoDeck: IDeckList = {
+      heroIdentifier: 'kayo-armed-and-dangerous',
+      format: 'Living Legend',
+      cards: [
+        { cardIdentifier: 'kayo-armed-and-dangerous', slot: 'hero', quantity: 1 },
+        { cardIdentifier: 'flex-red', slot: 'mainboard', quantity: 3 },
+        { cardIdentifier: 'mandible-claw', slot: 'weapon', quantity: 1 },
+      ],
+    };
+    const kayo = catalog.getCard('kayo-armed-and-dangerous');
+    const pool = buildRecommendationPool(kayoDeck, kayo, new Set(), catalog);
+
+    const { system, prompt } = buildRecommendationPrompt(kayoDeck, kayo, pool, catalog);
+
+    expect(pool.some((card) => card.cardIdentifier === 'berserk-yellow')).toBe(true);
+    expect(prompt).toMatch(/^berserk-yellow \| Berserk \| Brute Action Non-Attack \| cost 1, pitch 2, power -, defense 3 \| Until end of turn/m);
+    expect(prompt).toMatch(/^3x \[mainboard\] flex-red \| Flex \| .* \| cost 0, pitch 1, power 4, defense 2 \| /m);
+    expect(prompt).toMatch(/^1x \[weapon\] mandible-claw \| Mandible Claw \| .* \| cost -, pitch -, power \d+, defense - \| /m);
+    expect(prompt).toContain('identifier | name | type line | stats | rules text');
+    expect(system).toMatch(/Prefer the same resource cost as the card replaced/);
+  });
+
   it('the fingerprint ignores order and tracks every input', () => {
     const base = computeDeckFingerprint(deck);
 
