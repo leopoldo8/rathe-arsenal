@@ -50,7 +50,7 @@ describe('drainOnce', () => {
 });
 
 describe('runPendingUrlSync', () => {
-  const logger = { log: jest.fn(), error: jest.fn() };
+  const logger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
   it('does nothing when no sync is queued', async () => {
     const ingestion = {
@@ -86,6 +86,31 @@ describe('runPendingUrlSync', () => {
     await runPendingUrlSync({ ingestion, logger } as never);
     expect(ingestion.markUrlSyncFailed).toHaveBeenCalledWith('cupula-dt', 'blocked');
     expect(ingestion.markUrlSyncIdle).toHaveBeenCalledWith('cupula-dt');
+  });
+
+  it('logs the failed attempt number and when the automatic sweep tries again', async () => {
+    // Arrange
+    const failedAt = new Date('2026-11-01T05:00:00Z');
+    const ingestion = {
+      claimPendingUrlSync: jest.fn().mockResolvedValue('cupula-dt'),
+      runUrlSync: jest.fn().mockRejectedValue(new Error('did not return a listing page')),
+      markUrlSyncIdle: jest.fn(),
+      markUrlSyncFailed: jest.fn().mockResolvedValue({ failures: 3, failedAt, error: 'did not return a listing page' }),
+    };
+    const warnLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
+    const config = { get: jest.fn().mockReturnValue(undefined) };
+
+    // Act
+    await runPendingUrlSync({ ingestion, logger: warnLogger, config } as never);
+
+    // Assert
+    expect(warnLogger.warn).toHaveBeenCalledWith({
+      event: 'url-sync.backoff',
+      storeSlug: 'cupula-dt',
+      attempt: 3,
+      outOfCredits: false,
+      nextAttemptAt: '2026-11-01T17:00:00.000Z',
+    });
   });
 
   it('still clears the running lock when recording the failure also throws', async () => {
@@ -208,7 +233,7 @@ describe('runWorker', () => {
       const fetch = jest.fn();
       let running = true;
 
-      void runWorker(app as never, { env: { GEMINI_API_KEY: 'AIza-env' }, fetch, shouldContinue: () => running }, { log: jest.fn(), error: jest.fn() });
+      void runWorker(app as never, { env: { GEMINI_API_KEY: 'AIza-env' }, fetch, shouldContinue: () => running }, { log: jest.fn(), error: jest.fn(), warn: jest.fn() });
       await jest.advanceTimersByTimeAsync(2 * POLL_MS);
       running = false;
 
@@ -257,7 +282,7 @@ describe('worker loops', () => {
       void runWorker(
         { get: (token: unknown) => services.get(token) } as never,
         { env: { GEMINI_API_KEY: 'AIza-env', GEMINI_CHAT_THINKING_LEVEL: 'low' }, fetch, shouldContinue: () => running },
-        { log: jest.fn(), error: jest.fn() },
+        { log: jest.fn(), error: jest.fn(), warn: jest.fn() },
       );
       await jest.advanceTimersByTimeAsync(3 * POLL_MS);
       running = false;

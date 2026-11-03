@@ -6,7 +6,10 @@ import { VariantJobProcessorService } from './variant-job-processor.service';
 import { ResolveJobCardsService } from './resolve-job-cards.service';
 import { StoreIngestionService } from './store-ingestion.service';
 import { CreditBudgetService } from './credit-budget.service';
+import { ConfigService } from '@nestjs/config';
 import { createAvailabilityStep } from './availability-pass';
+import { readStoreAnswersConfig } from './store-answers.config';
+import { isOutOfCredits, ISweepFailure, nextSweepAttemptAt } from './sweep-backoff';
 import { VariantFetchJobEntity } from '../database/entities/variant-fetch-job.entity';
 import { IFetchCard } from './types/fetch-card';
 import { RecommendationQueueService } from '../recommendations/recommendation-queue.service';
@@ -51,7 +54,9 @@ export interface IUrlSyncDeps {
     StoreIngestionService,
     'claimPendingUrlSync' | 'runUrlSync' | 'markUrlSyncIdle' | 'markUrlSyncFailed'
   >;
-  readonly logger: Pick<Logger, 'log' | 'error'>;
+  readonly logger: Pick<Logger, 'log' | 'error' | 'warn'>;
+  /** Reads the sweep interval, to log when the automatic sweep will try again after a failure. */
+  readonly config?: Pick<ConfigService, 'get'>;
 }
 
 /**
@@ -69,10 +74,22 @@ export async function runPendingUrlSync(deps: IUrlSyncDeps): Promise<void> {
   } catch (err) {
     const message = (err as Error).message;
     deps.logger.error({ event: 'url-sync.error', storeSlug: slug, error: message });
-    await deps.ingestion.markUrlSyncFailed(slug, message);
+    const failure = await deps.ingestion.markUrlSyncFailed(slug, message);
+    if (failure && deps.config) logBackoff(deps, slug, failure);
   } finally {
     await deps.ingestion.markUrlSyncIdle(slug);
   }
+}
+
+function logBackoff(deps: IUrlSyncDeps, storeSlug: string, failure: ISweepFailure): void {
+  const { availabilityPassDays } = readStoreAnswersConfig(deps.config!);
+  deps.logger.warn({
+    event: 'url-sync.backoff',
+    storeSlug,
+    attempt: failure.failures,
+    outOfCredits: isOutOfCredits(failure.error),
+    nextAttemptAt: nextSweepAttemptAt(failure, availabilityPassDays).toISOString(),
+  });
 }
 
 function sleep(ms: number): Promise<void> {
@@ -174,7 +191,7 @@ export function defaultWorkerDeps(): IWorkerDeps {
 export async function runWorker(
   app: Pick<INestApplicationContext, 'get'>,
   deps: IWorkerDeps,
-  logger: Pick<Logger, 'log' | 'error'>,
+  logger: Pick<Logger, 'log' | 'error' | 'warn'>,
 ): Promise<void> {
   const queue = app.get(VariantFetchQueueService);
   const processor = app.get(VariantJobProcessorService);
@@ -185,11 +202,12 @@ export async function runWorker(
     resolver.resolve(job.storeId, job.cards.map((c) => c.cardIdentifier));
 
   logger.log({ event: 'variant-worker.started' });
+  const storeConfig = { get: <T>(key: string): T | undefined => deps.env[key] as T | undefined };
 
   const variantStep = async (): Promise<void> => {
     // Owner-triggered URL sync (no automatic cadence).
     try {
-      await runPendingUrlSync({ ingestion, logger });
+      await runPendingUrlSync({ ingestion, logger, config: storeConfig });
     } catch (err) {
       logger.error({ event: 'url-sync.claim_error', error: (err as Error).message });
     }
@@ -208,9 +226,9 @@ export async function runWorker(
   const availabilityStep = createAvailabilityStep({
     ingestion,
     budget: app.get(CreditBudgetService),
-    config: { get: <T>(key: string): T | undefined => deps.env[key] as T | undefined },
+    config: storeConfig,
     logger,
-    runPendingUrlSync: () => runPendingUrlSync({ ingestion, logger }),
+    runPendingUrlSync: () => runPendingUrlSync({ ingestion, logger, config: storeConfig }),
   });
 
   const recommendationStep = createRecommendationStep({

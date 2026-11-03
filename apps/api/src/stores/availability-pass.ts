@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { CreditBudgetService } from './credit-budget.service';
 import { readStoreAnswersConfig } from './store-answers.config';
 import { IAvailabilityStatus, StoreIngestionService } from './store-ingestion.service';
+import { nextSweepAttemptAt } from './sweep-backoff';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const RETRY_AFTER_FAILURE_MS = 60 * 60 * 1000;
 
 export interface IAvailabilityStepDeps {
   readonly ingestion: Pick<StoreIngestionService, 'listActiveStoreSlugs' | 'getAvailabilityStatus' | 'requestUrlSync'>;
@@ -18,7 +18,10 @@ export interface IAvailabilityStepDeps {
 
 function isPassDue(status: IAvailabilityStatus, passDays: number, now: Date): boolean {
   if (status.syncQueuedOrRunning) return false;
-  if (status.lastFailureAt !== null && now.getTime() - status.lastFailureAt.getTime() < RETRY_AFTER_FAILURE_MS) return false;
+  if (status.lastFailureAt !== null) {
+    const failure = { failures: status.failureCount, failedAt: status.lastFailureAt, error: status.lastError };
+    if (now.getTime() < nextSweepAttemptAt(failure, passDays).getTime()) return false;
+  }
   if (status.lastPassAt === null) return true;
   return now.getTime() - status.lastPassAt.getTime() >= passDays * DAY_MS;
 }
