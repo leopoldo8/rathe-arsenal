@@ -66,7 +66,7 @@ The API refuses to start when a required variable is missing or invalid.
 | `SCRAPER_FETCH_PROVIDER` | worker | no | `direct` (default) or `firecrawl` |
 | `FIRECRAWL_API_KEY` | worker | no | Needed when the provider is `firecrawl` |
 | `FIRECRAWL_REQUESTS_PER_MINUTE`, `FIRECRAWL_MONTHLY_CREDIT_BUDGET`, `FIRECRAWL_CREDITS_PER_PASS`, `FIRECRAWL_CREDITS_PER_DETAIL`, `FIRECRAWL_CREDITS_PER_LISTING_PAGE` | both | no | Rate and credit budget of the plan |
-| `STORE_PRICE_VALID_DAYS`, `STORE_AVAILABILITY_PASS_DAYS` | both | no | How long a store price stays valid (read by the web service and the worker), and how often the availability pass runs (worker) |
+| `STORE_PRICE_VALID_DAYS`, `STORE_AVAILABILITY_PASS_DAYS` | both | no | How long a store price stays valid (read by the web service and the worker), and how often the availability pass runs (worker; defaults 30 and 14 days) |
 | `STORE_SCRAPER_ENABLED`, `STORE_ALLOW_HOSTS`, `ADMIN_API_KEY` | web | no | `STORE_SCRAPER_ENABLED` and `STORE_ALLOW_HOSTS` are read only by the legacy scrape script (see the last section); `ADMIN_API_KEY` is the key of the admin endpoints. The schema requires `ADMIN_API_KEY` when `STORE_SCRAPER_ENABLED=true` |
 
 `EXPOSE_DEV_SECRETS=true` makes the API put sign-in secrets (confirmation link, codes) in its responses so tests need no inbox.
