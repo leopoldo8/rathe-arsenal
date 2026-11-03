@@ -33,7 +33,9 @@ async function* stream(products: IScrapedProduct[], failAfter?: number): AsyncGe
 
 interface IStoreState {
   lastAvailabilityPassAt: Date | null;
+  lastUrlSyncError: string | null;
   lastUrlSyncErrorAt: Date | null;
+  urlSyncFailureCount: number;
   urlSyncRequestedAt: Date | null;
   urlSyncRunningAt: Date | null;
 }
@@ -49,7 +51,9 @@ async function build(
     active: true,
     baseUrl: 'https://www.cupuladt.com.br',
     lastAvailabilityPassAt: null,
+    lastUrlSyncError: null,
     lastUrlSyncErrorAt: null,
+    urlSyncFailureCount: 0,
     urlSyncRequestedAt: null,
     urlSyncRunningAt: null,
     ...store,
@@ -93,7 +97,7 @@ async function build(
     config,
     logger,
     now: () => NOW,
-    runPendingUrlSync: () => runPendingUrlSync({ ingestion, logger }),
+    runPendingUrlSync: () => runPendingUrlSync({ ingestion, logger, config }),
   });
   return { step, storeRepo, stockRepo, scraper, budget, ingestion, logger, storeRow };
 }
@@ -115,20 +119,21 @@ function rowStamps(stockRepo: { update: jest.Mock }): Array<{ ids: string[]; at:
 
 describe('availability pass', () => {
   it('runs the pass when the last one is past the interval and stamps every listed row', async () => {
-    const eightDays = await build({ lastAvailabilityPassAt: new Date(NOW.getTime() - 8 * DAY_MS) });
-    (eightDays.scraper.scrapeStore as jest.Mock).mockReturnValue(stream(PRODUCTS));
+    const fifteenDays = await build({ lastAvailabilityPassAt: new Date(NOW.getTime() - 15 * DAY_MS) });
+    (fifteenDays.scraper.scrapeStore as jest.Mock).mockReturnValue(stream(PRODUCTS));
 
-    await eightDays.step();
+    await fifteenDays.step();
 
-    expect(eightDays.scraper.scrapeStore).toHaveBeenCalledTimes(1);
-    const stamps = rowStamps(eightDays.stockRepo);
+    expect(fifteenDays.scraper.scrapeStore).toHaveBeenCalledTimes(1);
+    const stamps = rowStamps(fifteenDays.stockRepo);
     expect(stamps).toHaveLength(1);
     expect([...stamps[0]!.ids].sort()).toEqual(['card-alpha', 'card-beta']);
-    expect(passStamps(eightDays.storeRepo)).toEqual([stamps[0]!.at]);
+    expect(passStamps(fifteenDays.storeRepo)).toEqual([stamps[0]!.at]);
 
-    const sixDays = await build({ lastAvailabilityPassAt: new Date(NOW.getTime() - 6 * DAY_MS) });
-    await sixDays.step();
-    expect(sixDays.scraper.scrapeStore).not.toHaveBeenCalled();
+    // The default interval is two weeks: a pass eight days old is not due yet.
+    const eightDays = await build({ lastAvailabilityPassAt: new Date(NOW.getTime() - 8 * DAY_MS) });
+    await eightDays.step();
+    expect(eightDays.scraper.scrapeStore).not.toHaveBeenCalled();
 
     const neverRan = await build({ lastAvailabilityPassAt: null });
     (neverRan.scraper.scrapeStore as jest.Mock).mockReturnValue(stream(PRODUCTS));
@@ -185,6 +190,118 @@ describe('availability pass', () => {
     (later.scraper.scrapeStore as jest.Mock).mockReturnValue(stream(PRODUCTS));
     await later.step();
     expect(later.scraper.scrapeStore).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits longer after each consecutive failure: 4h after the second, 12h after the third, 24h after the fourth', async () => {
+    const old = new Date(NOW.getTime() - 30 * DAY_MS);
+    const cases: Array<{ failures: number; waitHours: number }> = [
+      { failures: 2, waitHours: 4 },
+      { failures: 3, waitHours: 12 },
+      { failures: 4, waitHours: 24 },
+    ];
+    for (const { failures, waitHours } of cases) {
+      const tooSoon = await build({
+        lastAvailabilityPassAt: old,
+        urlSyncFailureCount: failures,
+        lastUrlSyncError: 'did not return a listing page',
+        lastUrlSyncErrorAt: new Date(NOW.getTime() - (waitHours * 60 - 1) * MINUTE_MS),
+      });
+      await tooSoon.step();
+      expect(tooSoon.scraper.scrapeStore).not.toHaveBeenCalled();
+
+      const due = await build({
+        lastAvailabilityPassAt: old,
+        urlSyncFailureCount: failures,
+        lastUrlSyncError: 'did not return a listing page',
+        lastUrlSyncErrorAt: new Date(NOW.getTime() - (waitHours * 60 + 1) * MINUTE_MS),
+      });
+      (due.scraper.scrapeStore as jest.Mock).mockReturnValue(stream(PRODUCTS));
+      await due.step();
+      expect(due.scraper.scrapeStore).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('after five consecutive failures it waits for the next scheduled sweep', async () => {
+    const old = new Date(NOW.getTime() - 30 * DAY_MS);
+    const spent = { lastAvailabilityPassAt: old, urlSyncFailureCount: 5, lastUrlSyncError: 'did not return a listing page' };
+
+    const threeDaysLater = await build({ ...spent, lastUrlSyncErrorAt: new Date(NOW.getTime() - 3 * DAY_MS) });
+    await threeDaysLater.step();
+    expect(threeDaysLater.scraper.scrapeStore).not.toHaveBeenCalled();
+
+    const nextWindow = await build({ ...spent, lastUrlSyncErrorAt: new Date(NOW.getTime() - 15 * DAY_MS) });
+    (nextWindow.scraper.scrapeStore as jest.Mock).mockReturnValue(stream(PRODUCTS));
+    await nextWindow.step();
+    expect(nextWindow.scraper.scrapeStore).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not retry while Firecrawl is out of credits, until its credits reset', async () => {
+    const old = new Date(NOW.getTime() - 30 * DAY_MS);
+    const resetAt = new Date(NOW.getTime() + 2 * DAY_MS);
+    const outOfCredits = {
+      lastAvailabilityPassAt: old,
+      urlSyncFailureCount: 1,
+      lastUrlSyncError: `Firecrawl returned HTTP 402: Insufficient credits, with plan credits resetting at ${resetAt.toISOString()}.`,
+      lastUrlSyncErrorAt: new Date(NOW.getTime() - 3 * 60 * MINUTE_MS),
+    };
+
+    const beforeReset = await build(outOfCredits);
+    await beforeReset.step();
+    expect(beforeReset.scraper.scrapeStore).not.toHaveBeenCalled();
+
+    const afterReset = await build({ ...outOfCredits, lastUrlSyncErrorAt: new Date(NOW.getTime() - 3 * DAY_MS),
+      lastUrlSyncError: `Firecrawl returned HTTP 402: credits resetting at ${new Date(NOW.getTime() - MINUTE_MS).toISOString()}.` });
+    (afterReset.scraper.scrapeStore as jest.Mock).mockReturnValue(stream(PRODUCTS));
+    await afterReset.step();
+    expect(afterReset.scraper.scrapeStore).toHaveBeenCalledTimes(1);
+  });
+
+  it('counts consecutive failures, logs the attempt and the next try, and a completed pass resets the count', async () => {
+    const old = new Date(NOW.getTime() - 30 * DAY_MS);
+
+    const secondFailure = await build({
+      lastAvailabilityPassAt: old,
+      urlSyncFailureCount: 1,
+      lastUrlSyncError: 'did not return a listing page',
+      lastUrlSyncErrorAt: new Date(NOW.getTime() - 2 * 60 * MINUTE_MS),
+    });
+    (secondFailure.scraper.scrapeStore as jest.Mock).mockReturnValue(stream(PRODUCTS, 1));
+    await secondFailure.step();
+    expect(secondFailure.storeRepo.update).toHaveBeenCalledWith(
+      { slug: 'cupula-dt' },
+      expect.objectContaining({ urlSyncFailureCount: 2 }),
+    );
+    const backoff = secondFailure.logger.warn.mock.calls.map(([entry]) => entry).find((entry) => entry.event === 'url-sync.backoff');
+    expect(backoff).toEqual(expect.objectContaining({ storeSlug: 'cupula-dt', attempt: 2, outOfCredits: false }));
+    const failedAt = (secondFailure.storeRepo.update.mock.calls.find(([, fields]) => fields.lastUrlSyncErrorAt)?.[1] as { lastUrlSyncErrorAt: Date }).lastUrlSyncErrorAt;
+    expect(backoff.nextAttemptAt).toBe(new Date(failedAt.getTime() + 4 * 60 * MINUTE_MS).toISOString());
+
+    const recovered = await build({
+      lastAvailabilityPassAt: old,
+      urlSyncFailureCount: 3,
+      lastUrlSyncError: 'did not return a listing page',
+      lastUrlSyncErrorAt: new Date(NOW.getTime() - 13 * 60 * MINUTE_MS),
+    });
+    (recovered.scraper.scrapeStore as jest.Mock).mockReturnValue(stream(PRODUCTS));
+    await recovered.step();
+    expect(recovered.storeRepo.update).toHaveBeenCalledWith(
+      { id: 1 },
+      expect.objectContaining({ urlSyncFailureCount: 0, lastUrlSyncError: null }),
+    );
+  });
+
+  it('a 402 does not grow the failure count, so the backoff restarts where it was once credits are back', async () => {
+    const old = new Date(NOW.getTime() - 30 * DAY_MS);
+    const failing = await build({ lastAvailabilityPassAt: old, urlSyncFailureCount: 2,
+      lastUrlSyncError: 'did not return a listing page', lastUrlSyncErrorAt: new Date(NOW.getTime() - 5 * 60 * MINUTE_MS) });
+    (failing.scraper.scrapeStore as jest.Mock).mockImplementation(async function* () {
+      throw new Error('Firecrawl returned HTTP 402: Insufficient credits');
+    });
+    await failing.step();
+    expect(failing.storeRepo.update).toHaveBeenCalledWith(
+      { slug: 'cupula-dt' },
+      expect.objectContaining({ urlSyncFailureCount: 2 }),
+    );
   });
 
   it('the pass waits for the next month and the manual sync always runs', async () => {

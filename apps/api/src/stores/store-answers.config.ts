@@ -11,7 +11,7 @@ export interface IStoreAnswersConfig {
 
 const DEFAULTS: IStoreAnswersConfig = {
   priceValidDays: 30,
-  availabilityPassDays: 7,
+  availabilityPassDays: 14,
   monthlyCreditBudget: 1000,
   creditsPerPass: 150,
   creditsPerDetail: 5,

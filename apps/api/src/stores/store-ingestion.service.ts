@@ -9,6 +9,7 @@ import {
 } from '../database/entities';
 import { CardNameMatcherService } from './card-name-matcher.service';
 import { SbraubleScraperService } from './sbrauble-scraper.service';
+import { isOutOfCredits, ISweepFailure } from './sweep-backoff';
 
 /**
  * Duration in milliseconds after which a `running` scrape-run row is
@@ -59,6 +60,9 @@ const INTERRUPTED_SYNC_MESSAGE = 'The sync was interrupted before it finished (t
 export interface IAvailabilityStatus {
   readonly lastPassAt: Date | null;
   readonly lastFailureAt: Date | null;
+  readonly lastError: string | null;
+  /** Consecutive failed syncs since the last completed one (402s excluded). */
+  readonly failureCount: number;
   readonly syncQueuedOrRunning: boolean;
 }
 
@@ -260,6 +264,7 @@ export class StoreIngestionService {
         lastUrlSyncProductCount: productsFetched,
         lastUrlSyncError: null,
         lastUrlSyncErrorAt: null,
+        urlSyncFailureCount: 0,
       },
     );
 
@@ -328,7 +333,15 @@ export class StoreIngestionService {
   async getAvailabilityStatus(storeSlug: string, now: Date = new Date()): Promise<IAvailabilityStatus> {
     const store = await this.storeRepo.findOne({
       where: { slug: storeSlug },
-      select: ['id', 'lastAvailabilityPassAt', 'lastUrlSyncErrorAt', 'urlSyncRequestedAt', 'urlSyncRunningAt'],
+      select: [
+        'id',
+        'lastAvailabilityPassAt',
+        'lastUrlSyncError',
+        'lastUrlSyncErrorAt',
+        'urlSyncFailureCount',
+        'urlSyncRequestedAt',
+        'urlSyncRunningAt',
+      ],
     });
     if (!store) {
       throw new NotFoundException(`Store not found: ${storeSlug}`);
@@ -336,6 +349,8 @@ export class StoreIngestionService {
     return {
       lastPassAt: store.lastAvailabilityPassAt,
       lastFailureAt: store.lastUrlSyncErrorAt,
+      lastError: store.lastUrlSyncError,
+      failureCount: store.urlSyncFailureCount ?? 0,
       syncQueuedOrRunning: Boolean(store.urlSyncRequestedAt) || (Boolean(store.urlSyncRunningAt) && !isStaleLock(store.urlSyncRunningAt, now)),
     };
   }
@@ -345,11 +360,21 @@ export class StoreIngestionService {
     await this.storeRepo.update({ slug: storeSlug }, { urlSyncRunningAt: null });
   }
 
-  async markUrlSyncFailed(storeSlug: string, message: string): Promise<void> {
+  /**
+   * Records a failed sync and grows the consecutive-failure count that spaces out
+   * automatic retries. A 402 (Firecrawl out of credits) leaves the count alone:
+   * it says nothing about the store, and the retry waits for the credit reset.
+   */
+  async markUrlSyncFailed(storeSlug: string, message: string): Promise<ISweepFailure> {
+    const store = await this.storeRepo.findOne({ where: { slug: storeSlug }, select: ['id', 'urlSyncFailureCount'] });
+    const previous = store?.urlSyncFailureCount ?? 0;
+    const failures = isOutOfCredits(message) ? previous : previous + 1;
+    const failedAt = new Date();
     await this.storeRepo.update(
       { slug: storeSlug },
-      { lastUrlSyncError: message, lastUrlSyncErrorAt: new Date() },
+      { lastUrlSyncError: message, lastUrlSyncErrorAt: failedAt, urlSyncFailureCount: failures },
     );
+    return { failures, failedAt, error: message };
   }
 
   /** Current URL-sync state + last-run summary, for the owner status display. */

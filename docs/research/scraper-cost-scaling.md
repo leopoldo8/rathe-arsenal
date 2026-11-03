@@ -177,9 +177,20 @@ That is the `O(stores × pages × frequency)` trap this doc exists to prevent.
 
 - **Detail fetch:** routed through Firecrawl when `SCRAPER_FETCH_PROVIDER=firecrawl`
   (set on the `scrapper-worker` service). Working; ~5 credits/card.
-- **URL-sync:** also Firecrawl-capable, but **not** on an automatic cadence — it
-  is triggered **on demand by the owner** via an admin control. This is the
-  cost-control posture above: no hands-off full crawls.
+- **URL-sync:** Firecrawl-capable. Since PR #181 (2026-10-28) the worker runs it
+  automatically as the in-stock availability pass every `STORE_AVAILABILITY_PASS_DAYS`
+  (default **14** since 2026-11-02, was 7), and the owner can still trigger it from
+  the admin control. At ~150 credits a pass that is ~325 credits a month of the
+  Free plan's 1,000 (weekly was ~650). The monthly counter (`firecrawl_usage`,
+  calendar month) keeps a one-pass reserve (`FIRECRAWL_CREDITS_PER_PASS`, 150):
+  automatic card lookups stop when less than that is left. Note that Firecrawl's
+  own cycle resets on the account's billing date (the 10th for this account), not
+  on the 1st, so the counter and the provider can disagree near month ends.
+  A failed pass is retried after 1, 4, 12 and 24 hours of consecutive failures,
+  then only at the next scheduled pass; a 402 (out of credits) waits for the
+  reset time Firecrawl names. Before this backoff, a pass that failed the same
+  way every hour (~17 credits each) spent the whole free-plan cycle in ~2.5 days
+  (2026-10-29 to 11-01).
   Since Oct 2026 the store refuses to page any single search past ~390 results
   ("limite de paginação desta busca"), so the scraper walks the catalog one
   edition at a time (~113 editions, ~150 requests at 120 items per page) and

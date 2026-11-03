@@ -131,6 +131,7 @@ Specs cited below as "the X spec" were deleted on 2026-10-28 when their features
 - **Scope**: `apps/api` collection, lists, scanner, readiness load; `apps/web` collection and lists.
 - **Date**: 2026-10-23
 - **Status**: active - the owner approved the persona-rethink spec on 2026-10-23; built and merged in PR #181 on 2026-10-28
+- **Amended 2026-11-02 (owner)**: `STORE_AVAILABILITY_PASS_DAYS` defaults to 14 instead of 7, to spend fewer Firecrawl credits. A failed pass is retried after 1, 4, 12 and 24 hours of consecutive failures, then only at the next scheduled pass; a Firecrawl 402 waits for the credit reset. Reason: a pass that failed the same way every hour spent the whole free-plan cycle on staging (2026-10-29 to 11-01).
 
 ### AD-017
 - **Decision**: A pick or a swap moves the quantity the caller gives (1 to the copies still needed, or the copies over the limit) from the side it names, `card_replacement.side` in `('deck', 'inventory')`; omitted, `decideAdoption` keeps today's behaviour. Supersedes AD-009's "moves the original's missing copies".

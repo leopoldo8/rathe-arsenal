@@ -84,6 +84,13 @@ export class StoreEntity {
   lastUrlSyncErrorAt!: Date | null;
 
   /**
+   * Consecutive failed URL syncs since the last completed one; spaces out the
+   * automatic sweep's retries. A Firecrawl 402 does not add to it.
+   */
+  @Column({ type: 'int', default: 0 })
+  urlSyncFailureCount!: number;
+
+  /**
    * Set when the owner requests an on-demand URL sync; cleared atomically when
    * the worker claims it. Non-null = a sync is queued and waiting for the worker.
    */
