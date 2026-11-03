@@ -24,6 +24,8 @@ const LISTING_WITH_BAD_URL = fixture('cupula-dt-listing-with-bad-url.html');
 const NO_RESULTS_PAGE = fixture('cupula-dt-empty-page.html');
 const PAGINATION_CAP_PAGE = fixture('cupula-dt-pagination-cap-page.html');
 const CHALLENGE_PAGE = '<html><body><h1>Just a moment...</h1></body></html>';
+// The store answers a search with exactly one result by redirecting to that product's page.
+const PRODUCT_PAGE = fixture('cupula-dt-detail-page.html');
 
 function editionsPage(editionIds: readonly string[]): string {
   const links = editionIds
@@ -269,6 +271,32 @@ describe('SbraubleScraperService', () => {
 
       expect(products).toHaveLength(6);
       expect(requested.filter((p) => p.edition === '49')).toHaveLength(1);
+    });
+
+    it('reads a search the store redirected to its only product page as a one-product listing', async () => {
+      serveEditions(editionsPage(['168', '10']), { '168': PRODUCT_PAGE, '10': LISTING_PAGE });
+
+      const products = await collect(service.scrapeStore(makeStore()));
+
+      expect(products.at(0)).toEqual({
+        rawName: 'Adrenaline Rush (Yellow)',
+        priceCents: null,
+        quantity: 0,
+        productUrl: 'https://www.cupuladt.com.br/?view=ecom/item&tcg=8&edicao=5&cardID=MON264&card=708',
+      });
+      expect(products).toHaveLength(7);
+    });
+
+    it('throws LISTING_UNRECOGNIZED for a product page whose own URL points off the store host', async () => {
+      const offHost = PRODUCT_PAGE.replace(
+        /(property="og:url" content=")https:\/\/www\.cupuladt\.com\.br/,
+        '$1https://evil.example',
+      );
+      servePages((page) => (page.view === 'ecom/edicoesTCG' ? editionsPage(['10']) : offHost));
+
+      const error = await collectError(service.scrapeStore(makeStore()));
+
+      expect(error.code).toBe(EScraperErrorCode.LISTING_UNRECOGNIZED);
     });
 
     it('throws PAGINATION_CAPPED when the store refuses to page further', async () => {

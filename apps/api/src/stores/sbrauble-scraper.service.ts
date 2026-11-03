@@ -33,6 +33,8 @@ const PAGINATION_CAP_NOTICE = /limite de pagina/i;
 const NO_RESULTS_NOTICE = /nenhum item encontrado/i;
 const NUMERIC_ID = /^\d+$/;
 const PAGE_EVIDENCE_TEXT_CHARS = 200;
+const PRODUCT_PAGE_URL = /[?&]view=ecom\/item(&|$)/;
+const OG_TITLE_SUFFIX_SEPARATOR = ' | ';
 
 /**
  * Maximum response body size per page fetch (5 MB).
@@ -258,6 +260,10 @@ export class SbraubleScraperService {
     const $ = cheerio.load(html);
 
     if ($('select[name="txt_limit"]').length === 0) {
+      const onlyProduct = this.readRedirectedProduct($, context);
+      if (onlyProduct !== null) {
+        return { url, total: 1, itemCount: 1, products: [onlyProduct], rarities: [] };
+      }
       throw new ScraperError(
         EScraperErrorCode.LISTING_UNRECOGNIZED,
         `${url} did not return a listing page (${describePage($, html)})`,
@@ -405,6 +411,24 @@ export class SbraubleScraperService {
     });
 
     return products;
+  }
+
+  /**
+   * The store answers a search with exactly one result by redirecting to that
+   * product's page instead of a listing. Reads it as that one product: name from
+   * og:title without the site suffix, URL from og:url (validated like any listing
+   * link). Returns null for anything that is not a product page of this store.
+   */
+  private readRedirectedProduct($: cheerio.CheerioAPI, context: IScrapeContext): IScrapedProduct | null {
+    const pageUrl = $('meta[property="og:url"]').attr('content') ?? '';
+    const title = $('meta[property="og:title"]').attr('content') ?? '';
+    if (!PRODUCT_PAGE_URL.test(pageUrl)) return null;
+
+    const suffixAt = title.lastIndexOf(OG_TITLE_SUFFIX_SEPARATOR);
+    const rawName = (suffixAt > 0 ? title.slice(0, suffixAt) : title).trim();
+    const productUrl = this.resolveProductUrl(pageUrl, context.store.baseUrl, context.baseHostname);
+    if (!rawName || productUrl === null) return null;
+    return { rawName, priceCents: null, quantity: 0, productUrl };
   }
 
   /**
