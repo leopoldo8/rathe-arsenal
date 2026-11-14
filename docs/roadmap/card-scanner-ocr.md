@@ -3,18 +3,19 @@
 Ideas to make the phone scanner (`/add-cards/scan`) faster and more reliable, ordered by what to do first.
 It is a list of options, not a commitment: each item is picked up only when the owner decides, and its result is judged with the checks under [How to judge a change](#how-to-judge-a-change).
 
-Last updated: 2026-10-10, after #128, #129, #132, #133 and #134.
+Last updated: 2026-11-13, after the code-line locator and the History Pack 1 fixes.
 
 ## Where it stands
 
 Everything runs in the browser; no image leaves the phone.
 
-1. Every 120 ms, when no read is in flight, the scanner grabs a video frame: the card guide plus an 8% margin, in grey (`scanner-deps.tsx`).
-2. It estimates the card's tilt (±12°) from the horizontal edges near the bottom of the card and crops the code line along that angle (`ocr-skew.ts`).
-3. One of three variants prepares the line: contrast stretch, resize to the height the recognizer was tuned on, and for two of them inversion plus a fixed threshold (`ocr-variants.ts`).
-4. Tesseract 7 (tesseract.js, WebAssembly, `eng` LSTM model) reads it in a Web Worker (`ocr-engine.ts`).
-5. The resolver finds a 6-character collector code in the text, fixes lookalike characters, and only returns codes that exist in the catalog (`collector-code.ts`).
-6. A card is accepted when two different variants read the same code within the last six reads (`scan-session.ts`).
+1. Every 120 ms, when no read is in flight, the scanner grabs a video frame: the card guide plus a margin (8% of its width at the sides, 12% of its height above and below), in grey (`scanner-deps.tsx`).
+2. On every other read it looks for the card's type line and the code line printed below it, and when that code line sits away from where the guide expects it, it reads the card where it really is instead of through the guide (`code-line-locator.ts`). The guide is a hint: a card higher, lower or smaller than it is still read.
+3. It estimates the card's tilt (±12°) from the horizontal edges near the bottom of the card and crops the code line along that angle (`ocr-skew.ts`).
+4. One of three variants prepares the line: contrast stretch, resize to the height the recognizer was tuned on, and for two of them inversion plus a fixed threshold (`ocr-variants.ts`).
+5. Tesseract 7 (tesseract.js, WebAssembly, `eng` LSTM model) reads it in a Web Worker (`ocr-engine.ts`).
+6. The resolver finds a 6-character collector code in the text, fixes lookalike characters, and only returns codes that exist in the catalog (`collector-code.ts`). A T, S or Z among the digits may be either of two digits (1/7, 5/9, 2/7); when both codes exist the read names neither.
+7. A card is accepted when two different variants read the same code within the last six reads, and at least one of them named it outright (`scan-session.ts`).
 
 Measured so far:
 
@@ -22,9 +23,13 @@ Measured so far:
 |---|---|---|
 | Time per read | ~5 ms preparing + ~150 ms OCR | M-series Mac, phone-size card |
 | Camera ready to card accepted | ~0.9 s | Chromium fake camera, CPU slowed 4x |
-| Cards accepted, level | 33/38, 0 wrong | Reference set, official images and 885 px wide |
-| Cards accepted, ±6° tilt | 32-33/38, 0 wrong | Same set, rotated inside a capture with margin |
+| Cards accepted, level | 32/38, 0 wrong | Reference set, official images and 885 px wide |
+| Cards accepted, ±6° tilt | 31-32/38, 0 wrong | Same set, rotated inside a capture with margin |
+| History Pack 1, level | 23/26, 0 wrong | Dark code on a white border; before the 5/9 rule, 1HP095 was accepted as 1HP055 |
+| Card at 0.75 of the guide, light background | 32/38, 0 wrong | Reference set; the setup of a card dropped into a white box |
+| Card 5% above the guide / 0.85 of it and 5% below | 24/38 / 26/38, 0 wrong | Reference set; before the locator the scanner read none past about 1.5% |
 | Tilt estimate | ~8 ms per read | M-series Mac |
+| Code-line locator | ~20-60 ms on the reads that use it | M-series Mac, capture of a 885 px guide |
 
 None of these numbers come from a real phone.
 The reference images are clean official renders scaled up, with no blur, noise, glare, sleeves or foil.
