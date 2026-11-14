@@ -16,6 +16,8 @@ const RESPONSE: ICollectorCodesResponse = {
     { cardIdentifier: 'mask-of-momentum', name: 'Mask of Momentum', pitch: null, printings: [{ code: '1HP095' }] },
     { cardIdentifier: 'hp1-55', name: 'Hp1 55', pitch: 1, printings: [{ code: '1HP055' }] },
     { cardIdentifier: 'hp1-46', name: 'Hp1 46', pitch: 1, printings: [{ code: '1HP046' }] },
+    { cardIdentifier: 'hp1-22', name: 'Hp1 22', pitch: 1, printings: [{ code: '1HP022' }] },
+    { cardIdentifier: 'hp1-27', name: 'Hp1 27', pitch: 1, printings: [{ code: '1HP027' }] },
     { cardIdentifier: 'a-drop-in-the-ocean-blue', name: 'A Drop in the Ocean', pitch: 3, printings: [{ code: 'MST095' }] },
     { cardIdentifier: 'inner-chi-blue', name: 'Inner Chi', pitch: 3, printings: [{ code: 'MST095', image: 'MST095_BACK' }] },
     {
@@ -95,6 +97,10 @@ describe('resolveCollectorCode', () => {
 
   it('skips an S that could be 5 or 9 when both codes exist', () => {
     expect(resolvedCode('(L) 1HPOSS Kate Fox ©2021 Legend Story Studios')).toBeNull();
+  });
+
+  it('skips a Z that could be 2 or 7 when both codes exist', () => {
+    expect(resolvedCode('C 1HPOZZ Olga Khariton + 2021')).toBeNull();
   });
 
   it('lists the codes an ambiguous read could be', () => {

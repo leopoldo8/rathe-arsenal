@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import { setUpCamera, videoConstraints, type ICameraSetup } from './camera-control';
+import { cardCandidates } from './code-line-locator';
 import { guideRectInVideo } from './guide-geometry';
 import { createOcrEngine, type IOcrEngine } from './ocr-engine';
 import { rgbaToGray, type ICardImage } from './ocr-image';
@@ -17,14 +18,17 @@ export interface IScannerDeps {
   readonly openCamera: () => Promise<MediaStream>;
   readonly attachStream: (video: HTMLVideoElement, stream: MediaStream) => void;
   readonly setUpCamera: (video: HTMLVideoElement, stream: MediaStream) => Promise<ICameraSetup>;
-  readonly captureCard: (video: HTMLVideoElement, stage: HTMLElement) => ICardImage | null;
+  /** Captures the card guide; `attempt` picks which crop of the card to read when there are two. */
+  readonly captureCard: (video: HTMLVideoElement, stage: HTMLElement, attempt: number) => ICardImage | null;
   readonly loadEngine: () => Promise<IOcrEngine>;
   readonly scheduleTicks: (tick: () => void) => () => void;
 }
 
 const SCAN_TICK_MS = 120;
-// Room around the guide for the corners of a tilted card (about 10° of tilt).
+// Room around the guide for the corners of a tilted card (about 10° of tilt),
+// and above and below it for a card that sits higher or lower than the guide.
 const CAPTURE_MARGIN = 0.08;
+const CAPTURE_MARGIN_VERTICAL = 0.12;
 const OCR_ASSET_PATH = '/ocr/';
 
 async function openRearCamera(): Promise<MediaStream> {
@@ -53,17 +57,18 @@ function setUpBrowserCamera(video: HTMLVideoElement, stream: MediaStream): Promi
   return setUpCamera({ video, stream, attach: attachStream });
 }
 
-function captureCard(video: HTMLVideoElement, stage: HTMLElement): ICardImage | null {
+function captureCard(video: HTMLVideoElement, stage: HTMLElement, attempt: number): ICardImage | null {
   if (video.videoWidth === 0 || video.videoHeight === 0) return null;
   const guide = guideRectInVideo(
     { width: video.videoWidth, height: video.videoHeight },
     { width: stage.clientWidth, height: stage.clientHeight },
   );
   const margin = Math.round(guide.width * CAPTURE_MARGIN);
+  const marginVertical = Math.round(guide.height * CAPTURE_MARGIN_VERTICAL);
   const left = Math.max(0, guide.x - margin);
-  const top = Math.max(0, guide.y - margin);
+  const top = Math.max(0, guide.y - marginVertical);
   const width = Math.min(video.videoWidth, guide.x + guide.width + margin) - left;
-  const height = Math.min(video.videoHeight, guide.y + guide.height + margin) - top;
+  const height = Math.min(video.videoHeight, guide.y + guide.height + marginVertical) - top;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -71,10 +76,11 @@ function captureCard(video: HTMLVideoElement, stage: HTMLElement): ICardImage | 
   if (!context) return null;
   context.drawImage(video, left, top, width, height, 0, 0, width, height);
   const { data } = context.getImageData(0, 0, width, height);
-  return {
+  const candidates = cardCandidates({
     ...rgbaToGray(data, width, height),
     guide: { x: guide.x - left, y: guide.y - top, width: guide.width, height: guide.height },
-  };
+  });
+  return candidates[attempt % candidates.length]!;
 }
 
 function loadEngine(): Promise<IOcrEngine> {

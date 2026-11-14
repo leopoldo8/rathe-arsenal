@@ -30,8 +30,8 @@ const DIGIT_LOOKALIKES: Readonly<Record<string, string>> = {
   S: '5', Z: '2', B: '8', G: '6',
 };
 
-// A T in the digits is read as 1 or as 7, and an S as 5 or 9; a slice where both codes exist is ambiguous.
-const SECOND_DIGIT_READING: Readonly<Record<string, string>> = { T: '7', S: '9' };
+// A T in the digits is read as 1 or 7, an S as 5 or 9 and a Z as 2 or 7; a slice where both codes exist is ambiguous.
+const SECOND_DIGIT_READING: Readonly<Record<string, string>> = { T: '7', S: '9', Z: '7' };
 
 const LETTER_LOOKALIKES: Readonly<Record<string, string>> = {
   '0': 'O', '1': 'I', '5': 'S', '2': 'Z', '8': 'B', '6': 'G',

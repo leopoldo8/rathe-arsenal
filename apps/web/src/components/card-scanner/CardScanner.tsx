@@ -172,8 +172,8 @@ export function CardScanner(): React.ReactElement {
     if (camera !== 'ready' || engine !== 'ready' || index === null) return undefined;
     const loop = createScanLoop({
       variants: OCR_VARIANTS,
-      captureFrame: () =>
-        videoRef.current && stageRef.current ? deps.captureCard(videoRef.current, stageRef.current) : null,
+      captureFrame: (attempt) =>
+        videoRef.current && stageRef.current ? deps.captureCard(videoRef.current, stageRef.current, attempt) : null,
       recognize: async (card, variant) => {
         if (!debug) return engineRef.current!.recognize(card, variant);
         if (variant.id === OCR_VARIANTS[0]!.id) setDebugCrop(variant.prepare(card));
