@@ -9,6 +9,8 @@ interface IWordsOptions {
   readonly centerY: number;
   readonly charHeight: number;
   readonly words: number;
+  /** Clockwise slope of the line; each character keeps upright and moves down the slope. */
+  readonly degrees?: number;
 }
 
 /** Draws a line of block "words" (four characters each) centred on (centerX, centerY). */
@@ -19,10 +21,11 @@ function drawLine(image: IGrayImage, options: IWordsOptions): void {
   const wordWidth = 4 * charWidth + 3 * charGap;
   const wordGap = charHeight;
   const total = words * wordWidth + (words - 1) * wordGap;
-  const top = Math.round(options.centerY - charHeight / 2);
+  const slope = Math.tan(((options.degrees ?? 0) * Math.PI) / 180);
   let x = Math.round(options.centerX - total / 2);
   for (let word = 0; word < words; word += 1) {
     for (let char = 0; char < 4; char += 1) {
+      const top = Math.round(options.centerY - charHeight / 2 + (x + charWidth / 2 - options.centerX) * slope);
       for (let y = top; y < top + charHeight; y += 1) image.pixels.fill(INK, y * image.width + x, y * image.width + x + charWidth);
       x += charWidth + charGap;
     }
@@ -31,13 +34,16 @@ function drawLine(image: IGrayImage, options: IWordsOptions): void {
 }
 
 /** A light card's bottom: a type line, and the code line 0.044 card heights below it. */
-function cardBottom(cardHeight: number, codeLineY: number): ICardImage {
+function cardBottom(cardHeight: number, codeLineY: number, degrees = 0): ICardImage {
   const width = 900;
   const height = 1400;
   const image: IGrayImage = { width, height, pixels: new Uint8ClampedArray(width * height).fill(PAPER) };
   const codeHeight = Math.round(cardHeight * 0.0125);
-  drawLine(image, { centerX: 450, centerY: codeLineY - cardHeight * 0.044, charHeight: Math.round(codeHeight * 1.3), words: 4 });
-  drawLine(image, { centerX: 450, centerY: codeLineY, charHeight: codeHeight, words: 6 });
+  const radians = (degrees * Math.PI) / 180;
+  const gap = cardHeight * 0.044;
+  const typeLine = { centerX: 450 + gap * Math.sin(radians), centerY: codeLineY - gap * Math.cos(radians) };
+  drawLine(image, { ...typeLine, charHeight: Math.round(codeHeight * 1.3), words: 4, degrees });
+  drawLine(image, { centerX: 450, centerY: codeLineY, charHeight: codeHeight, words: 6, degrees });
   return { ...image, guide: { x: 50, y: 100, width: 800, height: 1200 } };
 }
 
@@ -62,6 +68,15 @@ describe('locateCard', () => {
     expect(Math.abs(codeLineY - 1000)).toBeLessThan(4);
     expect(located!.guide.height / 1000).toBeGreaterThan(0.85);
     expect(located!.guide.height / 1000).toBeLessThan(1.15);
+  });
+
+  it.each([5, -5])('follows a card tilted %s°', (degrees) => {
+    const located = locateCard(cardBottom(1000, 1000, degrees));
+
+    expect(located).not.toBeNull();
+    expect(Math.abs(located!.degrees - degrees)).toBeLessThan(1);
+    const codeLineY = located!.guide.y + located!.guide.height * 0.957;
+    expect(Math.abs(codeLineY - 1000)).toBeLessThan(8);
   });
 
   it('finds nothing in a blank capture', () => {

@@ -45,7 +45,11 @@ interface IEdgeMap {
   readonly strength: Float32Array;
 }
 
-/** Vertical gradient of a downscaled copy of the card's bottom region, offset from the card centre. */
+/**
+ * Vertical gradient of a downscaled copy of the card's bottom region, offset
+ * from the card centre. A located card can reach past the capture; its pixels
+ * outside repeat the capture's edge.
+ */
 function horizontalEdges(card: ICardImage): IEdgeMap {
   const guide = guideOf(card);
   const step = Math.max(1, Math.floor(guide.width / ESTIMATE_WIDTH));
@@ -57,8 +61,11 @@ function horizontalEdges(card: ICardImage): IEdgeMap {
     for (let x = 0; x < width; x += 1) {
       let sum = 0;
       for (let dy = 0; dy < step; dy += 1) {
-        const row = (guide.y + (top + y) * step + dy) * card.width + guide.x;
-        for (let dx = 0; dx < step; dx += 1) sum += card.pixels[row + x * step + dx]!;
+        const sourceY = clampIndex(Math.round(guide.y) + (top + y) * step + dy, card.height);
+        for (let dx = 0; dx < step; dx += 1) {
+          const sourceX = clampIndex(Math.round(guide.x) + x * step + dx, card.width);
+          sum += card.pixels[sourceY * card.width + sourceX]!;
+        }
       }
       small[y * width + x] = sum / (step * step);
     }
@@ -114,6 +121,10 @@ function cropRotated(card: ICardImage, rect: IFractionRect, degrees: number): IG
     }
   }
   return { width, height, pixels };
+}
+
+function clampIndex(value: number, size: number): number {
+  return Math.min(size - 1, Math.max(0, value));
 }
 
 function guideOf(card: ICardImage): IPixelBox {

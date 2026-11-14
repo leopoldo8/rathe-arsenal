@@ -36,6 +36,8 @@ const MIN_FILL = 0.12;
 const MAX_PIECE_GAP_IN_HEIGHTS = 1.6;
 const MAX_DRIFT_IN_HEIGHTS = 0.45;
 const MAX_HEIGHT_RATIO = 1.7;
+// A frame full of texture (a busy background, motion blur) stops here instead of stalling the page.
+const MAX_COMPONENTS = 6000;
 
 /**
  * Finds horizontal lines of characters inside `region`: pixels that differ
@@ -55,7 +57,8 @@ export function findTextLines(image: IGrayImage, region: IPixelBox, options: ILo
 
 function localMeans(image: IGrayImage, region: IPixelBox, window: number): Float32Array {
   const { x: left, y: top, width, height } = region;
-  const integral = new Float64Array((width + 1) * (height + 1));
+  // Sums stay below 2^32 for any capture under 16 million pixels.
+  const integral = new Uint32Array((width + 1) * (height + 1));
   for (let y = 0; y < height; y += 1) {
     let rowSum = 0;
     for (let x = 0; x < width; x += 1) {
@@ -95,21 +98,23 @@ function inkMask(image: IGrayImage, region: IPixelBox, means: Float32Array, pola
 }
 
 function labelComponents(mask: Uint8Array, region: IPixelBox): IComponent[] {
-  const { width, height } = region;
-  const labels = new Int32Array(width * height).fill(-1);
+  const { width } = region;
+  const labelled = new Uint8Array(mask.length);
+  const stack = new Int32Array(mask.length);
   const components: IComponent[] = [];
-  const stack: number[] = [];
   for (let start = 0; start < mask.length; start += 1) {
-    if (mask[start] === 0 || labels[start] !== -1) continue;
+    if (mask[start] === 0 || labelled[start] === 1) continue;
+    if (components.length >= MAX_COMPONENTS) break;
     let left = width;
     let right = -1;
-    let top = height;
+    let top = Number.MAX_SAFE_INTEGER;
     let bottom = -1;
     let area = 0;
-    labels[start] = components.length;
-    stack.push(start);
-    while (stack.length > 0) {
-      const at = stack.pop()!;
+    let depth = 0;
+    labelled[start] = 1;
+    stack[depth++] = start;
+    while (depth > 0) {
+      const at = stack[--depth]!;
       const x = at % width;
       const y = (at - x) / width;
       area += 1;
@@ -117,19 +122,26 @@ function labelComponents(mask: Uint8Array, region: IPixelBox): IComponent[] {
       if (x > right) right = x;
       if (y < top) top = y;
       if (y > bottom) bottom = y;
-      for (const next of [at - 1, at + 1, at - width, at + width]) {
-        if (next < 0 || next >= mask.length || mask[next] === 0 || labels[next] !== -1) continue;
-        if ((next === at - 1 && x === 0) || (next === at + 1 && x === width - 1)) continue;
-        labels[next] = components.length;
-        stack.push(next);
+      if (x > 0 && mask[at - 1] === 1 && labelled[at - 1] === 0) {
+        labelled[at - 1] = 1;
+        stack[depth++] = at - 1;
+      }
+      if (x < width - 1 && mask[at + 1] === 1 && labelled[at + 1] === 0) {
+        labelled[at + 1] = 1;
+        stack[depth++] = at + 1;
+      }
+      if (at >= width && mask[at - width] === 1 && labelled[at - width] === 0) {
+        labelled[at - width] = 1;
+        stack[depth++] = at - width;
+      }
+      if (at + width < mask.length && mask[at + width] === 1 && labelled[at + width] === 0) {
+        labelled[at + width] = 1;
+        stack[depth++] = at + width;
       }
     }
     const boxHeight = bottom - top + 1;
     const boxWidth = right - left + 1;
-    if (area < MIN_FILL * boxWidth * boxHeight) {
-      components.push({ left: 0, right: -1, top: 0, bottom: -1, centerX: 0, centerY: 0, height: 0 });
-      continue;
-    }
+    if (area < MIN_FILL * boxWidth * boxHeight) continue;
     components.push({
       left: region.x + left,
       right: region.x + right,
