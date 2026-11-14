@@ -52,6 +52,13 @@ describe('estimateSkewDegrees', () => {
     expect(Math.abs(estimateSkewDegrees(tiltedCard(degrees)) - degrees)).toBeLessThanOrEqual(0.5);
   });
 
+  it('finds the tilt of a card whose guide reaches past the capture', () => {
+    const card = tiltedCard(5, 20);
+    const pastTheEdge = { ...card, guide: { x: -30, y: 40, width: WIDTH + 100, height: HEIGHT + 10 } };
+
+    expect(Math.abs(estimateSkewDegrees(pastTheEdge) - 5)).toBeLessThanOrEqual(1);
+  });
+
   it('reads a blank frame as level', () => {
     const blank: IGrayImage = { width: WIDTH, height: HEIGHT, pixels: new Uint8ClampedArray(WIDTH * HEIGHT).fill(PAPER) };
 

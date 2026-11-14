@@ -1,4 +1,4 @@
-import type { IResolvedCode, IScannedCard } from './collector-code';
+import type { ICodeRead, IScannedCard } from './collector-code';
 import type { TVariantId } from './ocr-variants';
 import type { IAddCardsBatchItem } from '../../api/collection';
 import type { TEdition, TFinish } from '../../api/collection-versions';
@@ -23,7 +23,9 @@ export interface ITrayRow {
 
 interface IRecognitionVote {
   readonly variant: TVariantId;
+  /** The code the read named, or null when it named none (a miss, or an ambiguous read). */
   readonly code: string | null;
+  readonly possibleCodes: readonly string[];
 }
 
 interface IHeldCode {
@@ -51,37 +53,38 @@ export const EMPTY_SESSION: IScanSession = { rows: [], votes: [], held: null };
 
 const NO_OUTCOME: TScanOutcome = { kind: 'none' };
 
-export function applyRecognition(
-  session: IScanSession,
-  variant: TVariantId,
-  resolved: IResolvedCode | null,
-): IScanStep {
-  const code = resolved?.code ?? null;
-  const held = nextHeld(session.held, code);
-  if (held !== null && code === held.code) {
+export function applyRecognition(session: IScanSession, variant: TVariantId, read: ICodeRead): IScanStep {
+  const { resolved, possibleCodes } = read;
+  const held = nextHeld(session.held, possibleCodes);
+  if (held !== null && possibleCodes.includes(held.code)) {
     return { session: { ...session, held }, outcome: NO_OUTCOME };
   }
 
-  const votes = [...session.votes, { variant, code }].slice(-VOTE_WINDOW);
+  const votes = [...session.votes, { variant, code: resolved?.code ?? null, possibleCodes }].slice(-VOTE_WINDOW);
   if (resolved === null || !hasAgreement(votes, resolved.code)) {
     return { session: { ...session, votes, held }, outcome: NO_OUTCOME };
   }
 
-  const cleared = votes.filter((vote) => vote.code !== resolved.code);
+  const cleared = votes.filter((vote) => !vote.possibleCodes.includes(resolved.code));
   const step = addToTray({ ...session, votes: cleared, held }, resolved.cards, resolved.code, resolved.code);
   if (step.outcome.kind !== 'added') return step;
   return { ...step, session: { ...step.session, held: { code: resolved.code, misses: 0 } } };
 }
 
-function nextHeld(held: IHeldCode | null, code: string | null): IHeldCode | null {
+function nextHeld(held: IHeldCode | null, possibleCodes: readonly string[]): IHeldCode | null {
   if (held === null) return null;
-  if (code === held.code) return { code, misses: 0 };
+  if (possibleCodes.includes(held.code)) return { code: held.code, misses: 0 };
   const misses = held.misses + 1;
   return misses >= REARM_AFTER_MISSES ? null : { code: held.code, misses };
 }
 
+/**
+ * Two different variants must back the code. An ambiguous read (an S that may
+ * be 5 or 9) backs every code it could be, so it counts as support, but the
+ * code is only accepted on a read that named it outright.
+ */
 function hasAgreement(votes: readonly IRecognitionVote[], code: string): boolean {
-  return new Set(votes.filter((vote) => vote.code === code).map((vote) => vote.variant)).size >= 2;
+  return new Set(votes.filter((vote) => vote.possibleCodes.includes(code)).map((vote) => vote.variant)).size >= 2;
 }
 
 export function addSearchedCard(session: IScanSession, card: IScannedCard): IScanStep {

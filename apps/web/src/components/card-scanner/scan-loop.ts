@@ -2,7 +2,8 @@ import type { IOcrVariant } from './ocr-variants';
 
 export interface IScanLoopDeps<TFrame> {
   readonly variants: readonly IOcrVariant[];
-  readonly captureFrame: () => TFrame | null;
+  /** `attempt` counts reads, so a capture can alternate between crops of the card. */
+  readonly captureFrame: (attempt: number) => TFrame | null;
   readonly recognize: (frame: TFrame, variant: IOcrVariant) => Promise<string>;
   readonly onText: (variant: IOcrVariant, text: string) => void;
   readonly onError: (error: unknown) => void;
@@ -21,7 +22,7 @@ export function createScanLoop<TFrame>(deps: IScanLoopDeps<TFrame>): IScanLoop {
   return {
     tick: () => {
       if (inFlight || paused) return;
-      const frame = deps.captureFrame();
+      const frame = deps.captureFrame(nextVariant);
       if (frame === null) return;
       const variant = deps.variants[nextVariant % deps.variants.length]!;
       nextVariant += 1;

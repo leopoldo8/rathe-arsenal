@@ -1,4 +1,4 @@
-import type { IResolvedCode, IScannedCard } from '../collector-code';
+import type { ICodeRead, IResolvedCode, IScannedCard } from '../collector-code';
 import type { TVariantId } from '../ocr-variants';
 import {
   addSearchedCard,
@@ -20,10 +20,24 @@ function code(value: string, ...cardIds: string[]): IResolvedCode {
   return { code: value, cards: (cardIds.length > 0 ? cardIds : [`card-${value}`]).map(card) };
 }
 
-type TRead = readonly [TVariantId, IResolvedCode | null];
+/** A read that could be any of these codes (an S that is 5 or 9), so it names none of them. */
+interface IAmbiguous {
+  readonly ambiguous: readonly string[];
+}
+
+type TRead = readonly [TVariantId, IResolvedCode | IAmbiguous | null];
+
+function toCodeRead(read: IResolvedCode | IAmbiguous | null): ICodeRead {
+  if (read === null) return { resolved: null, possibleCodes: [] };
+  if ('ambiguous' in read) return { resolved: null, possibleCodes: read.ambiguous };
+  return { resolved: read, possibleCodes: [read.code] };
+}
 
 function run(reads: readonly TRead[], from: IScanSession = EMPTY_SESSION): IScanSession {
-  return reads.reduce((session, [variant, resolved]) => applyRecognition(session, variant, resolved).session, from);
+  return reads.reduce(
+    (session, [variant, read]) => applyRecognition(session, variant, toCodeRead(read)).session,
+    from,
+  );
 }
 
 function quantities(session: IScanSession): Record<string, number> {
@@ -57,6 +71,30 @@ describe('scan session', () => {
 
     it('ignores agreeing reads six recognitions apart', () => {
       expect(run(readsApart(6)).rows).toEqual([]);
+    });
+  });
+
+  describe('counts a read that could be several codes as support, never as proof', () => {
+    const A_OR_B: IAmbiguous = { ambiguous: ['AAA001', 'BBB001'] };
+
+    it('adds the card when a variant names it and another read could be it', () => {
+      expect(quantities(run([['full', A_OR_B], ['left-binary', A]]))).toEqual({ 'card-AAA001': 1 });
+    });
+
+    it('adds the card when the ambiguous read comes after the one that names it', () => {
+      const session = run([['full', A], ['left-binary', A_OR_B], ['full-binary-sparse', null], ['full', A]]);
+
+      expect(quantities(session)).toEqual({ 'card-AAA001': 1 });
+    });
+
+    it('adds nothing when every read is ambiguous', () => {
+      expect(run([['full', A_OR_B], ['left-binary', A_OR_B], ['full-binary-sparse', A_OR_B]]).rows).toEqual([]);
+    });
+
+    it('keeps holding a card while its reads turn ambiguous', () => {
+      const session = run([...ACCEPT_A, ['full', A_OR_B], ['left-binary', A_OR_B], ['full-binary-sparse', A_OR_B], ['full', A]]);
+
+      expect(quantities(session)).toEqual({ 'card-AAA001': 1 });
     });
   });
 
