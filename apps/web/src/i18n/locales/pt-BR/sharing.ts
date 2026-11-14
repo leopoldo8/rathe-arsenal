@@ -227,7 +227,6 @@ export const sharing = {
     hint_other: 'Faltam {{count}} no seu {{deck}}',
     priceOne: 'R$ {{price}}',
     priceEach: 'R$ {{price}} cada',
-    select: 'Escolher {{name}}',
     increase: 'Mais uma cópia de {{name}}',
     decrease: 'Menos uma cópia de {{name}}',
     bar: 'Quero estas · R$ {{price}}',

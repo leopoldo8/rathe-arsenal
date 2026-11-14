@@ -34,6 +34,8 @@ interface ICardGalleryCellProps {
   readonly overlay?: React.ReactNode;
   /** Fades the art and strikes the name through, for a card that is no longer available. */
   readonly dimmed?: boolean | undefined;
+  /** Outlines the art, for a card the visitor picked. */
+  readonly selected?: boolean | undefined;
 }
 
 /** One card of a gallery: art (click opens the lightbox), quantity badge and name. */
@@ -54,16 +56,17 @@ export function CardGalleryCell({
   dataMissing,
   overlay,
   dimmed,
+  selected,
 }: ICardGalleryCellProps): React.ReactElement {
   const { t } = useTranslation();
   const displayName = cardName(name, pitch, t);
-  const cellClass = [styles.cell, dataMissing === true ? styles.cellMissing : '', dimmed === true ? styles.cellDimmed : '']
+  const cellClass = [styles.cell, dataMissing === true ? styles.cellMissing : '', dimmed === true ? styles.cellDimmed : '', selected === true ? styles.cellSelected : '']
     .filter(Boolean)
     .join(' ');
   const thumbClass = variant === 'full' ? `${styles.thumb} ${styles.thumbFull}` : styles.thumb;
 
   return (
-    <li className={cellClass} data-testid={testId} data-missing={dataMissing} data-dimmed={dimmed || undefined}>
+    <li className={cellClass} data-testid={testId} data-missing={dataMissing} data-dimmed={dimmed || undefined} data-selected={selected || undefined}>
       <div className={thumbClass}>
         <CardArt
           name={displayName}

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { postListEvent, type ISharedListResponse } from '../../api/shared-lists';
+import { postListEvent, type ISharedListLine, type ISharedListResponse } from '../../api/shared-lists';
 import { useSpareQuery } from '../../api/spare';
 import { cardName } from '../../lib/card-name';
 import { SpareRuleSheet } from '../spare/SpareRuleSheet';
 import { plural } from '../spare/spareModel';
 import { ShareMessageView } from './ShareMessageView';
-import { RowStepper, Thumb } from './VisitorRowParts';
+import { VisitorCardGrid } from './VisitorCardGrid';
+import { RowStepper } from './VisitorRowParts';
 import {
   buildOfferMessage,
   offerCents,
@@ -65,6 +66,12 @@ export function SharedListTrade({ list }: { readonly list: ISharedListResponse }
     );
   }
 
+  function wantsLine(line: ISharedListLine): string {
+    const wants = t('sharing.trade.wants', { name: list.sharerName, count: line.quantity });
+    const suggested = line.suggestedCents === null || line.suggestedCents === undefined ? '' : ` · ${t('sharing.trade.suggested', { price: reaisOf(line.suggestedCents) })}`;
+    return `${wants}${suggested}`;
+  }
+
   const summary = offerCopies(rows.spare);
   const lackingNames = rows.lacking.map((line) => cardName(line.name, line.pitch, (key) => t(key))).join(', ');
 
@@ -80,49 +87,46 @@ export function SharedListTrade({ list }: { readonly list: ISharedListResponse }
             })
           : t('sharing.trade.summaryNone', { name: list.sharerName })}
       </p>
-      <ul className={styles.list}>
-        {rows.spare.map(({ line, offerable }) => {
-          const label = cardName(line.name, line.pitch, (key) => t(key));
-          const wants = t('sharing.trade.wants', { name: list.sharerName, count: line.quantity });
-          const suggested = line.suggestedCents === null || line.suggestedCents === undefined ? '' : ` · ${t('sharing.trade.suggested', { price: reaisOf(line.suggestedCents) })}`;
-          return (
-            <li key={line.id} className={styles.row} data-testid="trade-row">
-              <Thumb line={line} label={label} />
-              <div className={styles.rowText}>
-                <span className={styles.name}>{label}</span>
-                <p className={styles.meta}>{`${wants}${suggested}`}</p>
-                <p className={styles.good}>{t('sharing.trade.youHave', { owned: line.owned ?? 0, spare: line.spare ?? 0 })}</p>
-              </div>
-              <RowStepper
-                value={selection[line.id] ?? 0}
-                max={offerable}
-                increaseLabel={t('sharing.trade.increase', { name: label })}
-                decreaseLabel={t('sharing.trade.decrease', { name: label })}
-                onChange={(value) => setSelection(setCount(selection, line.id, value))}
-              />
-            </li>
-          );
-        })}
-        {rows.none.map((line) => {
-          const label = cardName(line.name, line.pitch, (key) => t(key));
-          const wants = t('sharing.trade.wants', { name: list.sharerName, count: line.quantity });
-          const suggested = line.suggestedCents === null || line.suggestedCents === undefined ? '' : ` · ${t('sharing.trade.suggested', { price: reaisOf(line.suggestedCents) })}`;
-          return (
-            <li key={line.id} className={styles.row} data-testid="trade-row">
-              <Thumb line={line} label={label} />
-              <div className={styles.rowText}>
-                <span className={styles.name}>{label}</span>
-                <p className={styles.meta}>{`${wants}${suggested}`}</p>
+      <VisitorCardGrid
+        testId="trade-row"
+        formatQuantity={(count) => t('sharing.list.quantity', { count })}
+        items={[
+          ...rows.spare.map(({ line, offerable }) => {
+            const label = cardName(line.name, line.pitch, (key) => t(key));
+            const count = selection[line.id] ?? 0;
+            return {
+              line,
+              selected: count > 0,
+              footer: (
+                <div className={styles.cellFooter}>
+                  <p className={styles.meta}>{wantsLine(line)}</p>
+                  <p className={styles.good}>{t('sharing.trade.youHave', { owned: line.owned ?? 0, spare: line.spare ?? 0 })}</p>
+                  <RowStepper
+                    value={count}
+                    max={offerable}
+                    increaseLabel={t('sharing.trade.increase', { name: label })}
+                    decreaseLabel={t('sharing.trade.decrease', { name: label })}
+                    onChange={(value) => setSelection(setCount(selection, line.id, value))}
+                  />
+                </div>
+              ),
+            };
+          }),
+          ...rows.none.map((line) => ({
+            line,
+            footer: (
+              <div className={styles.cellFooter}>
+                <p className={styles.meta}>{wantsLine(line)}</p>
                 <p className={styles.meta}>
                   {line.spareReason === null || line.spareReason === undefined
                     ? t('sharing.trade.youHaveNone', { owned: line.owned ?? 0 })
                     : plural(t, 'sharing.trade.youHaveReason', line.spareReason.copies, { owned: line.owned ?? 0, deck: line.spareReason.deckName })}
                 </p>
               </div>
-            </li>
-          );
-        })}
-      </ul>
+            ),
+          })),
+        ]}
+      />
       {rows.lacking.length > 0 && <p className={styles.lacking}>{plural(t, 'sharing.trade.lacking', rows.lacking.length, { names: lackingNames })}</p>}
       {own !== null && (
         <label className={styles.mine}>
