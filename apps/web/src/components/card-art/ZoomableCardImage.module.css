@@ -1,0 +1,17 @@
+/* A bare button around a card thumbnail: the image keeps its own size and shape. */
+.button {
+  display: block;
+  flex: none;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: var(--ra-radius-sm);
+  background: transparent;
+  line-height: 0;
+  cursor: zoom-in;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}

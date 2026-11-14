@@ -111,3 +111,10 @@
   color: var(--ra-fg-tertiary);
   text-decoration: line-through;
 }
+
+/* A card the visitor picked: the art gets an accent outline. */
+.cellSelected .thumb {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+  border-radius: var(--ra-radius-sm);
+}

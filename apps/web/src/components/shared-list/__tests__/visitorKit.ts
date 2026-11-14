@@ -10,6 +10,22 @@ export function expectInOrder(...nodes: readonly HTMLElement[]): void {
   }
 }
 
+/** The card's name under its art in a grid cell (the art itself also carries the name). */
+export function cellName(cell: HTMLElement, name: string): HTMLElement {
+  const label = Array.from(cell.querySelectorAll('span')).find((node) => node.textContent === name && node.parentElement === cell);
+  if (label === undefined) throw new Error(`no cell name "${name}"`);
+  return label;
+}
+
+/** jsdom has no matchMedia; the card lightbox reads the reduced-motion preference from it. */
+export function stubMatchMedia(): void {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }),
+  });
+}
+
 /** The two lists of the sell-and-trade screens: Duda's sell list, and Marcos's want list "Procuro - Kayo". */
 
 export const TOKEN = 'aB3dE5gH7jK9mN';

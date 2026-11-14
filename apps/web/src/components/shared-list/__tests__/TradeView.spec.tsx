@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createFakeApi, makeAuth, renderWithProviders, type IFakeApi } from '../../shared-deck/__tests__/sharingTestKit';
-import { expectInOrder, MARCOS, TOKEN } from './visitorKit';
+import { cellName, expectInOrder, MARCOS, stubMatchMedia, TOKEN } from './visitorKit';
 
 const apiRef = vi.hoisted(() => ({ current: null as IFakeApi | null }));
 
@@ -73,7 +73,7 @@ describe('the trade view', () => {
     expect(within(rows[1]!).getByText('Marcos procura 1 · sugerido R$ 45')).toBeInTheDocument();
     expect(within(rows[1]!).getByText('Você tem 2 · 1 sobrando')).toBeInTheDocument();
     expect(within(rows[2]!).getByText('Você tem 2 · nenhuma sobrando (o seu Rhinar SA usa as 2)')).toBeInTheDocument();
-    expect(within(rows[2]!).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(rows[2]!).queryByRole('button', { name: /cópia/ })).not.toBeInTheDocument();
     expect(within(view).getByText('2 cartas que você não tem: Pack Hunt (Azul), Bloodrush Bellow (Amarelo)')).toBeInTheDocument();
     const mine = within(view).getByRole('switch', { name: /Incluir minha lista/ });
     expect(mine).not.toBeChecked();
@@ -91,11 +91,29 @@ describe('the trade view', () => {
       screen.getByRole('button', { name: 'Ver mensagem' }),
     );
     expectInOrder(
-      within(rows[0]!).getByText('Pummel (Vermelho)'),
+      cellName(rows[0]!, 'Pummel (Vermelho)'),
       within(rows[0]!).getByText('Marcos procura 3 · sugerido R$ 4'),
       within(rows[0]!).getByText('Você tem 4 · 3 sobrando'),
       rows[0]!.querySelector('output') as HTMLElement,
     );
+  });
+
+  it('opens a card full screen from the grid, and outlines a card once a copy is offered', async () => {
+    const image = { small: 'https://img.example/pummel-small.webp', large: 'https://img.example/pummel-large.webp' };
+    api.handlers.set(`GET /shared/lists/${TOKEN}`, () => ({ ...MARCOS, lines: MARCOS.lines.map((line) => ({ ...line, imageUrl: image })) }));
+    stubMatchMedia();
+    const user = userEvent.setup();
+    renderWithProviders(<SharedListPage token={TOKEN} />, makeAuth());
+
+    const rows = await screen.findAllByTestId('trade-row');
+    await user.click(within(rows[0]!).getByRole('button', { name: 'Abrir Pummel (Vermelho) em tela cheia' }));
+    expect(screen.getByRole('dialog', { name: 'Pummel (Vermelho)' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    expect(rows[0]).not.toHaveAttribute('data-selected');
+    await user.click(within(rows[0]!).getByRole('button', { name: 'Mais uma cópia de Pummel (Vermelho)' }));
+    expect(rows[0]).toHaveAttribute('data-selected', 'true');
   });
 
   it('asks the rule question before any spare number when it is owed', async () => {

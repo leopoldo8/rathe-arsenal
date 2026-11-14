@@ -8,6 +8,7 @@ import { neededCopies } from './missingListModel';
 import { MissingStandIn } from './MissingStandIn';
 import { OwnedStepper } from './OwnedStepper';
 import styles from './MissingListRow.module.css';
+import { ZoomableCardImage } from '../card-art/ZoomableCardImage';
 
 export type TRowLayout = 'card' | 'table';
 
@@ -56,11 +57,11 @@ function flagsWithShortfall(line: IMissingLine, t: TTranslate): readonly string[
   return note === null ? flagsOf(line, t) : [...flagsOf(line, t), note];
 }
 
-function CardImage({ line }: { readonly line: IMissingLine }): React.ReactElement {
+function CardImage({ line, name }: { readonly line: IMissingLine; readonly name: string }): React.ReactElement {
   return line.imageUrl === null ? (
     <span className={styles.imagePlaceholder} aria-hidden="true" />
   ) : (
-    <img className={styles.image} src={line.imageUrl} alt="" loading="lazy" />
+    <ZoomableCardImage image={line.imageUrl} name={name} className={styles.image} loading="lazy" />
   );
 }
 
@@ -157,7 +158,7 @@ function CardRow({ deckId, line, onOpenAlternatives, alternativesOpen }: { reado
   return (
     <li className={styles.card} data-testid="missing-row" data-state={line.state} data-alternatives-open={alternativesOpen ? 'true' : undefined}>
       <div className={styles.top}>
-        <CardImage line={line} />
+        <CardImage line={line} name={name} />
         <div className={styles.main}>
           <div className={styles.headline}>
             <NameBlock line={line} name={name} />
@@ -222,7 +223,7 @@ function TableRow({ deckId, line, onOpenAlternatives, alternativesOpen }: { read
     <tr className={styles.tableRow} data-testid="missing-row" data-state={line.state} data-alternatives-open={alternativesOpen ? 'true' : undefined}>
       <td>
         <div className={styles.cardCell}>
-          <CardImage line={line} />
+          <CardImage line={line} name={name} />
           <div className={styles.cardCellText}>
             <NameBlock line={line} name={name} />
             {flags.map((flag) => (

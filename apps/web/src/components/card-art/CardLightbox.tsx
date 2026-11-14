@@ -21,6 +21,11 @@ export interface ICardLightboxProps {
   readonly name: string;
   /** Called when user dismisses via Escape, backdrop, or close button. */
   readonly onClose: () => void;
+  /**
+   * Where the lightbox mounts; defaults to `document.body`. A card inside a modal dialog
+   * passes the dialog, whose layer otherwise blocks clicks and focus outside it.
+   */
+  readonly container?: Element | null | undefined;
 }
 
 /**
@@ -35,6 +40,7 @@ export function CardLightbox({
   sources,
   name,
   onClose,
+  container,
 }: ICardLightboxProps): React.ReactElement {
   const { t } = useTranslation();
   const candidateList = sources && sources.length > 0 ? sources : [imageUrl];
@@ -66,16 +72,18 @@ export function CardLightbox({
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
         e.preventDefault();
+        // Escape closes only the lightbox, not a dialog underneath it (Radix listens on the document).
+        e.stopPropagation();
         onClose();
       }
     };
-    document.addEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
     // Lock body scroll while the lightbox is open.
     // Note: initial focus is handled by useFocusTrap (initialFocusRef → closeButtonRef).
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('keydown', onKey, true);
       document.body.style.overflow = prevOverflow;
     };
   }, [onClose]);
@@ -187,6 +195,6 @@ export function CardLightbox({
         {name}
       </p>
     </div>,
-    document.body,
+    container ?? document.body,
   );
 }

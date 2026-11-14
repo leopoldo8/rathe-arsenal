@@ -1,8 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { IScannedCard } from './collector-code';
-import { pitchWord } from '../../lib/card-name';
+import { cardName, pitchWord } from '../../lib/card-name';
 import styles from './CardScanner.module.css';
+import { ZoomableCardImage } from '../card-art/ZoomableCardImage';
 
 const PITCH_CLASS: Readonly<Record<number, string | undefined>> = {
   1: styles.pitchRed,
@@ -10,7 +11,17 @@ const PITCH_CLASS: Readonly<Record<number, string | undefined>> = {
   3: styles.pitchBlue,
 };
 
-export function CardThumb({ card }: { readonly card: IScannedCard }): React.ReactElement {
+interface ICardThumbProps {
+  readonly card: IScannedCard;
+  /** Opens the card full screen on click; off inside a pick button and in the scan notice, which unmounts after a few seconds. */
+  readonly zoomable?: boolean;
+}
+
+export function CardThumb({ card, zoomable = false }: ICardThumbProps): React.ReactElement {
+  const { t } = useTranslation();
+  if (zoomable && card.imageSmall) {
+    return <ZoomableCardImage image={card.imageSmall} name={cardName(card.name, card.pitch, t)} className={styles.thumb} />;
+  }
   return card.imageSmall ? (
     <img src={card.imageSmall} alt="" className={styles.thumb} decoding="async" />
   ) : (

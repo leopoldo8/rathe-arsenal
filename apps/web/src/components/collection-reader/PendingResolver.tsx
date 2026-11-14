@@ -16,6 +16,7 @@ import { DEFAULT_LIBRARY_SEARCH } from '../../routes/_auth/-library.helpers';
 import { ColorChoices } from './ReaderBlocks';
 import baseStyles from './CollectionReader.module.css';
 import styles from './PendingResolver.module.css';
+import { ZoomableCardImage } from '../card-art/ZoomableCardImage';
 
 const MAX_COPIES = 20;
 const SEARCH_DELAY_MS = 350;
@@ -34,8 +35,9 @@ function cardOfRead(line: IReadLine): ILineSuggestion | null {
 }
 
 function Thumb({ card }: { readonly card: ILineSuggestion | null }): React.ReactElement {
+  const { t } = useTranslation();
   return card?.imageUrl ? (
-    <img className={styles.thumb} src={card.imageUrl.small} alt="" loading="lazy" />
+    <ZoomableCardImage image={card.imageUrl} name={cardName(card.name, card.pitch, t)} className={styles.thumb} loading="lazy" />
   ) : (
     <span className={styles.thumb} aria-hidden="true" />
   );

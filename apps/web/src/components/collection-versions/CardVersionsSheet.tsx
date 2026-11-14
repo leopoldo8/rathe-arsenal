@@ -25,6 +25,7 @@ import {
   versionKey,
 } from './copy-version-labels';
 import styles from './CopyVersions.module.css';
+import { ZoomableCardImage } from '../card-art/ZoomableCardImage';
 
 /** Printings shown before "+ N versões"; the screen draws three. */
 const VISIBLE_PRINTINGS = 3;
@@ -92,7 +93,7 @@ function SheetBody({ card, name, onClose }: ISheetBodyProps): React.ReactElement
   return (
     <>
       <div className={styles.cardHead}>
-        {card.imageUrl && <img className={styles.cardThumb} src={card.imageUrl.small} alt="" />}
+        <ZoomableCardImage image={card.imageUrl} name={name} className={styles.cardThumb} />
         <div>
           <Dialog.Title className={styles.cardName}>{name}</Dialog.Title>
           <p className={styles.subtitle}>{t('copyVersions.copiesCount', { count: card.ownedQuantity })}</p>

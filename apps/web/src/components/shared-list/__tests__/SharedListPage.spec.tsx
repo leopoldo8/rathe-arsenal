@@ -53,7 +53,7 @@ vi.mock('@tanstack/react-router', () => ({
 import { SharedListPage } from '../SharedListPage';
 import { StartFlow } from '../../auth/StartFlow';
 import { ToastProvider } from '../../ui/Toast/ToastProvider';
-import { DUDA, DUDA_MATCHES, expectInOrder, MARCOS } from './visitorKit';
+import { cellName, DUDA, DUDA_MATCHES, expectInOrder, MARCOS, stubMatchMedia } from './visitorKit';
 
 const TOKEN = 'aB3dE5gH7jK9mN';
 const URL = `https://rathearsenal.app/l/${TOKEN}`;
@@ -417,20 +417,44 @@ describe('SharedListPage', () => {
       const rows = screen.getAllByTestId('buyer-row');
       expectInOrder(screen.getByText('Lista de venda'), heading, summary, ...rows);
       expect(rows).toHaveLength(3);
-      expect(within(rows[0]!).getByText('Command and Conquer (Vermelho)')).toBeInTheDocument();
+      expect(cellName(rows[0]!, 'Command and Conquer (Vermelho)')).toBeInTheDocument();
       expect(within(rows[0]!).getByText('History Pack 1 · NM · R$ 45')).toBeInTheDocument();
       expect(within(rows[0]!).getByText('Falta 1 no seu Rhinar CC')).toBeInTheDocument();
       expect(within(rows[1]!).getByText('sem foil · R$ 6 cada')).toBeInTheDocument();
       expect(within(rows[1]!).getByText('Faltam 2 no seu Kayo CC')).toBeInTheDocument();
       for (const row of rows) expect(row.querySelector('output')).toHaveTextContent('0');
-      // Inside a row: name, then version and price, then the deck hint, then the stepper.
+      // Inside a cell: name, then version and price, then the deck hint, then the stepper.
       expectInOrder(
-        within(rows[0]!).getByText('Command and Conquer (Vermelho)'),
+        cellName(rows[0]!, 'Command and Conquer (Vermelho)'),
         within(rows[0]!).getByText('History Pack 1 · NM · R$ 45'),
         within(rows[0]!).getByText('Falta 1 no seu Rhinar CC'),
         rows[0]!.querySelector('output') as HTMLElement,
       );
       expect(screen.queryByTestId('buyer-bar')).not.toBeInTheDocument();
+    });
+
+    it('a buyer opens any card full screen from the grid', async () => {
+      const image = { small: 'https://img.example/card-small.webp', large: 'https://img.example/card-large.webp' };
+      api.handlers.set(`GET /shared/lists/${TOKEN}`, () => ({ ...DUDA, lines: DUDA.lines.map((entry) => ({ ...entry, imageUrl: image })) }));
+      stubMatchMedia();
+      const user = userEvent.setup();
+      renderPage(makeAuth());
+
+      const rows = await screen.findAllByTestId('buyer-row');
+      await user.click(within(rows[1]!).getByRole('button', { name: 'Abrir Snatch (Vermelho) em tela cheia' }));
+      expect(screen.getByRole('dialog', { name: 'Snatch (Vermelho)' })).toBeInTheDocument();
+    });
+
+    it('outlines a chosen card and totals it in the bar', async () => {
+      const user = userEvent.setup();
+      renderPage(makeAuth());
+
+      const rows = await screen.findAllByTestId('buyer-row');
+      expect(rows[0]).not.toHaveAttribute('data-selected');
+      await user.click(within(rows[0]!).getByRole('button', { name: 'Mais uma cópia de Command and Conquer (Vermelho)' }));
+
+      expect(rows[0]).toHaveAttribute('data-selected', 'true');
+      expect(screen.getByTestId('buyer-bar')).toHaveTextContent('Quero estas · R$ 45');
     });
 
     it('names the deck that misses the card most, with that deck own count', async () => {

@@ -227,7 +227,6 @@ export const sharing = {
     hint_other: '{{count}} missing in your {{deck}}',
     priceOne: 'R$ {{price}}',
     priceEach: 'R$ {{price}} each',
-    select: 'Choose {{name}}',
     increase: 'One more copy of {{name}}',
     decrease: 'One less copy of {{name}}',
     bar: 'I want these · R$ {{price}}',
@@ -306,7 +305,6 @@ export const sharing = {
   },
   // Deck gallery groups
   list: {
-    thumbAria: 'Art of {{name}}',
     quantity: '{{count}}×',
     groupCount: '{{count}}',
   },

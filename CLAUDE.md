@@ -84,6 +84,13 @@ not designed until it has both:
 - Before a UI change is called done, look at it at 390, 1024 and
   1440 px.
 
+Every card image the app shows opens full screen on click (the
+`CardLightbox`): `CardArt` with `onClick`, or `ZoomableCardImage` for a
+plain thumbnail. Owner's rule (2026-11-13): "sempre tem que dar para
+clicar na carta para ver a imagem em fullscreen". A card that is itself
+a pick button (search results, scanner, version picker) is the only
+exception until it gets its own open control.
+
 This rule exists because the persona rethink (PR #181) designed most
 new screens for phones only, and the desktop sign-in lost its layout.
 

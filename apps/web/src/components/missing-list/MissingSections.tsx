@@ -4,6 +4,7 @@ import type { IMissingLine } from '../../api/missing-list';
 import { cardName } from '../../lib/card-name';
 import { neededCopies } from './missingListModel';
 import styles from './MissingSections.module.css';
+import { ZoomableCardImage } from '../card-art/ZoomableCardImage';
 
 interface IMissingSectionsProps {
   readonly lines: readonly IMissingLine[];
@@ -17,10 +18,11 @@ function lackedCopies(line: IMissingLine): number {
 }
 
 function Thumb({ line }: { readonly line: IMissingLine }): React.ReactElement {
+  const { t } = useTranslation();
   return line.imageUrl === null ? (
     <span className={styles.placeholder} aria-hidden="true" />
   ) : (
-    <img className={styles.thumb} src={line.imageUrl} alt="" loading="lazy" />
+    <ZoomableCardImage image={line.imageUrl} name={cardName(line.name, line.pitch, t)} className={styles.thumb} loading="lazy" />
   );
 }
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,6 +16,7 @@ import {
   type IPatchLineBody,
 } from '../../api/lists';
 import { CardArt } from '../card-art/CardArt';
+import { useCardLightbox } from '../card-art/useCardLightbox';
 import { cardName } from '../../lib/card-name';
 import { MoneyInput } from './MoneyInput';
 import { SuggestionBlock } from './SuggestionBlock';
@@ -36,6 +37,9 @@ function versionOf(key: string, options: readonly IListPrinting[]): IPatchLineBo
 
 export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): React.ReactElement {
   const { t } = useTranslation();
+  const lightbox = useCardLightbox();
+  const artRef = useRef<HTMLDivElement>(null);
+  const displayName = cardName(line.name, line.pitch, (key) => t(key));
   const patch = usePatchLineMutation(list.id);
   const remove = useRemoveLineMutation(list.id);
   const applySuggestion = useApplySuggestionsMutation(list.id);
@@ -60,11 +64,21 @@ export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): Rea
           </div>
           <div className={styles.panelBody}>
             <div className={styles.panelTop}>
-              <div className={styles.panelArt}>
-                <CardArt name={line.name} pitch={line.pitch} cost={null} type={line.type} missing={false} size="lg" imageUrl={line.imageUrl} />
+              <div className={styles.panelArt} ref={artRef}>
+                <CardArt
+                  name={displayName}
+                  pitch={line.pitch}
+                  cost={null}
+                  type={line.type}
+                  missing={false}
+                  size="lg"
+                  imageUrl={line.imageUrl}
+                  onClick={line.imageUrl === null ? undefined : () => lightbox.open(line.imageUrl, displayName, artRef.current)}
+                />
+                {lightbox.element}
               </div>
               <div className={styles.panelTopText}>
-                <p className={styles.panelName}>{cardName(line.name, line.pitch, (key) => t(key))}</p>
+                <p className={styles.panelName}>{displayName}</p>
                 <span className={styles.panelLabel} id="line-qty-label">{t('lists.panel.quantity')}</span>
                 <div className={styles.stepper} role="group" aria-labelledby="line-qty-label">
                   <button

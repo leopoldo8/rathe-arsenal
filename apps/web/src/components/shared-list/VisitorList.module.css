@@ -3,10 +3,10 @@
   flex-direction: column;
   gap: var(--ra-space-4);
   inline-size: 100%;
-  max-inline-size: var(--ra-page-form-inline);
+  max-inline-size: var(--ra-page-max-inline);
   margin-inline: auto;
   min-inline-size: 0;
-  padding-block-end: 120px;
+  padding-block-end: 160px;
 }
 
 .eyebrow {
@@ -38,61 +38,15 @@
   font-weight: var(--ra-weight-bold);
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-md);
-  background: var(--ra-bg-surface);
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: var(--ra-space-3);
-  padding: var(--ra-space-3) var(--ra-space-4);
-  border-block-start: 1px solid var(--ra-border);
-}
-
-.row:first-child {
-  border-block-start: 0;
-}
-
-.check {
-  flex: none;
-  inline-size: 22px;
-  block-size: 22px;
-  accent-color: var(--ra-accent);
-}
-
-.thumb,
-.thumbPlaceholder {
-  display: block;
-  inline-size: 40px;
-  block-size: 56px;
-  flex: none;
-  border-radius: 3px;
-  object-fit: cover;
-  background: var(--ra-bg-muted);
-}
-
-.rowText {
+.cellFooter {
   display: flex;
   flex-direction: column;
   gap: var(--ra-space-1);
   min-inline-size: 0;
-  flex: 1;
 }
 
-.name {
-  color: var(--ra-fg-primary);
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-body);
-  font-weight: var(--ra-weight-semibold);
-  overflow-wrap: anywhere;
+.cellFooter > :last-child:not(p) {
+  margin-block-start: var(--ra-space-1);
 }
 
 .meta {

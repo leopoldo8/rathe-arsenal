@@ -26,6 +26,7 @@ import { SpareRowMenu } from './SpareRowMenu';
 import { SpareRuleSheet } from './SpareRuleSheet';
 import { WhySpareSheet } from './WhySpareSheet';
 import styles from './SparePage.module.css';
+import { ZoomableCardImage } from '../card-art/ZoomableCardImage';
 
 interface ISparePageProps {
   /** Back to the collection. */
@@ -129,7 +130,7 @@ function SpareRowItem({ row, rows, quantity, onQuantity, onWhy, t }: ISpareRowIt
   const showStore = (row.finish === '' || row.finish === 'none') && row.storeCents !== null;
   return (
     <li className={styles.row} data-testid="spare-row">
-      {row.imageUrl !== null && <img className={styles.art} src={row.imageUrl} alt="" loading="lazy" />}
+      <ZoomableCardImage image={row.imageUrl} name={name} className={styles.art} loading="lazy" />
       <div className={styles.rowText}>
         <p className={styles.name}>{name}</p>
         <p className={styles.meta}>{version === null ? t('spare.sparePlain', { count: row.spare }) : t('spare.versionLine', { version, count: row.spare })}</p>

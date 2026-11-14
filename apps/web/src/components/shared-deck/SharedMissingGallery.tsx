@@ -9,6 +9,7 @@ import { OfferButton } from './OfferButton';
 import { EMPTY_SELECTION, giveRowKey, offerItems, setRowCopies, toggleRow, totalCopies, type TOfferSelection } from './offerSelection';
 import { giveRows, inventorySplit, storeRows, type IGiveRow } from './sharedMissingModel';
 import styles from './SharedMissingGallery.module.css';
+import { ZoomableCardImage } from '../card-art/ZoomableCardImage';
 
 const PITCH_CLASS: Readonly<Record<number, string>> = {
   1: styles.pitchRed ?? '',
@@ -23,7 +24,7 @@ function CardThumb({ card, label }: { readonly card: ISharedCard; readonly label
   return src === null ? (
     <span className={styles.thumbPlaceholder} role="img" aria-label={label} />
   ) : (
-    <img className={styles.thumb} src={src} alt={label} loading="lazy" />
+    <ZoomableCardImage image={card.imageUrl} name={label} className={styles.thumb} loading="lazy" />
   );
 }
 

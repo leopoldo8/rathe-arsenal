@@ -25,6 +25,7 @@ import {
 } from './sellDraftModel';
 import { buildSellMessage, type TFinishAnswer } from './sellMessage';
 import styles from './SellDraft.module.css';
+import { ZoomableCardImage } from '../card-art/ZoomableCardImage';
 
 interface ISellDraftProps {
   /** The rows of the page, in the order it showed them. */
@@ -194,7 +195,7 @@ export function SellDraft({ rows, chosen, onBack, onSent, today }: ISellDraftPro
           const label = cardName(line.row.name, line.row.pitch, (key) => t(key));
           return (
             <li key={line.key} className={styles.line} data-testid="draft-line">
-              {line.row.imageUrl !== null && <img className={styles.art} src={line.row.imageUrl} alt="" />}
+              <ZoomableCardImage image={line.row.imageUrl} name={label} className={styles.art} />
               <div className={styles.lineText}>
                 <p className={styles.lineName}>{t('spare.lineHeading', { count: line.quantity, name: label })}</p>
                 <p className={styles.lineMeta}>{lineSubtitle(line, answers[line.key] ?? null, t)}</p>

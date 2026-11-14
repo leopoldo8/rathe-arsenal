@@ -1,15 +1,5 @@
 import React from 'react';
-import type { ISharedListLine } from '../../api/shared-lists';
 import styles from './VisitorList.module.css';
-
-export function Thumb({ line, label }: { readonly line: ISharedListLine; readonly label: string }): React.ReactElement {
-  const src = line.imageUrl?.small ?? null;
-  return src === null ? (
-    <span className={styles.thumbPlaceholder} role="img" aria-label={label} />
-  ) : (
-    <img className={styles.thumb} src={src} alt={label} loading="lazy" />
-  );
-}
 
 interface IRowStepperProps {
   readonly value: number;
