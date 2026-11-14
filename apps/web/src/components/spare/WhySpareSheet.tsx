@@ -5,6 +5,7 @@ import { cardName } from '../../lib/card-name';
 import { plural, ruleLine, whyLines } from './spareModel';
 import { SpareRuleSheet } from './SpareRuleSheet';
 import styles from './WhySpareSheet.module.css';
+import { ZoomableCardImage } from '../card-art/ZoomableCardImage';
 
 interface IWhySpareSheetProps {
   readonly spare: ISpareResponse;
@@ -43,7 +44,7 @@ export function WhySpareSheet({ spare, row, onBack }: IWhySpareSheetProps): Reac
         {t('spare.backToSpare')}
       </button>
       <header className={styles.header}>
-        {row.imageUrl !== null && <img className={styles.art} src={row.imageUrl} alt="" />}
+        <ZoomableCardImage image={row.imageUrl} name={name} className={styles.art} />
         <div>
           <p className={styles.eyebrow}>{t('spare.whyEyebrow')}</p>
           <h1 className={styles.title}>{name}</h1>

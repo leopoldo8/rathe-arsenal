@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CardArt } from '../card-art/CardArt';
+import { useCardLightbox } from '../card-art/useCardLightbox';
 import { cardName } from '../../lib/card-name';
 import { cardTypeLabel } from './cardTypeLabel';
 import type { TRuleChangedCard } from './ruleChangedModel';
@@ -18,6 +19,7 @@ const ART_WIDTH_PX = 52;
 
 export function RuleChangedRow({ card, format, limit, disabled, onTakeOne }: IRuleChangedRowProps): React.ReactElement {
   const { t } = useTranslation();
+  const lightbox = useCardLightbox();
   const name = cardName(card.name, card.pitch, t);
   const total = card.quantity + (card.inventoryQuantity ?? 0);
   const meta =
@@ -36,7 +38,9 @@ export function RuleChangedRow({ card, format, limit, disabled, onTakeOne }: IRu
         size="sm"
         widthOverride={ART_WIDTH_PX}
         imageUrl={card.imageUrl}
+        onClick={card.imageUrl ? () => lightbox.open(card.imageUrl, name) : undefined}
       />
+      {lightbox.element}
       <div className={styles.text}>
         <div className={styles.name}>{name}</div>
         <div className={styles.meta}>{meta}</div>

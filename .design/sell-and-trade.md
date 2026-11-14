@@ -138,17 +138,18 @@ Default taken: a sold line can be unmarked as today; unmarking after a removal o
 
 ### Buying and trading from a shared list
 
-**Delivers** a buyer selection on sell lists and a trade offer on want lists. Screens: `r3-buyer-phone`, `r3-buyer-message-phone`, `r3-trade-visitor-phone`, `r3-offer-message-phone`, `r3-share-contact-phone`.
+**Delivers** a buyer selection on sell lists and a trade offer on want lists. Screens: `r3-buyer-phone`, `r3-buyer-message-phone`, `r3-trade-visitor-phone`, `r3-offer-message-phone`, `r3-share-contact-phone`; since 2026-11-13 the grid screens `buyer-grid-phone`, `buyer-grid-desktop`, `trade-grid-phone` and `trade-grid-desktop` (screenshots in the pull request that made the change).
 
 | State | What should happen |
 |---|---|
-| A logged-in visitor opens a sell list | "<sharer> vende estas cartas", the summary of lines that fill their decks, rows with version, price and deck hint ("Falta 1 no seu Rhinar CC"), a stepper per row, nothing selected |
+| A logged-in visitor opens a sell list | "<sharer> vende estas cartas", the summary of lines that fill their decks, the cards in a grid like the library (owner, 2026-11-13: "ficaria bem melhor em grade, como é a biblioteca"), each with version, price and deck hint ("Falta 1 no seu Rhinar CC") and a stepper under it, nothing selected; a card with chosen copies is outlined |
 | The visitor chooses | Bar "Quero estas · R$ X" with "Ver mensagem" |
 | "Ver mensagem" | "Oi <sharer>, vi sua lista no Rathe Arsenal. Quero: <lines with version and price>. Total R$ X.", editable, "Enviar no WhatsApp" (to the sharer's number when shown) and "Copiar texto" |
-| A logged-in visitor opens a want list | "Cartas que <sharer> procura"; the summary "Você tem sobrando N cópias de M cartas que <sharer> procura."; rows with "Você tem N · M sobrando" and the reason when none is spare ("o seu Rhinar SA usa as 2"); a stepper on rows with spare; the cards the visitor lacks collapsed into one line |
+| A logged-in visitor opens a want list | "Cartas que <sharer> procura"; the summary "Você tem sobrando N cópias de M cartas que <sharer> procura."; the same card grid, the cards with spare first, each with "Você tem N · M sobrando" or the reason when none is spare ("o seu Rhinar SA usa as 2"); a stepper under cards with spare; the cards the visitor lacks collapsed into one line |
 | The visitor chooses copies | The value line "Valor aproximado, pelo preço sugerido: você oferece R$ X · você procura R$ Y" when "Incluir minha lista" is on; the switch is off until tapped |
 | "Ver mensagem" | "Oi <sharer>, vi sua lista no Rathe Arsenal. Tenho sobrando para você: <lines with what is known of the visitor's copies>. Em troca procuro: <the visitor's list lines>. Minha lista: <link>" (the last two parts only with the switch on), editable, the two buttons; back link "‹ Lista de <sharer>" |
 | The sharer shows no number | The text is copied, with "Texto copiado. Cole no grupo onde você viu a lista." |
+| A card in either grid is clicked | It opens full screen, as everywhere in the app |
 | The visitor is the owner | No selection, no offer |
 | Anonymous visitor | As today: sign up or sign in, then back to the same address |
 | Sharing a list with no number saved | "Sem seu WhatsApp, quem abrir o link não tem como falar com você."; "Salvar e mostrar" with "Seu número aparece para quem abrir o link."; "Compartilhar sem contato" below |
