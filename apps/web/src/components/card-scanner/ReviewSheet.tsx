@@ -78,7 +78,7 @@ function ReviewRow({
     <li className={styles.reviewRow} data-testid="review-row">
       {row.picked ? (
         <div className={styles.reviewCard}>
-          <CardThumb card={row.picked} />
+          <CardThumb card={row.picked} zoomable />
           <CardName card={row.picked} />
         </div>
       ) : (

@@ -305,7 +305,6 @@ export const sharing = {
   },
   // Deck gallery groups
   list: {
-    thumbAria: 'Arte de {{name}}',
     quantity: '{{count}}×',
     groupCount: '{{count}}',
   },

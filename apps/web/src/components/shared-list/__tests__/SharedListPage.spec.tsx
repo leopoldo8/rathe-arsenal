@@ -445,6 +445,18 @@ describe('SharedListPage', () => {
       expect(screen.getByRole('dialog', { name: 'Snatch (Vermelho)' })).toBeInTheDocument();
     });
 
+    it('outlines a chosen card and totals it in the bar', async () => {
+      const user = userEvent.setup();
+      renderPage(makeAuth());
+
+      const rows = await screen.findAllByTestId('buyer-row');
+      expect(rows[0]).not.toHaveAttribute('data-selected');
+      await user.click(within(rows[0]!).getByRole('button', { name: 'Mais uma cópia de Command and Conquer (Vermelho)' }));
+
+      expect(rows[0]).toHaveAttribute('data-selected', 'true');
+      expect(screen.getByTestId('buyer-bar')).toHaveTextContent('Quero estas · R$ 45');
+    });
+
     it('names the deck that misses the card most, with that deck own count', async () => {
       api.handlers.set(`GET /shared/lists/${TOKEN}/matches`, () => ({
         lines: [

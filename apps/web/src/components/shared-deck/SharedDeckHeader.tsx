@@ -6,6 +6,7 @@ import { GlossaryTerm } from '../glossary/GlossaryTerm';
 import { formatTermId } from '../glossary/glossary-model';
 import { imageSources } from '../deck-detail/recommendations/card-naming';
 import styles from './SharedDeckHeader.module.css';
+import { useCardLightbox } from '../card-art/useCardLightbox';
 
 interface ISharedDeckHeaderProps {
   readonly deck: ISharedDeckResponse;
@@ -21,6 +22,7 @@ export function SharedDeckHeader({ deck, contact }: ISharedDeckHeaderProps): Rea
   const { t } = useTranslation();
   const heroCard = deck.heroCard ?? findHeroCard(deck.cards);
   const isMissing = deck.intent === 'missing';
+  const lightbox = useCardLightbox();
   const art = useImageFallback(imageSources(heroCard?.imageUrl ?? null, 'large'));
   const formatTerm = formatTermId(deck.format, t);
 
@@ -34,13 +36,16 @@ export function SharedDeckHeader({ deck, contact }: ISharedDeckHeaderProps): Rea
       <div className={styles.overlay} aria-hidden="true" />
       <div className={styles.content}>
         {art.src !== null && (
-          <img
-            className={styles.heroCard}
-            src={art.src}
-            alt={t('sharing.list.thumbAria', { name: deck.hero })}
-            onError={art.onError}
-          />
+          <button
+            type="button"
+            className={styles.heroCardButton}
+            aria-label={t('ui.openFullscreen', { name: deck.hero })}
+            onClick={() => lightbox.open(heroCard?.imageUrl, deck.hero)}
+          >
+            <img className={styles.heroCard} src={art.src} alt="" onError={art.onError} />
+          </button>
         )}
+        {lightbox.element}
         <div className={styles.identity}>
           <p className={styles.eyebrow}>{isMissing ? t('sharing.page.eyebrowMissing') : t('sharing.page.eyebrow')}</p>
           <h1 id="shared-deck-title" className={styles.title}>

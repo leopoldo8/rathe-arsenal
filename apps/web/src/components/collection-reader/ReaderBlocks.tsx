@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { ILineSuggestion, TColorOption } from '../../api/collection-imports';
 import { cardName, pitchWord } from '../../lib/card-name';
 import styles from './CollectionReader.module.css';
+import { ZoomableCardImage } from '../card-art/ZoomableCardImage';
 
 const DOT_CLASS: Readonly<Record<number, string>> = {
   1: styles.dotRed!,
@@ -40,10 +41,11 @@ export function ColorChoices({ options, showUnknown, declined, onPick }: IColorC
 }
 
 function Thumb({ suggestion }: { readonly suggestion: ILineSuggestion }): React.ReactElement {
+  const { t } = useTranslation();
   return suggestion.imageUrl === null ? (
     <span className={styles.thumb} aria-hidden="true" />
   ) : (
-    <img className={styles.thumb} src={suggestion.imageUrl.small} alt="" loading="lazy" />
+    <ZoomableCardImage image={suggestion.imageUrl} name={cardName(suggestion.name, suggestion.pitch, t)} className={styles.thumb} loading="lazy" />
   );
 }
 

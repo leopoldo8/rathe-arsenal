@@ -46,6 +46,21 @@
   padding: var(--ra-space-5);
 }
 
+.heroCardButton {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  line-height: 0;
+  cursor: zoom-in;
+}
+
+.heroCardButton:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 3px;
+}
+
 .heroCard {
   flex: 0 0 auto;
   inline-size: 104px;
