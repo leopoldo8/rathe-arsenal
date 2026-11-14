@@ -58,7 +58,7 @@ function NoticeBody({
   const names = row.candidates.map((card) => card.name).join(' / ');
   return (
     <div className={styles.notice} data-testid="scan-notice">
-      <CardThumb card={row.picked ?? row.candidates[0]!} zoomable />
+      <CardThumb card={row.picked ?? row.candidates[0]!} />
       <div className={styles.noticeText}>
         {row.picked ? <CardName card={row.picked} /> : <span className={styles.cardName}>{names}</span>}
         <span className={styles.noticeCount}>{t('scanner.noticeInTray', { count: row.quantity })}</span>

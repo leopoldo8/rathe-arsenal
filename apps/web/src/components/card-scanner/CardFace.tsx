@@ -13,7 +13,7 @@ const PITCH_CLASS: Readonly<Record<number, string | undefined>> = {
 
 interface ICardThumbProps {
   readonly card: IScannedCard;
-  /** Opens the card full screen on click; off where the thumbnail sits inside a pick button. */
+  /** Opens the card full screen on click; off inside a pick button and in the scan notice, which unmounts after a few seconds. */
   readonly zoomable?: boolean;
 }
 
