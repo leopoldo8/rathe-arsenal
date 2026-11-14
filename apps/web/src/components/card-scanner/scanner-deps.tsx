@@ -76,11 +76,14 @@ function captureCard(video: HTMLVideoElement, stage: HTMLElement, attempt: numbe
   if (!context) return null;
   context.drawImage(video, left, top, width, height, 0, 0, width, height);
   const { data } = context.getImageData(0, 0, width, height);
-  const candidates = cardCandidates({
+  const card = {
     ...rgbaToGray(data, width, height),
     guide: { x: guide.x - left, y: guide.y - top, width: guide.width, height: guide.height },
-  });
-  return candidates[attempt % candidates.length]!;
+  };
+  // Even reads use the guide's crop, which is always the first candidate, so only odd reads pay for the locator.
+  if (attempt % 2 === 0) return card;
+  const candidates = cardCandidates(card);
+  return candidates[candidates.length - 1]!;
 }
 
 function loadEngine(): Promise<IOcrEngine> {
