@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import type { ICollectorCodesResponse } from '../../../api/collector-codes';
-import { buildCollectorCodeIndex, resolveCollectorCode } from '../collector-code';
+import { buildCollectorCodeIndex, readCollectorCode } from '../collector-code';
 import { createOcrEngine, type IOcrEngine } from '../ocr-engine';
 import { rgbaToGray, type ICardImage } from '../ocr-image';
 import { OCR_VARIANTS } from '../ocr-variants';
@@ -139,7 +139,7 @@ describe('recognition pipeline over the reference set', () => {
           const variant = OCR_VARIANTS[attempt % OCR_VARIANTS.length]!;
           const text = readByVariant.get(variant.id) ?? (await engine.recognize(card, variant));
           readByVariant.set(variant.id, text);
-          const step = applyRecognition(session, variant.id, resolveCollectorCode(text, index));
+          const step = applyRecognition(session, variant.id, readCollectorCode(text, index));
           session = step.session;
           if (step.outcome.kind === 'added') {
             if (step.outcome.code === code) right += 1;

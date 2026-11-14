@@ -1,5 +1,5 @@
 import type { ICollectorCodesResponse } from '../../../api/collector-codes';
-import { buildCollectorCodeIndex, resolveCollectorCode } from '../collector-code';
+import { buildCollectorCodeIndex, readCollectorCode, resolveCollectorCode } from '../collector-code';
 
 const RESPONSE: ICollectorCodesResponse = {
   imageSmallBase: 'https://cdn.test/small/',
@@ -13,6 +13,9 @@ const RESPONSE: ICollectorCodesResponse = {
     { cardIdentifier: 'ele-57', name: 'Ele 57', pitch: 1, printings: [{ code: 'ELE057' }] },
     { cardIdentifier: 'arc-97', name: 'Arc 97', pitch: 1, printings: [{ code: 'ARC097' }] },
     { cardIdentifier: 'crane-dance-yellow', name: 'Crane Dance', pitch: 2, printings: [{ code: '1HP108' }] },
+    { cardIdentifier: 'mask-of-momentum', name: 'Mask of Momentum', pitch: null, printings: [{ code: '1HP095' }] },
+    { cardIdentifier: 'hp1-55', name: 'Hp1 55', pitch: 1, printings: [{ code: '1HP055' }] },
+    { cardIdentifier: 'hp1-46', name: 'Hp1 46', pitch: 1, printings: [{ code: '1HP046' }] },
     { cardIdentifier: 'a-drop-in-the-ocean-blue', name: 'A Drop in the Ocean', pitch: 3, printings: [{ code: 'MST095' }] },
     { cardIdentifier: 'inner-chi-blue', name: 'Inner Chi', pitch: 3, printings: [{ code: 'MST095', image: 'MST095_BACK' }] },
     {
@@ -79,6 +82,33 @@ describe('resolveCollectorCode', () => {
 
     expect(result?.code).toBe('1HP108');
     expect(result?.cards.map((card) => card.cardIdentifier)).toEqual(['crane-dance-yellow']);
+  });
+
+  it.each([
+    ['(R: THPO46 bimawithpencil', '1HP046'],
+    ['C IHPO46 Artist', '1HP046'],
+    ['C lHPO46 Artist', '1HP046'],
+    ['C |HPO46 Artist', '1HP046'],
+  ])('reads a 1 taken for a letter at the start of the HP1 prefix: %s -> %s', (text, expected) => {
+    expect(resolvedCode(text)).toBe(expected);
+  });
+
+  it('skips an S that could be 5 or 9 when both codes exist', () => {
+    expect(resolvedCode('(L) 1HPOSS Kate Fox ©2021 Legend Story Studios')).toBeNull();
+  });
+
+  it('lists the codes an ambiguous read could be', () => {
+    const read = readCollectorCode('(L) 1HPOSS Kate Fox ©2021 Legend Story Studios', INDEX);
+
+    expect(read.resolved).toBeNull();
+    expect([...read.possibleCodes].sort()).toEqual(['1HP055', '1HP095']);
+  });
+
+  it('lists the resolved code as its only possible code', () => {
+    const read = readCollectorCode('EN | MSTI72 Faizal Fikri', INDEX);
+
+    expect(read.resolved?.code).toBe('MST172');
+    expect(read.possibleCodes).toEqual(['MST172']);
   });
 
   it.each([

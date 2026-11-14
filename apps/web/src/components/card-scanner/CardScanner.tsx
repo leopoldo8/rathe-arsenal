@@ -7,7 +7,7 @@ import type { ISearchCardResult } from '../../api/catalog';
 import { useNavigationAwayGuard } from '../../hooks/useNavigationAwayGuard';
 import { DEFAULT_LIBRARY_SEARCH } from '../../routes/_auth/-library.helpers';
 import { DiscardChangesConfirm } from '../deck-detail/DiscardChangesConfirm';
-import { buildCollectorCodeIndex, resolveCollectorCode, type IScannedCard } from './collector-code';
+import { buildCollectorCodeIndex, readCollectorCode, type IScannedCard } from './collector-code';
 import type { IOcrEngine } from './ocr-engine';
 import { OCR_VARIANTS } from './ocr-variants';
 import { preferredZoom, type ICameraControl, type ICameraState } from './camera-control';
@@ -183,7 +183,7 @@ export function CardScanner(): React.ReactElement {
         return text;
       },
       onText: (variant, text) =>
-        applyStep(applyRecognition(sessionRef.current, variant.id, resolveCollectorCode(text, index))),
+        applyStep(applyRecognition(sessionRef.current, variant.id, readCollectorCode(text, index))),
       onError: () => setEngine('error'),
     });
     loopRef.current = loop;

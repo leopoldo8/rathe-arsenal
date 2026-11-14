@@ -30,8 +30,8 @@ const DIGIT_LOOKALIKES: Readonly<Record<string, string>> = {
   S: '5', Z: '2', B: '8', G: '6',
 };
 
-// A T in the digits is read as 1 or as 7; a slice where both codes exist is ambiguous.
-const SECOND_DIGIT_READING: Readonly<Record<string, string>> = { T: '7' };
+// A T in the digits is read as 1 or as 7, and an S as 5 or 9; a slice where both codes exist is ambiguous.
+const SECOND_DIGIT_READING: Readonly<Record<string, string>> = { T: '7', S: '9' };
 
 const LETTER_LOOKALIKES: Readonly<Record<string, string>> = {
   '0': 'O', '1': 'I', '5': 'S', '2': 'Z', '8': 'B', '6': 'G',
@@ -57,24 +57,36 @@ export function buildCollectorCodeIndex(response: ICollectorCodesResponse): ICol
   return { byCode, prefixes };
 }
 
-export function resolveCollectorCode(text: string, index: ICollectorCodeIndex): IResolvedCode | null {
-  for (const code of candidateCodes(text, index)) {
-    const cards = index.byCode.get(code);
-    if (cards) return { code, cards };
-  }
-  return null;
+/** What one OCR read says: the code it names, if any, and every code it could be. */
+export interface ICodeRead {
+  readonly resolved: IResolvedCode | null;
+  /** Includes the resolved code; holds several codes when lookalikes leave the read ambiguous. */
+  readonly possibleCodes: readonly string[];
 }
 
-function candidateCodes(text: string, index: ICollectorCodeIndex): readonly string[] {
+export function readCollectorCode(text: string, index: ICollectorCodeIndex): ICodeRead {
+  const slices = sliceReadings(text, index);
+  const named = slices.find((codes) => codes.length === 1)?.[0];
+  const resolved = named === undefined ? null : { code: named, cards: index.byCode.get(named)! };
+  const possibleCodes = resolved ? [resolved.code] : [...new Set(slices.flat())];
+  return { resolved, possibleCodes };
+}
+
+export function resolveCollectorCode(text: string, index: ICollectorCodeIndex): IResolvedCode | null {
+  return readCollectorCode(text, index).resolved;
+}
+
+/** For each six-character slice and set-code reading, the indexed codes its digits could spell. */
+function sliceReadings(text: string, index: ICollectorCodeIndex): readonly (readonly string[])[] {
   const tokens = text.toUpperCase().replace(/[^A-Z0-9|]/g, ' ').split(/\s+/).filter(Boolean);
-  const codes: string[] = [];
+  const readings: (readonly string[])[] = [];
   for (const token of tokens) {
     for (let start = 0; start + CODE_LENGTH <= token.length; start += 1) {
       const slice = sliceAt(token, start);
-      if (slice !== null) codes.push(...codesForSlice(slice, index));
+      if (slice !== null) readings.push(...codesForSlice(slice, index));
     }
   }
-  return codes;
+  return readings.filter((codes) => codes.length > 0);
 }
 
 /**
@@ -94,21 +106,20 @@ function isDigit(char: string | undefined): boolean {
   return char !== undefined && char >= '0' && char <= '9';
 }
 
-function codesForSlice(slice: string, index: ICollectorCodeIndex): readonly string[] {
+function codesForSlice(slice: string, index: ICollectorCodeIndex): readonly (readonly string[])[] {
   const digitReadings = readDigits(slice.slice(PREFIX_LENGTH));
   if (digitReadings.length === 0) return [];
   const prefix = slice.slice(0, PREFIX_LENGTH);
+  // The last variant covers a digit-led set code (1HP) whose 1 was read as a letter.
   const prefixVariants = [
     prefix,
     mapChars(prefix, LETTER_LOOKALIKES),
     prefix[0] + mapChars(prefix.slice(1), LETTER_LOOKALIKES),
+    mapChars(prefix[0]!, DIGIT_LOOKALIKES) + mapChars(prefix.slice(1), LETTER_LOOKALIKES),
   ];
-  return prefixVariants
+  return [...new Set(prefixVariants)]
     .filter((variant) => index.prefixes.has(variant))
-    .flatMap((variant) => {
-      const indexed = digitReadings.map((digits) => variant + digits).filter((code) => index.byCode.has(code));
-      return indexed.length === 1 ? indexed : [];
-    });
+    .map((variant) => digitReadings.map((digits) => variant + digits).filter((code) => index.byCode.has(code)));
 }
 
 function readDigits(chars: string): readonly string[] {
